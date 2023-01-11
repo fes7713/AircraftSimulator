@@ -3,12 +3,11 @@ package aircraftsimulator;
 import map.NoiseMapPanel;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class Environment {
-    private final JFrame frame;
-
+public class Environment extends JPanel{
     private final NoiseMapPanel mapPanel;
     private final NoiseMapPanel cloud;
     private final NoiseMapPanel cloudHigh;
@@ -16,10 +15,9 @@ public class Environment {
     private final Wind windLow;
     private final Wind windHigh;
 
-    public Environment(){
-        frame = new JFrame("New Frame");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    private final Timer timer;
 
+    public Environment(){
         mapPanel = new NoiseMapPanel() ;
         cloud = new NoiseMapPanel() ;
         cloudHigh = new NoiseMapPanel() ;
@@ -65,23 +63,26 @@ public class Environment {
 
 //
 //
-        frame.add(mapPanel);
-        frame.setBounds(0, 0, 500, 500);
-        frame.setVisible(true);
+        this.setLayout(new BorderLayout());
+        this.add(mapPanel);
 
         windLow = new Wind(1, 2);
         windHigh = new Wind(0.1F, 0.2F);
 
-        java.util.Timer timer = new Timer();
+        timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                cloud.setCenterX(cloud.getCenterX() + 2);
-                cloud.setStartLeft(cloud.getStartLeft() - 2);
+                cloud.setStartLeft(cloud.getStartLeft() - windLow.getWindX());
+                cloud.setStartTop(cloud.getStartTop() - windLow.getWindY());
+                cloud.setCenter(cloud.getCenterX() + windLow.getWindX(), cloud.getCenterY() + windLow.getWindY());
+
                 cloud.repaint();
 
-                cloudHigh.setCenterX(cloudHigh.getCenterX() + 0.6F);
-                cloudHigh.setStartLeft(cloudHigh.getStartLeft() - 0.6F);
+                cloudHigh.setStartLeft(cloudHigh.getStartLeft() - windHigh.getWindX());
+                cloudHigh.setStartTop(cloudHigh.getStartTop() - windHigh.getWindY());
+                cloudHigh.setCenter(cloudHigh.getCenterX() + windHigh.getWindX(), cloudHigh.getCenterY() + windHigh.getWindY());
+
                 cloudHigh.repaint();
             }
         }, 1000, 50);

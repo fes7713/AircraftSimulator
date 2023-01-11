@@ -5,11 +5,12 @@ import javax.swing.*;
 public class Game {
     public static void main(String[] args)
     {
-        JFrame frame = new JFrame("Title");
+        Environment env = new Environment();
+        JFrame frame = new JFrame("New Frame");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setBounds(200, 200, 500, 500);
-        JPanel panel = new GamePanel();
-        frame.add(panel);
+
+        frame.add(env);
+        frame.setBounds(0, 0, 500, 500);
         frame.setVisible(true);
     }
 }
