@@ -1,4 +1,6 @@
 package aircraftsimulator;
 
-public class Engine extends Component{
+import aircraftsimulator.GameObject.Component.Component;
+
+public class Engine extends Component {
 }

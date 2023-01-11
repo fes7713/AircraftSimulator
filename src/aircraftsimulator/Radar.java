@@ -1,4 +1,6 @@
 package aircraftsimulator;
 
-public class Radar  extends Component{
+import aircraftsimulator.GameObject.Component.Component;
+
+public class Radar  extends Component {
 }

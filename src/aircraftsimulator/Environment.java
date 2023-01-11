@@ -21,8 +21,8 @@ public class Environment extends JPanel{
 
     public Environment(){
         mapPanel = new NoiseMapPanel() ;
-        cloudLow = new NoiseMapPanel() ;
-        cloudHigh = new NoiseMapPanel() ;
+        cloudLow = new NoiseMapPanel(2, 2) ;
+        cloudHigh = new NoiseMapPanel(3, 3) ;
         gamePanel = new GamePanel(this);
         gamePanel.setOpaque(false);
 
@@ -35,10 +35,10 @@ public class Environment extends JPanel{
         cloudLow.updateChunkGroups();
         cloudLow.setOpaque(false);
 
-        cloudHigh.setResolutionMin(-6);
-        cloudHigh.setResolutionMax(-4);
+        cloudHigh.setResolutionMin(-5);
+        cloudHigh.setResolutionMax(0);
         cloudHigh.loadColorPreset("cloud3.txt");
-        cloudHigh.loadVariables("cloudHigh1.txt");
+        cloudHigh.loadVariables("cloudHigh3.txt");
         cloudHigh.clearChunks();
         cloudHigh.updateChunkGroups();
         cloudHigh.setOpaque(false);
@@ -49,7 +49,7 @@ public class Environment extends JPanel{
         mapPanel.add(gamePanel);
         mapPanel.add(cloudHigh);
         mapPanel.add(cloudLow);
-//
+
         cloudHigh.addComponentListener(mapPanel);
         cloudHigh.addMouseMotionListener(mapPanel);
         cloudHigh.addMouseListener(mapPanel);
@@ -61,7 +61,8 @@ public class Environment extends JPanel{
         cloudHigh.addMouseWheelListener(cloudLow);
 
 //        cloudLow.showColorEditor();
-//        cloudHigh.showVariableChanger();
+        cloudHigh.showVariableChanger();
+        cloudHigh.showMapEditor();
 //        mapPanel.showColorEditor();
 //        mapPanel.showVariableChanger();
 //        mapPanel.showLightingChanger();
@@ -73,8 +74,8 @@ public class Environment extends JPanel{
         this.setLayout(new BorderLayout());
         this.add(mapPanel);
 
-        windLow = new Wind(1, 2);
-        windHigh = new Wind(0.1F, 0.2F);
+        windLow = new Wind(1, 1);
+        windHigh = new Wind(0.2F, 0.4F);
 
         timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -124,5 +125,4 @@ public class Environment extends JPanel{
     {
         return mapPanel.getScreenSize(gameSize);
     }
-
 }
