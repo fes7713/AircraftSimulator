@@ -1,0 +1,5 @@
+CenterX,-808.0
+CenterY,0.0
+Width,5909.0
+Height,6010.0
+Color,255
