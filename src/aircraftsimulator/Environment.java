@@ -9,25 +9,31 @@ import java.util.TimerTask;
 
 public class Environment extends JPanel{
     private final NoiseMapPanel mapPanel;
-    private final NoiseMapPanel cloud;
+    private final NoiseMapPanel cloudLow;
     private final NoiseMapPanel cloudHigh;
 
     private final Wind windLow;
     private final Wind windHigh;
 
+    private final GamePanel gamePanel;
+
     private final Timer timer;
 
     public Environment(){
         mapPanel = new NoiseMapPanel() ;
-        cloud = new NoiseMapPanel() ;
+        cloudLow = new NoiseMapPanel() ;
         cloudHigh = new NoiseMapPanel() ;
-        cloud.setResolutionMin(-4);
-        cloud.setResolutionMax(1);
-        cloud.loadColorPreset("cloud3.txt");
-        cloud.loadVariables("cloud2.txt");
-        cloud.clearChunks();
-        cloud.updateChunkGroups();
-        cloud.setOpaque(false);
+        gamePanel = new GamePanel(this);
+        gamePanel.setOpaque(false);
+
+
+        cloudLow.setResolutionMin(-4);
+        cloudLow.setResolutionMax(1);
+        cloudLow.loadColorPreset("cloud3.txt");
+        cloudLow.loadVariables("cloud2.txt");
+        cloudLow.clearChunks();
+        cloudLow.updateChunkGroups();
+        cloudLow.setOpaque(false);
 
         cloudHigh.setResolutionMin(-6);
         cloudHigh.setResolutionMax(-4);
@@ -40,20 +46,21 @@ public class Environment extends JPanel{
 
         OverlayLayout layout = new OverlayLayout(mapPanel);
         mapPanel.setLayout(layout);
-        mapPanel.add(cloud);
+        mapPanel.add(gamePanel);
         mapPanel.add(cloudHigh);
+        mapPanel.add(cloudLow);
 //
-        cloud.addComponentListener(mapPanel);
-        cloud.addMouseMotionListener(mapPanel);
-        cloud.addMouseListener(mapPanel);
-        cloud.addMouseWheelListener(mapPanel);
+        cloudHigh.addComponentListener(mapPanel);
+        cloudHigh.addMouseMotionListener(mapPanel);
+        cloudHigh.addMouseListener(mapPanel);
+        cloudHigh.addMouseWheelListener(mapPanel);
 
-        cloud.addComponentListener(cloudHigh);
-        cloud.addMouseMotionListener(cloudHigh);
-        cloud.addMouseListener(cloudHigh);
-        cloud.addMouseWheelListener(cloudHigh);
+        cloudHigh.addComponentListener(cloudLow);
+        cloudHigh.addMouseMotionListener(cloudLow);
+        cloudHigh.addMouseListener(cloudLow);
+        cloudHigh.addMouseWheelListener(cloudLow);
 
-//        cloud.showColorEditor();
+//        cloudLow.showColorEditor();
 //        cloudHigh.showVariableChanger();
 //        mapPanel.showColorEditor();
 //        mapPanel.showVariableChanger();
@@ -73,11 +80,11 @@ public class Environment extends JPanel{
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                cloud.setStartLeft(cloud.getStartLeft() - windLow.getWindX());
-                cloud.setStartTop(cloud.getStartTop() - windLow.getWindY());
-                cloud.setCenter(cloud.getCenterX() + windLow.getWindX(), cloud.getCenterY() + windLow.getWindY());
+                cloudLow.setStartLeft(cloudLow.getStartLeft() - windLow.getWindX());
+                cloudLow.setStartTop(cloudLow.getStartTop() - windLow.getWindY());
+                cloudLow.setCenter(cloudLow.getCenterX() + windLow.getWindX(), cloudLow.getCenterY() + windLow.getWindY());
 
-                cloud.repaint();
+                cloudLow.repaint();
 
                 cloudHigh.setStartLeft(cloudHigh.getStartLeft() - windHigh.getWindX());
                 cloudHigh.setStartTop(cloudHigh.getStartTop() - windHigh.getWindY());
@@ -87,4 +94,35 @@ public class Environment extends JPanel{
             }
         }, 1000, 50);
     }
+
+    public float getGameX(int screenX)
+    {
+        return mapPanel.getGameX(screenX);
+    }
+
+    public float getGameY(int screenY)
+    {
+        return mapPanel.getGameY(screenY);
+    }
+
+    public float getGameSize(int screenSize)
+    {
+        return mapPanel.getGameSize(screenSize);
+    }
+
+    public int getScreenX(float gameX)
+    {
+        return mapPanel.getScreenX(gameX);
+    }
+
+    public int getScreenY(float gameY)
+    {
+        return mapPanel.getScreenY(gameY);
+    }
+
+    public int getScreenSize(float gameSize)
+    {
+        return mapPanel.getScreenSize(gameSize);
+    }
+
 }
