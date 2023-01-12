@@ -16,6 +16,11 @@ public class DestructibleObject extends GameObject implements DestructibleObject
         // TODO destroy object with animation
     }
 
+    @Override
+    public float getHealth() {
+        return 0;
+    }
+
     public boolean takeDamage(float damage){
         // TODO
         // Have indirect layer of damage calculation.
@@ -24,5 +29,4 @@ public class DestructibleObject extends GameObject implements DestructibleObject
         // Reduce damage first by decorator pattern;
         return false;
     }
-
 }

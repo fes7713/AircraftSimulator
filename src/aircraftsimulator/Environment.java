@@ -21,7 +21,7 @@ public class Environment extends JPanel{
 
     public Environment(){
         mapPanel = new NoiseMapPanel() ;
-        cloudLow = new NoiseMapPanel(2, 2) ;
+        cloudLow = new NoiseMapPanel(3, 3) ;
         cloudHigh = new NoiseMapPanel(3, 3) ;
         gamePanel = new GamePanel(this);
         gamePanel.setOpaque(false);

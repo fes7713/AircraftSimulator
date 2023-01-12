@@ -9,7 +9,6 @@ public class GameObject implements GameObjectInterface {
     Vector2f position;
     Color color;
     float size;
-
     List<Component> components;
 
     public GameObject(Vector2f position, Color color, float size)
@@ -17,8 +16,22 @@ public class GameObject implements GameObjectInterface {
         this.position = position;
         this.color = color;
         this.size = size;
-
         components = new ArrayList<>();
+    }
+
+    @Override
+    public Vector2f getPosition() {
+        return position;
+    }
+
+    @Override
+    public Color getColor() {
+        return color;
+    }
+
+    @Override
+    public float getSize() {
+        return size;
     }
 
     public void addComponent(Component component)
@@ -30,6 +43,4 @@ public class GameObject implements GameObjectInterface {
     public void update() {
         // TODO
     }
-
-
 }
