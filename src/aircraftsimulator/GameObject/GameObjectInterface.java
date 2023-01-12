@@ -8,5 +8,6 @@ public interface GameObjectInterface {
     Color getColor();
     float getSize();
     void addComponent(Component component);
-    void update();
+    void update(float delta);
+    void draw(Graphics2D g2d);
 }

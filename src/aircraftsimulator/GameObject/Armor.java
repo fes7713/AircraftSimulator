@@ -33,8 +33,13 @@ public class Armor implements DestructibleObjectInterface{
     }
 
     @Override
-    public void update() {
-        object.update();
+    public void update(float delta) {
+        object.update(delta);
+    }
+
+    @Override
+    public void draw(Graphics2D g2d) {
+        object.draw(g2d);
     }
 
     @Override

@@ -40,7 +40,13 @@ public class GameObject implements GameObjectInterface {
     }
 
     @Override
-    public void update() {
+    public void update(float delta) {
         // TODO
+    }
+
+    @Override
+    public void draw(Graphics2D g2d) {
+        g2d.setColor(color);
+        g2d.fillOval((int)(position.x - size /2), (int)(position.y - size /2), (int)size, (int)size);
     }
 }

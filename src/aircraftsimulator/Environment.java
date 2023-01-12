@@ -125,4 +125,18 @@ public class Environment extends JPanel{
     {
         return mapPanel.getScreenSize(gameSize);
     }
+
+    public float getZoom(){
+        return mapPanel.getZoom();
+    }
+
+    public float getStartLeft()
+    {
+        return mapPanel.getStartLeft();
+    }
+
+    public float getStartTop()
+    {
+        return mapPanel.getStartTop();
+    }
 }
