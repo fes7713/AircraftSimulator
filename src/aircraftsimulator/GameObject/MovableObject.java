@@ -1,6 +1,7 @@
 package aircraftsimulator.GameObject;
 
 import aircraftsimulator.GameObject.MovePolicy.MovePolicy;
+import aircraftsimulator.GameObject.MovePolicy.SimpleMovePolicy;
 
 import javax.vecmath.Vector2f;
 import java.awt.*;
@@ -11,8 +12,11 @@ public class MovableObject extends GameObject implements Movable{
 
     MovePolicy policy;
 
+    int mass;
+
     public MovableObject(Vector2f position, Color color, float size) {
         super(position, color, size);
+        policy = new SimpleMovePolicy(this);
     }
 
     @Override
@@ -26,8 +30,22 @@ public class MovableObject extends GameObject implements Movable{
     }
 
     @Override
-    public void move(float delta) {
+    public void addForce(Vector2f force) {
+        acceleration.x += force.x / mass;
+        acceleration.y += force.y / mass;
+    }
 
+    @Override
+    public void move(float delta) {
+        Vector2f destination = policy.destination();
+        if(destination == null)
+            return;
+
+    }
+
+    @Override
+    public void setMovePolicy(MovePolicy policy) {
+        this.policy = policy;
     }
 
     @Override
