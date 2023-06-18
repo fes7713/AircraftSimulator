@@ -13,10 +13,12 @@ public class MovableObject extends GameObject implements Movable{
     MovePolicy policy;
 
     int mass;
+    Vector2f coordinate;
 
     public MovableObject(Vector2f position, Color color, float size) {
         super(position, color, size);
         policy = new SimpleMovePolicy(this);
+        coordinate = new Vector2f(0, 0);
     }
 
     @Override
