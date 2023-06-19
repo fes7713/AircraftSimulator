@@ -1,8 +1,11 @@
 package aircraftsimulator;
 
 import javax.swing.*;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Game {
+    public static long prevTime;
     public static void main(String[] args)
     {
         Environment env = new Environment();
@@ -12,5 +15,17 @@ public class Game {
         frame.add(env);
         frame.setBounds(0, 0, 500, 500);
         frame.setVisible(true);
+
+        java.util.Timer timer = new Timer();
+
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println(1000 / (System.currentTimeMillis() - prevTime + 1));
+                env.updateGame(20 / 1000F);
+                frame.repaint();
+                prevTime = System.currentTimeMillis();
+            }
+        }, 1000, 20);
     }
 }

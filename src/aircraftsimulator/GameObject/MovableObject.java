@@ -4,35 +4,36 @@ import aircraftsimulator.GameObject.MovePolicy.MovePolicy;
 import aircraftsimulator.GameObject.MovePolicy.SimpleMovePolicy;
 
 import javax.vecmath.Vector2f;
+import javax.vecmath.Vector3f;
 import java.awt.*;
 
 public class MovableObject extends GameObject implements Movable{
-    Vector2f velocity;
-    Vector2f acceleration;
+    Vector3f velocity;
+    Vector3f acceleration;
 
     MovePolicy policy;
 
     int mass;
-    Vector2f coordinate;
+    Vector3f coordinate;
 
-    public MovableObject(Vector2f position, Color color, float size) {
+    public MovableObject(Vector3f position, Color color, float size) {
         super(position, color, size);
         policy = new SimpleMovePolicy(this);
-        coordinate = new Vector2f(0, 0);
+        coordinate = new Vector3f(0, 0, 0);
     }
 
     @Override
-    public Vector2f getVelocity() {
+    public Vector3f getVelocity() {
         return velocity;
     }
 
     @Override
-    public Vector2f getAcceleration() {
+    public Vector3f getAcceleration() {
         return acceleration;
     }
 
     @Override
-    public void addForce(Vector2f force) {
+    public void addForce(Vector3f force) {
         acceleration.x += force.x / mass;
         acceleration.y += force.y / mass;
     }

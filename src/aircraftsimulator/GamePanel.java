@@ -1,9 +1,10 @@
 package aircraftsimulator;
 
+import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.GameObject;
 
 import javax.swing.*;
-import javax.vecmath.Vector2f;
+import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
@@ -16,7 +17,14 @@ public class GamePanel extends JPanel {
     public GamePanel(Environment environment){
         this.environment = environment;
         objects = new ArrayList<>();
-        objects.add(new GameObject(new Vector2f(100, 100), Color.BLACK, 5));
+        objects.add(new GameObject(new Vector3f(100, 100, 100), Color.BLACK, 5));
+        objects.add(new Aircraft(new Vector3f(100, 100, 100), Color.RED, 5, 100));
+    }
+
+    public void update(float delta)
+    {
+        for(GameObject go: objects)
+            go.update(delta);
     }
 
     @Override

@@ -1,12 +1,12 @@
 package aircraftsimulator.GameObject;
 
-import javax.vecmath.Vector2f;
+import javax.vecmath.Vector3f;
 import java.awt.*;
 
 public class DestructibleObject extends GameObject implements DestructibleObjectInterface{
     float health;
 
-    public DestructibleObject(Vector2f position, Color color, float size, float health)
+    public DestructibleObject(Vector3f position, Color color, float size, float health)
     {
         super(position, color, size);
         this.health = health;

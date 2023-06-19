@@ -1,6 +1,6 @@
 package aircraftsimulator.GameObject;
 
-import javax.vecmath.Vector2f;
+import javax.vecmath.Vector3f;
 import java.awt.*;
 
 public class Armor implements DestructibleObjectInterface{
@@ -13,7 +13,7 @@ public class Armor implements DestructibleObjectInterface{
     }
 
     @Override
-    public Vector2f getPosition() {
+    public Vector3f getPosition() {
         return object.getPosition();
     }
 

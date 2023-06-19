@@ -1,17 +1,17 @@
 package aircraftsimulator.GameObject;
 
-import javax.vecmath.Vector2f;
+import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class GameObject implements GameObjectInterface {
-    Vector2f position;
-    Color color;
-    float size;
-    List<Component> components;
+    protected Vector3f position;
+    protected Color color;
+    protected float size;
+    protected List<Component> components;
 
-    public GameObject(Vector2f position, Color color, float size)
+    public GameObject(Vector3f position, Color color, float size)
     {
         this.position = position;
         this.color = color;
@@ -20,7 +20,7 @@ public class GameObject implements GameObjectInterface {
     }
 
     @Override
-    public Vector2f getPosition() {
+    public Vector3f getPosition() {
         return position;
     }
 
