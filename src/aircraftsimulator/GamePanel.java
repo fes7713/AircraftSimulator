@@ -1,6 +1,7 @@
 package aircraftsimulator;
 
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
+import aircraftsimulator.GameObject.DestructibleObject;
 import aircraftsimulator.GameObject.GameObject;
 
 import javax.swing.*;
@@ -9,6 +10,7 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class GamePanel extends JPanel {
     private final aircraftsimulator.Environment environment;
@@ -17,8 +19,13 @@ public class GamePanel extends JPanel {
     public GamePanel(Environment environment){
         this.environment = environment;
         objects = new ArrayList<>();
-        objects.add(new GameObject(new Vector3f(100, 100, 100), Color.BLACK, 5));
-        objects.add(new Aircraft(new Vector3f(100, 100, 100), Color.RED, 5, 100));
+        objects.add(new GameObject(new Vector3f(100, 100, 100), Color.CYAN, 5));
+        Aircraft aircraft = new Aircraft(new Vector3f(100, 100, 100), Color.RED, 5, 100);
+        DestructibleObject target = new DestructibleObject(new Vector3f(300, 500, 100), Color.GREEN, 5, 100);
+        aircraft.setTarget(target);
+        Stream.of(target, aircraft).forEach(go -> {
+            objects.add(go);
+        });
     }
 
     public void update(float delta)

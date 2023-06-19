@@ -10,4 +10,5 @@ public interface FlightControllerInterface {
     float getInterval();
     float getIntervalCount();
     void setParent(Aircraft parent);
+    Vector3f rotatedDirection(float radian);
 }

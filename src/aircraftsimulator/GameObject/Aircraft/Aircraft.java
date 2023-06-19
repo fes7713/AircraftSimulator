@@ -2,6 +2,7 @@ package aircraftsimulator.GameObject.Aircraft;
 
 import aircraftsimulator.GameObject.DestructibleObject;
 
+import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.util.HashMap;
@@ -20,7 +21,7 @@ public class Aircraft extends DestructibleObject {
     private SimpleThruster thruster;
 
     public static final float THRUSTER_MAGNITUDE = 1F;
-    public static final float FLIGHT_CONTROLLER_INTERVAL = 0;
+    public static final float FLIGHT_CONTROLLER_INTERVAL = 1F;
 
     public Aircraft(Vector3f position, Color color, float size, float health) {
         this(new SimpleFlightController(FLIGHT_CONTROLLER_INTERVAL), position, color, size, health);
@@ -35,12 +36,18 @@ public class Aircraft extends DestructibleObject {
         thruster = new SimpleThruster(THRUSTER_MAGNITUDE);
         acceleration = new Vector3f();
         velocity = new Vector3f();
+        // TODO
+        direction = new Vector3f(-1, -1, 0);
     }
 
     public void update(float delta)
     {
+        Vector3f waypoint = flightControl.nextPoint(delta);
         // TODO
-        acceleration.set(thruster.applyForce(new Vector3f(1, 0, 0)));
+        Vector3f directionNew = flightControl.rotatedDirection(0.01F);
+        direction.set(directionNew);
+        // TODO
+        acceleration.set(thruster.generateForce(direction));
         Vector3f accelerationScaled = new Vector3f(acceleration);
         accelerationScaled.scale(delta);
 
@@ -49,6 +56,20 @@ public class Aircraft extends DestructibleObject {
         velocityScaled.scale(delta);
 
         position.add(velocityScaled);
+    }
+
+    // TODO
+    public void setTarget(DestructibleObject target)
+    {
+        flightControl.setTarget(target);
+    }
+
+    @Override
+    public void draw(Graphics2D g2d) {
+        super.draw(g2d);
+        Vector2f direction2D = new Vector2f(direction.x, direction.y);
+        direction2D.scale(size);
+        g2d.drawLine((int)position.x, (int)position.y, (int)(position.x + (int)direction2D.x), (int)(position.y + (int)direction2D.y));
     }
 
     public Vector3f getVelocity() {

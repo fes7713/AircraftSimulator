@@ -11,7 +11,7 @@ public class SimpleThruster implements ForceApplier{
     }
 
     @Override
-    public Vector3f applyForce(Vector3f direction) {
+    public Vector3f generateForce(Vector3f direction) {
         Vector3f directionScaled = new Vector3f(direction);
         directionScaled.scale(magnitude);
         return directionScaled ;
