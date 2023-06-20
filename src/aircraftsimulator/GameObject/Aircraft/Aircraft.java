@@ -27,7 +27,7 @@ public class Aircraft extends DestructibleObject {
 
     public static final float THRUSTER_MAGNITUDE = 1F;
     public static final float FLIGHT_CONTROLLER_INTERVAL = 1F;
-    public static final float ANGULAR_ACCELERATION = 0.005F;
+    public static final float ANGULAR_ACCELERATION = 0.002F;
     public static final float MAX_G_FORCE = 1F;
     public static final float AIR_RESISTANCE_COEFFICIENT = 0.02F;
     public static final float ANGULAR_SPEED_MAX = 0.01F;
@@ -66,6 +66,12 @@ public class Aircraft extends DestructibleObject {
         float angleDest = waypointVector.dot(direction) / waypointVector.length();
         float angleToStopAtMaxAngAcc = angularSpeed * angularSpeed / 2 / angularAccelerationMagnitude;
         targetAngle = angleDest;
+        if(angleDest > 0.99F && angularAcceleration < 0)
+            angularAcceleration = 0;
+        else if(Math.cos(angleToStopAtMaxAngAcc) < angleDest)
+            angularAcceleration = -angularAccelerationMagnitude;
+        else
+            angularAcceleration = angularAccelerationMagnitude;
 //        if(Math.cos(angleToStopAtMaxAngAcc) < angleDest && angularVelocity > 0)
 //            angularAcceleration = - angularAccelerationMagnitude;
 //        else if(Math.cos(angleToStopAtMaxAngAcc) < angleDest && angularVelocity <= 0)
@@ -114,9 +120,10 @@ public class Aircraft extends DestructibleObject {
         Vector2f direction2D = new Vector2f(direction.x, direction.y);
         direction2D.scale(size);
         g2d.drawLine((int)position.x, (int)position.y, (int)(position.x + (int)direction2D.x), (int)(position.y + (int)direction2D.y));
-        String text = String.format("Speed : %.5f\nAngular Speed : %.5f\nG : %.5f\nTarget Angle : %.5f",
+        String text = String.format("Speed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
                 velocity.length(),
                 angularSpeed,
+                angularAcceleration,
                 velocity.length() * angularSpeed,
                 targetAngle);
         int y = (int)(position.y - 5);
