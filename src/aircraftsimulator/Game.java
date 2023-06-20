@@ -21,7 +21,6 @@ public class Game {
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                System.out.println(1000 / (System.currentTimeMillis() - prevTime + 1));
                 env.updateGame(20 / 1000F);
                 frame.repaint();
                 prevTime = System.currentTimeMillis();

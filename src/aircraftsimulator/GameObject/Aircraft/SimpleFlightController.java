@@ -51,6 +51,8 @@ public class SimpleFlightController implements FlightControllerInterface {
         destinationVector.sub(parentObject.getPosition());
         Vector3f n = new Vector3f();
         n.cross(direction, destinationVector);
+        if(n.lengthSquared() == 0)
+            n.set(1, 0, 0);
         n.normalize();
         Matrix3f rotationMatrix = new Matrix3f(
                 n.x * n.x, n.x * n.y, n.x * n.z,
