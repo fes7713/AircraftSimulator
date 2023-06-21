@@ -2,12 +2,13 @@ package aircraftsimulator.GameObject.Aircraft;
 
 import aircraftsimulator.GameObject.Aircraft.FlightController.FlightControllerInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
+import aircraftsimulator.GameObject.Aircraft.Thruster.SimpleThruster;
 import aircraftsimulator.GameObject.DestructibleObject;
 
 import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
 import java.awt.*;
-import java.util.Vector;
+import java.util.List;
 import java.util.stream.Stream;
 
 public class Aircraft extends DestructibleObject implements AircraftInterface{
@@ -77,10 +78,13 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
             direction.set(directionNew);
         }
 
-        acceleration.set(0, 0, 0);
-        Stream.of(thruster, airResistance).forEach(forceApplier -> {
-            acceleration.add(forceApplier.generateForce());
-        });
+//        acceleration.set(0, 0, 0);
+//        Stream.of(thruster, airResistance).forEach(forceApplier -> {
+//            acceleration.add(forceApplier.generateForce());
+//        });
+
+        acceleration.set(flightControl.calculateLinearAcceleration(delta));
+
         Vector3f accelerationScaled = new Vector3f(acceleration);
         accelerationScaled.scale(delta);
 
@@ -154,5 +158,10 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
     public float getAngularSpeedMax()
     {
         return angularSpeedMax;
+    }
+
+    @Override
+    public List<ForceApplier> getForceList() {
+        return List.of(thruster, airResistance);
     }
 }

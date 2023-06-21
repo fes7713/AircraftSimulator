@@ -1,8 +1,11 @@
-package aircraftsimulator.GameObject.Aircraft;
+package aircraftsimulator.GameObject.Aircraft.Thruster;
+
+import aircraftsimulator.GameObject.Aircraft.Aircraft;
+import aircraftsimulator.GameObject.Aircraft.ForceApplier;
 
 import javax.vecmath.Vector3f;
 
-public class SimpleThruster implements ForceApplier{
+public class SimpleThruster implements ForceApplier {
     private Aircraft aircraft;
     private float magnitude;
 

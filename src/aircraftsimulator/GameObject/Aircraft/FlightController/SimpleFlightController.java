@@ -1,10 +1,12 @@
 package aircraftsimulator.GameObject.Aircraft.FlightController;
 
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
+import aircraftsimulator.GameObject.Aircraft.ForceApplier;
 import aircraftsimulator.GameObject.DestructibleObject;
 
 import javax.vecmath.Matrix3f;
 import javax.vecmath.Vector3f;
+import java.util.List;
 
 public class SimpleFlightController implements FlightControllerInterface {
     protected Aircraft parentObject;
@@ -62,6 +64,15 @@ public class SimpleFlightController implements FlightControllerInterface {
         if(target instanceof Aircraft)
             return new Vector3f(((Aircraft)target).getVelocity());
         return new Vector3f(0, 0, 0);
+    }
+
+    @Override
+    public Vector3f calculateLinearAcceleration(float delta) {
+        Vector3f acceleration = new Vector3f(0, 0, 0);
+        List<ForceApplier> forces = parentObject.getForceList();
+        for(ForceApplier force: forces)
+            acceleration.add(force.generateForce());
+        return acceleration;
     }
 
     @Override
