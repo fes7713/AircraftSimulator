@@ -1,10 +1,13 @@
 package aircraftsimulator.GameObject.Aircraft;
 
+import aircraftsimulator.GameObject.Aircraft.FlightController.FlightControllerInterface;
+import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.DestructibleObject;
 
 import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
 import java.awt.*;
+import java.util.Vector;
 import java.util.stream.Stream;
 
 public class Aircraft extends DestructibleObject implements AircraftInterface{
@@ -32,17 +35,23 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
         this(new SimpleFlightController(FLIGHT_CONTROLLER_INTERVAL), position, color, size, health);
     }
 
-    public Aircraft(FlightControllerInterface fci, Vector3f position, Color color, float size, float health) {
+    public Aircraft(FlightControllerInterface fci, Vector3f position, Color color, float size, float health){
+        this(fci, position, color, size, health, THRUSTER_MAGNITUDE);
+    }
+    public Aircraft(FlightControllerInterface fci, Vector3f position, Color color, float size, float health, float thrusterMagnitude){
+        this(fci, position, new Vector3f(-1 , -1, 0), color, size, health, thrusterMagnitude);
+    }
+
+    public Aircraft(FlightControllerInterface fci, Vector3f position, Vector3f velocity, Color color, float size, float health, float thrusterMagnitude) {
         super(position, color, size, health);
         flightControl = fci;
         fci.setParent(this);
-        thruster = new SimpleThruster(this, THRUSTER_MAGNITUDE);
+        thruster = new SimpleThruster(this, thrusterMagnitude);
         airResistance = new AirResistance(this, AIR_RESISTANCE_COEFFICIENT);
         acceleration = new Vector3f();
-        // TODO
-        velocity = new Vector3f(-1 , -1, 0);
-        // TODO
-        direction = new Vector3f(-1, -1, 0);
+        this.velocity = velocity;
+        direction = new Vector3f(velocity);
+        direction.normalize();
         angularSpeed = 0;
         // TODO
         angularAcceleration = ANGULAR_ACCELERATION;
@@ -104,6 +113,13 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
         int y = (int)(position.y - 5);
         for (String line : text.split("\n"))
             g2d.drawString(line, (int)position.x + 5, y += g2d.getFontMetrics().getHeight());
+        Vector3f waypoint = flightControl.nextPoint(0);
+
+        if(waypoint != null)
+        {
+            g2d.drawLine((int)(waypoint.x - size), (int)(waypoint.y - size), (int)(waypoint.x + size), (int)(waypoint.y + size));
+            g2d.drawLine((int)(waypoint.x + size), (int)(waypoint.y - size), (int)(waypoint.x - size), (int)(waypoint.y + size));
+        }
     }
 
     public Vector3f getVelocity() {

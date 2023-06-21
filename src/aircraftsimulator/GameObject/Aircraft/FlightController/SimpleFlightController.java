@@ -1,18 +1,21 @@
-package aircraftsimulator.GameObject.Aircraft;
+package aircraftsimulator.GameObject.Aircraft.FlightController;
 
+import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.DestructibleObject;
 
 import javax.vecmath.Matrix3f;
 import javax.vecmath.Vector3f;
 
 public class SimpleFlightController implements FlightControllerInterface {
-    private Aircraft parentObject;
-    private DestructibleObject target;
+    protected Aircraft parentObject;
+    protected DestructibleObject target;
     private final float interval;
     private float intervalCount;
     private Vector3f waypoint;
 
     private float targetAngle;
+
+    public static final float FLIGHT_CONTROLLER_INTERVAL = 1F;
 
     public SimpleFlightController(Aircraft parentObject, float interval){
         this.parentObject = parentObject;
@@ -25,22 +28,40 @@ public class SimpleFlightController implements FlightControllerInterface {
         this(null, interval);
     }
 
+    public SimpleFlightController()
+    {
+        this(null, FLIGHT_CONTROLLER_INTERVAL);
+    }
+
     @Override
     public Vector3f nextPoint(float delta) {
 //        Vector3f point = new Vector3f(parentObject.getDirection());
 //        point.scale(delta);
 //        point.add(parentObject.getPosition());
+        if(delta == 0)
+            return waypoint;
         if(intervalCount <= 0)
         {
             intervalCount = interval;
             if(target == null)
                 waypoint = null;
             else
-                waypoint = new Vector3f(target.getPosition());
+                waypoint = getTargetPosition(delta);
         }
 
         intervalCount -= delta;
         return waypoint;
+    }
+
+    protected Vector3f getTargetPosition(float delta)
+    {
+        return new Vector3f(target.getPosition());
+    }
+
+    protected Vector3f getTargetVelocity(float delta){
+        if(target instanceof Aircraft)
+            return new Vector3f(((Aircraft)target).getVelocity());
+        return new Vector3f(0, 0, 0);
     }
 
     @Override

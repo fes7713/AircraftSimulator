@@ -1,6 +1,8 @@
 package aircraftsimulator;
 
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
+import aircraftsimulator.GameObject.Aircraft.FlightController.AdvancedFlightController;
+import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.DestructibleObject;
 import aircraftsimulator.GameObject.GameObject;
 
@@ -20,7 +22,11 @@ public class GamePanel extends JPanel {
         this.environment = environment;
         objects = new ArrayList<>();
         objects.add(new GameObject(new Vector3f(100, 100, 100), Color.CYAN, 5));
-        Aircraft aircraft = new Aircraft(new Vector3f(100, 100, 100), Color.RED, 5, 100);
+        Aircraft aircraft = new Aircraft(
+                new AdvancedFlightController(),
+                new Vector3f(100, 100, 100),
+                new Vector3f(1, 1, 0), Color.RED, 5, 100,
+                Aircraft.THRUSTER_MAGNITUDE * 2);
         Aircraft aircraft1 = new Aircraft(new Vector3f(100, 600, 100), Color.BLUE, 5, 100);
         DestructibleObject target = new DestructibleObject(new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
         aircraft.setTarget(aircraft1);

@@ -1,5 +1,6 @@
-package aircraftsimulator.GameObject.Aircraft;
+package aircraftsimulator.GameObject.Aircraft.FlightController;
 
+import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.DestructibleObject;
 
 import javax.vecmath.Vector3f;
