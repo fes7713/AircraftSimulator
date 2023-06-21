@@ -21,9 +21,10 @@ public class GamePanel extends JPanel {
         objects = new ArrayList<>();
         objects.add(new GameObject(new Vector3f(100, 100, 100), Color.CYAN, 5));
         Aircraft aircraft = new Aircraft(new Vector3f(100, 100, 100), Color.RED, 5, 100);
+        Aircraft aircraft1 = new Aircraft(new Vector3f(100, 600, 100), Color.BLUE, 5, 100);
         DestructibleObject target = new DestructibleObject(new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
-        aircraft.setTarget(target);
-        Stream.of(target, aircraft).forEach(go -> {
+        aircraft.setTarget(aircraft1);
+        Stream.of(target, aircraft, aircraft1).forEach(go -> {
             objects.add(go);
         });
     }

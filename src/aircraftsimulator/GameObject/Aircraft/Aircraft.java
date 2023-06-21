@@ -7,7 +7,7 @@ import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.util.stream.Stream;
 
-public class Aircraft extends DestructibleObject {
+public class Aircraft extends DestructibleObject implements AircraftInterface{
     private Vector3f velocity;
     private Vector3f acceleration;
     private Vector3f direction;
@@ -17,24 +17,19 @@ public class Aircraft extends DestructibleObject {
     private float maxGAcceleration;
     private float angularSpeedMax;
 
-
-    // TODO
-    private float targetAngle;
-
     private final FlightControllerInterface flightControl;
     private SimpleThruster thruster;
     private AirResistance airResistance;
 
     public static final float THRUSTER_MAGNITUDE = 1F;
     public static final float FLIGHT_CONTROLLER_INTERVAL = 1F;
-    public static final float ANGULAR_ACCELERATION = 0.002F;
+    public static final float ANGULAR_ACCELERATION = 0.01F;
     public static final float MAX_G_FORCE = 1F;
     public static final float AIR_RESISTANCE_COEFFICIENT = 0.02F;
-    public static final float ANGULAR_SPEED_MAX = 0.01F;
+    public static final float ANGULAR_SPEED_MAX = 0.05F;
 
     public Aircraft(Vector3f position, Color color, float size, float health) {
         this(new SimpleFlightController(FLIGHT_CONTROLLER_INTERVAL), position, color, size, health);
-
     }
 
     public Aircraft(FlightControllerInterface fci, Vector3f position, Color color, float size, float health) {
@@ -59,41 +54,20 @@ public class Aircraft extends DestructibleObject {
     public void update(float delta)
     {
         float maxAngularVelocity = maxGAcceleration / velocity.length();
+        angularAcceleration = 0;
 
         Vector3f waypoint = flightControl.nextPoint(delta);
-        Vector3f waypointVector = new Vector3f(waypoint);
-        waypointVector.sub(position);
-        float angleDest = waypointVector.dot(direction) / waypointVector.length();
-        float angleToStopAtMaxAngAcc = angularSpeed * angularSpeed / 2 / angularAccelerationMagnitude;
-        targetAngle = angleDest;
-        if(angleDest > 0.99F && angularAcceleration < 0)
-            angularAcceleration = 0;
-        else if(Math.cos(angleToStopAtMaxAngAcc) < angleDest)
-            angularAcceleration = -angularAccelerationMagnitude;
-        else
-            angularAcceleration = angularAccelerationMagnitude;
-//        if(Math.cos(angleToStopAtMaxAngAcc) < angleDest && angularVelocity > 0)
-//            angularAcceleration = - angularAccelerationMagnitude;
-//        else if(Math.cos(angleToStopAtMaxAngAcc) < angleDest && angularVelocity <= 0)
-//            angularAcceleration = 0;
-//        else
-//            angularAcceleration = angularAccelerationMagnitude;
-        float angularSpeedOld = angularSpeed;
-        angularSpeed += angularAcceleration * delta;
 
-        // Clamp
-        angularSpeed = Math.max(Math.min(angularSpeed, angularSpeedMax), 0);
+        if(waypoint != null)
+        {
+            angularAcceleration = flightControl.calculateAngularAcceleration(delta);
+            angularSpeed += angularAcceleration * delta;
+            float angle = angularSpeed * delta;
 
-        // Actual angular acceleration
-        angularAcceleration = (angularSpeed - angularSpeedOld) / delta;
-        float angle = angularSpeed * delta;
-//        if(angle > 0)
-//        {
-//            Vector3f directionNew = flightControl.rotatedDirection(angle);
-//            direction.set(directionNew);
-//        }
-        Vector3f directionNew = flightControl.rotatedDirection(angularSpeed);
-        direction.set(directionNew);
+            Vector3f directionNew = flightControl.rotatedDirection(angle);
+            direction.set(directionNew);
+        }
+
         acceleration.set(0, 0, 0);
         Stream.of(thruster, airResistance).forEach(forceApplier -> {
             acceleration.add(forceApplier.generateForce());
@@ -118,18 +92,18 @@ public class Aircraft extends DestructibleObject {
     public void draw(Graphics2D g2d) {
         super.draw(g2d);
         Vector2f direction2D = new Vector2f(direction.x, direction.y);
+        direction2D.normalize();
         direction2D.scale(size);
-        g2d.drawLine((int)position.x, (int)position.y, (int)(position.x + (int)direction2D.x), (int)(position.y + (int)direction2D.y));
+        g2d.drawLine((int)position.x, (int)position.y, (int)(position.x + direction2D.x), (int)(position.y + direction2D.y));
         String text = String.format("Speed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
                 velocity.length(),
                 angularSpeed,
                 angularAcceleration,
                 velocity.length() * angularSpeed,
-                targetAngle);
+                flightControl.getTargetAngle());
         int y = (int)(position.y - 5);
         for (String line : text.split("\n"))
             g2d.drawString(line, (int)position.x + 5, y += g2d.getFontMetrics().getHeight());
-
     }
 
     public Vector3f getVelocity() {
@@ -143,5 +117,26 @@ public class Aircraft extends DestructibleObject {
     public Vector3f getDirection()
     {
         return direction;
+    }
+
+    @Override
+    public float getAngularSpeed() {
+        return angularSpeed;
+    }
+
+    @Override
+    public float getAngularAcceleration() {
+        return angularAcceleration;
+    }
+
+    @Override
+    public float getAngularAccelerationMagnitude() {
+        return angularAccelerationMagnitude;
+    }
+
+    @Override
+    public float getAngularSpeedMax()
+    {
+        return angularSpeedMax;
     }
 }

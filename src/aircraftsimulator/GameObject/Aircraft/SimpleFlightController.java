@@ -12,6 +12,8 @@ public class SimpleFlightController implements FlightControllerInterface {
     private float intervalCount;
     private Vector3f waypoint;
 
+    private float targetAngle;
+
     public SimpleFlightController(Aircraft parentObject, float interval){
         this.parentObject = parentObject;
         this.interval = interval;
@@ -41,7 +43,44 @@ public class SimpleFlightController implements FlightControllerInterface {
         return waypoint;
     }
 
+    @Override
+    public float calculateAngularAcceleration(float delta)
+    {
+        Vector3f waypointVector = new Vector3f(waypoint);
+        waypointVector.sub(parentObject.getPosition());
+        float angleDest = waypointVector.dot(parentObject.getDirection()) / waypointVector.length();
+        float angleToStopAtMaxAngAcc =
+                parentObject.getAngularSpeed() * parentObject.getAngularSpeed() / 2 / parentObject.getAngularAccelerationMagnitude();
+        targetAngle = angleDest;
+        float angularSpeed = parentObject.getAngularSpeed();
+        float angularSpeedMax = parentObject.getAngularSpeedMax();
+        float angularAccelerationMagnitude = parentObject.getAngularAccelerationMagnitude();
+        float angularAcceleration;
+
+        if(angleDest > 0.99F && parentObject.getAngularAcceleration() < 0)
+            angularAcceleration = 0;
+        else if(Math.cos(angleToStopAtMaxAngAcc) < angleDest)
+        {
+            // Check if speed goes to negative with acceleration wit max negative magnitude
+            if(angularSpeed - angularAccelerationMagnitude * delta >= 0)
+                angularAcceleration = -angularAccelerationMagnitude;
+            else
+                angularAcceleration = angularSpeed / delta ;
+        }
+        else
+        {
+            // Check if speed goes to negative with acceleration wit max positive magnitude
+            if(angularSpeed + angularAccelerationMagnitude * delta <= angularSpeedMax)
+                angularAcceleration = parentObject.getAngularAccelerationMagnitude();
+            else
+                angularAcceleration = (angularSpeedMax - angularSpeed) / delta;
+        }
+
+        return angularAcceleration;
+    }
+
     // Rotation diff to the direction
+    @Override
     public Vector3f rotatedDirection(float radian)
     {
         if(waypoint == null)
@@ -70,9 +109,9 @@ public class SimpleFlightController implements FlightControllerInterface {
         return r;
     }
 
-    public Vector3f nextDirection()
-    {
-        return parentObject.getDirection();
+    @Override
+    public float getTargetAngle() {
+        return targetAngle;
     }
 
     @Override
@@ -94,4 +133,6 @@ public class SimpleFlightController implements FlightControllerInterface {
     public void setParent(Aircraft parent) {
         parentObject = parent;
     }
+
+
 }
