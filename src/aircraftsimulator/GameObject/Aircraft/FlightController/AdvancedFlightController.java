@@ -5,7 +5,6 @@ import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import javax.vecmath.Vector3f;
 
 public class AdvancedFlightController extends SimpleFlightController{
-
     public AdvancedFlightController(Aircraft parentObject, float interval) {
         super(parentObject, interval);
     }
@@ -15,12 +14,11 @@ public class AdvancedFlightController extends SimpleFlightController{
     }
 
     public AdvancedFlightController() {
-        super();
     }
 
     // Target is non-null in this context
     @Override
-    public Vector3f getTargetPosition(float delta) {
+    public Vector3f getTargetFuturePosition(float delta, Vector3f position, Vector3f velocity) {
         Vector3f targetPosition = super.getTargetPosition(delta);
         Vector3f targetVelocity = getTargetVelocity(delta);
 
@@ -28,8 +26,8 @@ public class AdvancedFlightController extends SimpleFlightController{
             return targetPosition;
 
         Vector3f BA = new Vector3f(targetPosition);
-        BA.sub(parentObject.getPosition());
-        float a = parentObject.getVelocity().lengthSquared() - targetVelocity.lengthSquared();
+        BA.sub(position);
+        float a = velocity.lengthSquared() - targetVelocity.lengthSquared();
         float b = - 2 * (BA.x * targetVelocity.x + BA.y * targetVelocity.y + BA.z * targetVelocity.z);
         float c = - BA.lengthSquared();
 

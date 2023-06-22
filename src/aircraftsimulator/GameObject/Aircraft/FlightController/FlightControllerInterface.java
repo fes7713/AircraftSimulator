@@ -15,4 +15,5 @@ public interface FlightControllerInterface {
     float getTargetAngle();
     Vector3f calculateLinearAcceleration(float delta);
     float calculateAngularAcceleration(float delta);
+    void configurationChanged();
 }

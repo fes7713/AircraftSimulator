@@ -5,6 +5,7 @@ import aircraftsimulator.GameObject.Aircraft.ForceApplier;
 import aircraftsimulator.GameObject.DestructibleObject;
 
 import javax.vecmath.Matrix3f;
+import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
 import java.util.List;
 
@@ -48,11 +49,23 @@ public class SimpleFlightController implements FlightControllerInterface {
             if(target == null)
                 waypoint = null;
             else
-                waypoint = getTargetPosition(delta);
+                waypoint = getTargetFuturePosition(delta, parentObject.getPosition(), parentObject.getVelocity());
         }
 
         intervalCount -= delta;
         return waypoint;
+    }
+
+    protected float timeToPoint(Vector3f point)
+    {
+        point.sub(parentObject.getPosition());
+
+        return (float)Math.sqrt(point.lengthSquared() / parentObject.getVelocity().lengthSquared());
+    }
+
+    protected Vector3f getTargetFuturePosition(float delta, Vector3f position, Vector3f velocity)
+    {
+        return getTargetPosition(delta);
     }
 
     protected Vector3f getTargetPosition(float delta)
@@ -166,5 +179,8 @@ public class SimpleFlightController implements FlightControllerInterface {
         parentObject = parent;
     }
 
+    @Override
+    public void configurationChanged() {
 
+    }
 }

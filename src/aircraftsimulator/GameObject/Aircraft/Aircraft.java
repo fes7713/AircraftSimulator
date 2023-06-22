@@ -3,6 +3,7 @@ package aircraftsimulator.GameObject.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.FlightController.FlightControllerInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.Aircraft.Thruster.SimpleThruster;
+import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
 import aircraftsimulator.GameObject.DestructibleObject;
 
 import javax.vecmath.Vector2f;
@@ -22,7 +23,7 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
     private float angularSpeedMax;
 
     private final FlightControllerInterface flightControl;
-    private SimpleThruster thruster;
+    private Thruster thruster;
     private AirResistance airResistance;
 
     public static final float THRUSTER_MAGNITUDE = 1F;
@@ -78,11 +79,6 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
             direction.set(directionNew);
         }
 
-//        acceleration.set(0, 0, 0);
-//        Stream.of(thruster, airResistance).forEach(forceApplier -> {
-//            acceleration.add(forceApplier.generateForce());
-//        });
-
         acceleration.set(flightControl.calculateLinearAcceleration(delta));
 
         Vector3f accelerationScaled = new Vector3f(acceleration);
@@ -108,7 +104,8 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
         direction2D.normalize();
         direction2D.scale(size);
         g2d.drawLine((int)position.x, (int)position.y, (int)(position.x + direction2D.x), (int)(position.y + direction2D.y));
-        String text = String.format("Speed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
+        String text = String.format("Acceleration : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
+                acceleration.length(),
                 velocity.length(),
                 angularSpeed,
                 angularAcceleration,
@@ -163,5 +160,11 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
     @Override
     public List<ForceApplier> getForceList() {
         return List.of(thruster, airResistance);
+    }
+
+    @Override
+    public void setThruster(Thruster thruster) {
+        this.thruster = thruster;
+        flightControl.configurationChanged();
     }
 }

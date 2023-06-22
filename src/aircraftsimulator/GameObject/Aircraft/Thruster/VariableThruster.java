@@ -1,11 +1,11 @@
 package aircraftsimulator.GameObject.Aircraft.Thruster;
 
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
-import aircraftsimulator.GameObject.Aircraft.SwitchValueSimulator;
+import aircraftsimulator.GameObject.Aircraft.SwitchTypeSimulator.SwitchTypesSimulator;
 
 import javax.vecmath.Vector3f;
 
-public class VariableThruster extends SimpleThruster implements SwitchValueSimulator {
+public class VariableThruster extends SimpleThruster implements SwitchTypesSimulator<ThrusterActionType> {
     private final float minimumMagnitudePercentage;
     private final float maximumMagnitudePercentage;
 
@@ -13,30 +13,29 @@ public class VariableThruster extends SimpleThruster implements SwitchValueSimul
 
     public VariableThruster(Aircraft aircraft, float magnitude, float maximumMagnitudePercentage, float minimumMagnitudePercentage) {
         super(aircraft, magnitude);
-        if(maximumMagnitudePercentage <= 1)
+        if(maximumMagnitudePercentage < 1)
             throw new RuntimeException("Invalid max value");
         if(minimumMagnitudePercentage < 0 || minimumMagnitudePercentage > 1)
             throw new RuntimeException("Invalid percentage value");
 
         this.maximumMagnitudePercentage = maximumMagnitudePercentage;
         this.minimumMagnitudePercentage = minimumMagnitudePercentage;
+        thrusterActionType = ThrusterActionType.NORMAL;
+    }
 
+    public VariableThruster(Aircraft aircraft, float magnitude)
+    {
+        this(aircraft, magnitude, magnitude, magnitude / 2F);
     }
 
     @Override
     public Vector3f generateForce() {
-        Vector3f force = super.generateForce();
+        Vector3f force = normalizedForce();
         switch (thrusterActionType)
         {
-            case ACCELERATION -> {
-                force.scale(maximumMagnitudePercentage);
-            }
-            case DECELERATION -> {
-                force.scale(minimumMagnitudePercentage);
-            }
-            case NORMAL -> {
-                ;
-            }
+            case ACCELERATION -> force.scale(maximumMagnitudePercentage);
+            case DECELERATION -> force.scale(minimumMagnitudePercentage);
+            case NORMAL -> force.scale(magnitude);
         }
         return force;
     }
@@ -47,12 +46,17 @@ public class VariableThruster extends SimpleThruster implements SwitchValueSimul
     }
 
     @Override
-    public Enum[] getSwitchCases() {
+    public ThrusterActionType[] getSwitchTypes() {
         return ThrusterActionType.values();
     }
 
     @Override
-    public void simulateSwitchCase(ThrusterActionType type) {
+    public void simulateSwitchTypes(ThrusterActionType type) {
         setThrusterActionType(type);
+    }
+
+    @Override
+    public ThrusterActionType getCurrentType() {
+        return thrusterActionType;
     }
 }
