@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface AircraftInterface {
     Vector3f getDirection();
+    Vector3f getAcceleration();
     float getAngularSpeed();
     float getAngularAcceleration();
     float getAngularAccelerationMagnitude();

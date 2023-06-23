@@ -3,68 +3,73 @@ package aircraftsimulator.GameObject.Aircraft.FlightController;
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.ForceApplier;
 import aircraftsimulator.GameObject.Aircraft.SwitchTypeSimulator.SwitchTypesSimulator;
+import org.jetbrains.annotations.NotNull;
 
 import javax.vecmath.Vector3f;
 import java.util.*;
 
 public class SwitchValueFlightController <E extends Enum<E>>extends AdvancedFlightController{
     private final List<SwitchTypesSimulator<E>> switchValuesList;
-    private final Map<SwitchTypesSimulator<E>, E> timeMap;
+    private final Map<SwitchTypesSimulator<E>, E> lengthMap;
 
 
     public SwitchValueFlightController(Aircraft parentObject, float interval) {
         super(parentObject, interval);
-        timeMap = new HashMap<>();
+        lengthMap = new HashMap<>();
         switchValuesList = new ArrayList<>();
         configurationChanged();
     }
 
     public SwitchValueFlightController(float interval) {
         super(interval);
-        timeMap = new HashMap<>();
+        lengthMap = new HashMap<>();
         switchValuesList = new ArrayList<>();
         configurationChanged();
     }
 
     public SwitchValueFlightController() {
         super();
-        timeMap = new HashMap<>();
+        lengthMap = new HashMap<>();
         switchValuesList = new ArrayList<>();
         configurationChanged();
     }
 
+    protected float calculateLength(SwitchTypesSimulator<E> switchType, float delta, @NotNull Vector3f position, Vector3f velocity)
+    {
+        return position.lengthSquared();
+    }
+
     @Override
     public Vector3f calculateLinearAcceleration(float delta) {
-        timeMap.clear();
+        lengthMap.clear();
         for(SwitchTypesSimulator<E> sim: switchValuesList)
         {
-            float timeMin = Float.MAX_VALUE;
-            timeMap.put(sim, null);
+            float lengthMin = Float.MAX_VALUE;
+            lengthMap.put(sim, null);
             E[] types = sim.getSwitchTypes();
             for(E type : types)
             {
                 sim.simulateSwitchTypes(type);
-                Vector3f acceleration = super.calculateLinearAcceleration(delta);
+                Vector3f acceleration = parentObject.getAcceleration();
                 Vector3f velocity = new Vector3f();
                 velocity.scaleAdd(delta, acceleration, parentObject.getVelocity());
+                Vector3f position = new Vector3f();
+                position.scaleAdd(delta, velocity, parentObject.getPosition());
+                Vector3f hitPoint =  getTargetFuturePosition(delta, position, velocity);
 
-                Vector3f hitPoint =  getTargetFuturePosition(delta, parentObject.getPosition(), velocity);
-//                float time = timeToPoint(hitPoint);
-//                Vector3f hitPoint = new Vector3f();
-//                hitPoint.scaleAdd(delta, velocity, parentObject.getPosition());
-//                hitPoint.sub(getTargetPosition(delta));
+                position.sub(hitPoint);
                 // Length
-                float time = hitPoint.lengthSquared();
+                float length = calculateLength(sim, delta, position, velocity);
 
-                if(timeMin > time)
+                if(lengthMin > length)
                 {
-                    timeMap.put(sim, type);
-                    timeMin = time;
+                    lengthMap.put(sim, type);
+                    lengthMin = length;
                 }
             }
-            sim.simulateSwitchTypes(timeMap.get(sim));
+            sim.simulateSwitchTypes(lengthMap.get(sim));
         }
-        return super.calculateLinearAcceleration(delta);
+        return parentObject.getAcceleration();
     }
 
     public void configurationChanged()

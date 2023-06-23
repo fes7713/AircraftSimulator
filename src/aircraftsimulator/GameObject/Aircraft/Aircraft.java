@@ -10,16 +10,14 @@ import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class Aircraft extends DestructibleObject implements AircraftInterface{
     private Vector3f velocity;
-    private Vector3f acceleration;
     private Vector3f direction;
     private float angularSpeed;
     private float angularAcceleration;
     private float angularAccelerationMagnitude;
-    private float maxGAcceleration;
+    private float maxG;
     private float angularSpeedMax;
 
     private final FlightControllerInterface flightControl;
@@ -29,7 +27,7 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
     public static final float THRUSTER_MAGNITUDE = 1F;
     public static final float FLIGHT_CONTROLLER_INTERVAL = 1F;
     public static final float ANGULAR_ACCELERATION = 0.01F;
-    public static final float MAX_G_FORCE = 1F;
+    public static final float MAX_G_FORCE = 0.5F;
     public static final float AIR_RESISTANCE_COEFFICIENT = 0.02F;
     public static final float ANGULAR_SPEED_MAX = 0.05F;
 
@@ -50,7 +48,6 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
         fci.setParent(this);
         thruster = new SimpleThruster(this, thrusterMagnitude);
         airResistance = new AirResistance(this, AIR_RESISTANCE_COEFFICIENT);
-        acceleration = new Vector3f();
         this.velocity = velocity;
         direction = new Vector3f(velocity);
         direction.normalize();
@@ -59,12 +56,11 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
         angularAcceleration = ANGULAR_ACCELERATION;
         angularSpeedMax = ANGULAR_SPEED_MAX;
         angularAccelerationMagnitude = ANGULAR_ACCELERATION;
-        maxGAcceleration = MAX_G_FORCE;
+        maxG = MAX_G_FORCE;
     }
 
     public void update(float delta)
     {
-        float maxAngularVelocity = maxGAcceleration / velocity.length();
         angularAcceleration = 0;
 
         Vector3f waypoint = flightControl.nextPoint(delta);
@@ -79,9 +75,7 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
             direction.set(directionNew);
         }
 
-        acceleration.set(flightControl.calculateLinearAcceleration(delta));
-
-        Vector3f accelerationScaled = new Vector3f(acceleration);
+        Vector3f accelerationScaled = new Vector3f(flightControl.calculateLinearAcceleration(delta));
         accelerationScaled.scale(delta);
 
         velocity.add(accelerationScaled);
@@ -104,8 +98,8 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
         direction2D.normalize();
         direction2D.scale(size);
         g2d.drawLine((int)position.x, (int)position.y, (int)(position.x + direction2D.x), (int)(position.y + direction2D.y));
-        String text = String.format("Acceleration : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
-                acceleration.length(),
+        String text = String.format("Thruster : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
+                thruster.generateForce().length(),
                 velocity.length(),
                 angularSpeed,
                 angularAcceleration,
@@ -128,6 +122,10 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
     }
 
     public Vector3f getAcceleration() {
+        Vector3f acceleration = new Vector3f(0, 0, 0);
+        List<ForceApplier> forces = getForceList();
+        for(ForceApplier force: forces)
+            acceleration.add(force.generateForce());
         return acceleration;
     }
 
@@ -152,9 +150,12 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
     }
 
     @Override
-    public float getAngularSpeedMax()
-    {
-        return angularSpeedMax;
+    public float getAngularSpeedMax() {
+        return getMaxG() / getVelocity().length();
+    }
+
+    public float getMaxG() {
+        return maxG;
     }
 
     @Override

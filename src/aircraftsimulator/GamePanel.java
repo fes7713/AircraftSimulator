@@ -2,7 +2,6 @@ package aircraftsimulator;
 
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.FlightController.AdvancedFlightController;
-import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
 import aircraftsimulator.GameObject.Aircraft.Thruster.VariableThruster;
 import aircraftsimulator.GameObject.DestructibleObject;
@@ -34,20 +33,30 @@ public class GamePanel extends JPanel {
                 new Vector3f(100, 100, 100),
                 new Vector3f(1, 1, 0), Color.ORANGE, 5, 100,
                 Aircraft.THRUSTER_MAGNITUDE * 2);
+        Aircraft aircraftG = new Aircraft(
+                new SwitchValueFlightController<>(),
+                new Vector3f(100, 100, 100),
+                new Vector3f(1, 1, 0), Color.YELLOW, 5, 100,
+                Aircraft.THRUSTER_MAGNITUDE * 2);
         aircraftAcc.setThruster(new VariableThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE * 2));
+        aircraftG.setThruster(new VariableThruster(aircraftG, Aircraft.THRUSTER_MAGNITUDE * 2));
         Aircraft aircraft1 = new Aircraft(new Vector3f(100, 600, 100), Color.BLUE, 5, 100);
         DestructibleObject target = new DestructibleObject(new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
         aircraft.setTarget(aircraft1);
         aircraftAcc.setTarget(aircraft1);
-        Stream.of(target, aircraft, aircraft1, aircraftAcc).forEach(go -> {
-            objects.add(go);
-        });
+        aircraftG.setTarget(aircraft1);
+        Stream.of(target, aircraft, aircraft1, aircraftAcc, aircraftG).forEach(objects::add);
     }
 
     public void update(float delta)
     {
         for(GameObject go: objects)
             go.update(delta);
+    }
+
+    public List<GameObject> getObjects()
+    {
+        return objects;
     }
 
     @Override

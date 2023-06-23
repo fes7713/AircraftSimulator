@@ -5,7 +5,6 @@ import aircraftsimulator.GameObject.Aircraft.ForceApplier;
 import aircraftsimulator.GameObject.DestructibleObject;
 
 import javax.vecmath.Matrix3f;
-import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
 import java.util.List;
 
@@ -14,7 +13,7 @@ public class SimpleFlightController implements FlightControllerInterface {
     protected DestructibleObject target;
     private final float interval;
     private float intervalCount;
-    private Vector3f waypoint;
+    protected Vector3f waypoint;
 
     private float targetAngle;
 
@@ -81,11 +80,7 @@ public class SimpleFlightController implements FlightControllerInterface {
 
     @Override
     public Vector3f calculateLinearAcceleration(float delta) {
-        Vector3f acceleration = new Vector3f(0, 0, 0);
-        List<ForceApplier> forces = parentObject.getForceList();
-        for(ForceApplier force: forces)
-            acceleration.add(force.generateForce());
-        return acceleration;
+        return parentObject.getAcceleration();
     }
 
     @Override
@@ -102,11 +97,13 @@ public class SimpleFlightController implements FlightControllerInterface {
         float angularAccelerationMagnitude = parentObject.getAngularAccelerationMagnitude();
         float angularAcceleration;
 
+        // Finished turning so angular acceleration is zero
         if(angleDest > 0.99F && parentObject.getAngularAcceleration() < 0)
             angularAcceleration = 0;
+        // Not yet hit the angular deceleration overhead zone where I need to decelerate in advance
         else if(Math.cos(angleToStopAtMaxAngAcc) < angleDest)
         {
-            // Check if speed goes to negative with acceleration wit max negative magnitude
+            // Check if angular speed goes to negative with acceleration wit max negative magnitude
             if(angularSpeed - angularAccelerationMagnitude * delta >= 0)
                 angularAcceleration = -angularAccelerationMagnitude;
             else
