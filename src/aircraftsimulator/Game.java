@@ -8,7 +8,7 @@ public class Game {
     public static long prevTime;
     public static void main(String[] args)
     {
-        Environment env = new Environment();
+        Environment env = Environment.getInstance();
         JFrame frame = new JFrame("New Frame");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 

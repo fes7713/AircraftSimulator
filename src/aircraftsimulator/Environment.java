@@ -5,16 +5,16 @@ import map.NoiseMapPanel;
 import javax.swing.*;
 import java.awt.*;
 import java.util.Timer;
-import java.util.TimerTask;
 
 public class Environment extends JPanel{
     private final NoiseMapPanel mapPanel;
+    private static Environment environment;
 
-    private GamePanel gamePanel;
+    private final GamePanel gamePanel;
 
     private Timer timer;
 
-    public Environment(){
+    private Environment(){
         mapPanel = new NoiseMapPanel() ;
         mapPanel.showCursorGraphics();
         gamePanel = new GamePanel(this);
@@ -73,5 +73,11 @@ public class Environment extends JPanel{
     public float getStartTop()
     {
         return mapPanel.getStartTop();
+    }
+
+    public static Environment getInstance(){
+        if(environment == null)
+            environment = new Environment();
+        return environment;
     }
 }
