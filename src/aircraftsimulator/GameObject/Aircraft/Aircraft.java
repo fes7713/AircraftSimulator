@@ -12,8 +12,9 @@ import java.awt.*;
 import java.util.List;
 
 public class Aircraft extends DestructibleObject implements AircraftInterface{
-    private Vector3f velocity;
-    private Vector3f direction;
+    private final Vector3f velocity;
+    private final Vector3f direction;
+
     private float angularSpeed;
     private float angularAcceleration;
     private final float angularAccelerationMagnitude;
