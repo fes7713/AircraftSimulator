@@ -27,6 +27,11 @@ public class SimpleStorage extends Component implements ObjectStorage{
     }
 
     @Override
+    public void update(float delta) {
+
+    }
+
+    @Override
     public void draw(Graphics2D g2d) {
 
     }

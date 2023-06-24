@@ -2,13 +2,16 @@ package aircraftsimulator.GameObject.Aircraft;
 
 import aircraftsimulator.GameObject.Aircraft.FlightController.FlightControllerInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
+import aircraftsimulator.GameObject.Aircraft.Radar.SimpleRadar;
 import aircraftsimulator.GameObject.Aircraft.Thruster.SimpleThruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
+import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.GameObject.DestructibleObject;
 
 import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Aircraft extends DestructibleObject implements AircraftInterface{
@@ -23,6 +26,7 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
     private final FlightControllerInterface flightControl;
     private Thruster thruster;
     private final AirResistance airResistance;
+    private final List<Component> components;
 
     public static final float THRUSTER_MAGNITUDE = 1F;
     public static final float FLIGHT_CONTROLLER_INTERVAL = 1F;
@@ -37,6 +41,7 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
     public Aircraft(FlightControllerInterface fci, Vector3f position, Color color, float size, float health){
         this(fci, position, color, size, health, THRUSTER_MAGNITUDE);
     }
+
     public Aircraft(FlightControllerInterface fci, Vector3f position, Color color, float size, float health, float thrusterMagnitude){
         this(fci, position, new Vector3f(-1 , -1, 0), color, size, health, thrusterMagnitude);
     }
@@ -54,10 +59,14 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
         angularAcceleration = ANGULAR_ACCELERATION;
         angularAccelerationMagnitude = ANGULAR_ACCELERATION;
         maxG = MAX_G_FORCE;
+        components = new ArrayList<>();
+
+        components.add(new SimpleRadar(this, 100, o-> {}));
     }
 
     public void update(float delta)
     {
+//        components.forEach(o -> o.update(delta));
         angularAcceleration = 0;
 
         Vector3f waypoint = flightControl.nextPoint(delta);
@@ -90,6 +99,7 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
 
     @Override
     public void draw(Graphics2D g2d) {
+        components.forEach(o -> o.draw(g2d));
         super.draw(g2d);
         Vector2f direction2D = new Vector2f(direction.x, direction.y);
         direction2D.normalize();
