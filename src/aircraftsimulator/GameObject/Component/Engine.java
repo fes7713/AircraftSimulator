@@ -1,5 +1,5 @@
 package aircraftsimulator.GameObject.Component;
 
-public class Engine extends Component {
+public abstract class Engine extends Component {
 
 }

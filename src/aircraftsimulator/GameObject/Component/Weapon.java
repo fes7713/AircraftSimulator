@@ -2,7 +2,7 @@ package aircraftsimulator.GameObject.Component;
 
 import aircraftsimulator.GameObject.GameObject;
 
-public class Weapon extends Component implements ObjectStorage{
+public abstract class Weapon extends Component implements ObjectStorage{
     ObjectStorage weaponStorage;
 
     public void fire()

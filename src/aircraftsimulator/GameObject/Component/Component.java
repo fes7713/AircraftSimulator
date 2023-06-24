@@ -1,4 +1,5 @@
 package aircraftsimulator.GameObject.Component;
 
-public class Component implements ComponentInterface{
+public abstract class Component implements ComponentInterface{
+
 }

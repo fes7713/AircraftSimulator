@@ -2,6 +2,7 @@ package aircraftsimulator.GameObject.Component;
 
 import aircraftsimulator.GameObject.GameObject;
 
+import java.awt.*;
 import java.util.Stack;
 
 public class SimpleStorage extends Component implements ObjectStorage{
@@ -23,6 +24,11 @@ public class SimpleStorage extends Component implements ObjectStorage{
         if(storage.isEmpty())
             return null;
         return storage.pop();
+    }
+
+    @Override
+    public void draw(Graphics2D g2d) {
+
     }
 }
 

@@ -1,9 +1,11 @@
 package aircraftsimulator;
 
+import aircraftsimulator.GameObject.GameObject;
 import map.NoiseMapPanel;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 import java.util.Timer;
 
 public class Environment extends JPanel{
@@ -24,6 +26,10 @@ public class Environment extends JPanel{
         mapPanel.add(gamePanel);
         this.setLayout(new BorderLayout());
         this.add(mapPanel);
+    }
+
+    public List<GameObject> getObjects() {
+        return gamePanel.getObjects();
     }
 
     public void updateGame(float delta)
