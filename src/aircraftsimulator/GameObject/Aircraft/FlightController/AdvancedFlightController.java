@@ -1,6 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.FlightController;
 
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
 
 import javax.vecmath.Vector3f;
 
@@ -22,7 +23,7 @@ public class AdvancedFlightController extends SimpleFlightController{
         Vector3f targetPosition = super.getTargetPosition(delta);
         Vector3f targetVelocity = getTargetVelocity(delta);
 
-        if(!(target instanceof Aircraft))
+        if(!(target instanceof MotionInformation))
             return targetPosition;
 
         Vector3f BA = new Vector3f(targetPosition);

@@ -2,7 +2,9 @@ package aircraftsimulator;
 
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.FlightController.AdvancedFlightController;
+import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
+import aircraftsimulator.GameObject.Aircraft.Radar.SimpleRadar;
 import aircraftsimulator.GameObject.Aircraft.Thruster.VariableThruster;
 import aircraftsimulator.GameObject.DestructibleObject;
 import aircraftsimulator.GameObject.GameObject;
@@ -22,30 +24,27 @@ public class GamePanel extends JPanel {
     public GamePanel(Environment environment){
         this.environment = environment;
         objects = new ArrayList<>();
-        objects.add(new GameObject(new Vector3f(100, 100, 100), Color.CYAN, 5));
-        Aircraft aircraft = new Aircraft(
-                new AdvancedFlightController(),
-                new Vector3f(100, 100, 100),
-                new Vector3f(1, 1, 0), Color.RED, 5, 100,
-                Aircraft.THRUSTER_MAGNITUDE * 2);
+//        objects.add(new GameObject(new Vector3f(100, 100, 100), Color.CYAN, 5));
+
         Aircraft aircraftAcc = new Aircraft(
                 new SwitchValueFlightController<>(),
                 new Vector3f(100, 100, 100),
-                new Vector3f(1, 1, 0), Color.ORANGE, 5, 100,
+                new Vector3f(1, 0, 0), Color.ORANGE, 5, 100,
                 Aircraft.THRUSTER_MAGNITUDE * 2);
-        Aircraft aircraftG = new Aircraft(
-                new SwitchValueFlightController<>(),
-                new Vector3f(100, 100, 100),
-                new Vector3f(1, 1, 0), Color.YELLOW, 5, 100,
-                Aircraft.THRUSTER_MAGNITUDE * 2);
+
         aircraftAcc.setThruster(new VariableThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE * 2));
-        aircraftG.setThruster(new VariableThruster(aircraftG, Aircraft.THRUSTER_MAGNITUDE * 2));
-        Aircraft aircraft1 = new Aircraft(new Vector3f(100, 600, 100), Color.BLUE, 5, 100);
+        aircraftAcc.addComponent(new SimpleRadar(aircraftAcc, 100, info -> {
+            aircraftAcc.receive(info);
+        }));
+
+        Aircraft aircraft1 = new Aircraft(
+                new SimpleFlightController(),
+                new Vector3f(500, 100, 100),
+                new Vector3f(-1, -0.1F, 0),
+                Color.BLUE, 5, 100,
+                Aircraft.THRUSTER_MAGNITUDE);
         DestructibleObject target = new DestructibleObject(new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
-        aircraft.setTarget(aircraft1);
-        aircraftAcc.setTarget(aircraft1);
-        aircraftG.setTarget(aircraft1);
-        Stream.of(target, aircraft, aircraft1, aircraftAcc, aircraftG).forEach(objects::add);
+        Stream.of(target, aircraft1, aircraftAcc).forEach(objects::add);
     }
 
     public void update(float delta)

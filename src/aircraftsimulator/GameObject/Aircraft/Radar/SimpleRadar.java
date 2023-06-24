@@ -1,6 +1,9 @@
 package aircraftsimulator.GameObject.Aircraft.Radar;
 
 import aircraftsimulator.Environment;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
+import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.GameObject.GameObject;
 
@@ -11,19 +14,19 @@ import java.util.List;
 
 public class SimpleRadar extends Component implements RadarInterface{
 //    private final Environment environment;
-    private final GameObject parent;
+    private GameObject parent;
     private final float range;
     private final List<GameObject> detectedObjects;
-    private final RadarSignal radarSignal;
+    private final ReceiverInterface receiverInterface;
 
     public static Color radarColor = new Color(71,179,77, 100);
 
-    public SimpleRadar(GameObject parent, float range, RadarSignal signal)
+    public SimpleRadar(GameObject parent, float range, ReceiverInterface receiverInterface)
     {
         this.parent = parent;
         this.range = range;
         detectedObjects = new ArrayList<>();
-        radarSignal = signal;
+        this.receiverInterface = receiverInterface;
     }
 
     @Override
@@ -36,6 +39,8 @@ public class SimpleRadar extends Component implements RadarInterface{
         GameObject closestObject = null;
         for(GameObject o: objects)
         {
+            if(parent == o)
+                continue;
             Vector3f v = new Vector3f(parent.getPosition());
             v.sub(o.getPosition());
             float lengthSquared = v.lengthSquared();
@@ -49,7 +54,10 @@ public class SimpleRadar extends Component implements RadarInterface{
                 }
             }
         }
-        radarSignal.process(closestObject);
+        if(closestObject != null)
+            receiverInterface.receive(closestObject.send(detectType()));
+        else
+            receiverInterface.receive(null);
     }
 
     @Override
@@ -58,14 +66,27 @@ public class SimpleRadar extends Component implements RadarInterface{
     }
 
     @Override
-    public void update(float delta) {
+    public Class<? extends Information> detectType() {
+        return MotionInformation.class;
+    }
 
+    // TODO May cause bug here Parent does not match or already defined
+    @Override
+    public void setParent(GameObject parent) {
+        this.parent = parent;
+    }
+
+    @Override
+    public void update(float delta) {
+        detect();
     }
 
     @Override
     public void draw(Graphics2D g2d) {
         Vector3f center = parent.getPosition();
         g2d.setColor(radarColor);
-        g2d.fillOval((int)(center.x - range / 2), (int)(center.y - range / 2), (int)range, (int)range);
+        g2d.fillOval((int)(center.x - range), (int)(center.y - range), (int)range * 2, (int)range * 2);
     }
+
+
 }

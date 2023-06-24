@@ -1,11 +1,15 @@
 package aircraftsimulator.GameObject;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
+import aircraftsimulator.GameObject.Aircraft.Communication.SenderInterface;
+
 import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GameObject implements GameObjectInterface {
+public class GameObject implements GameObjectInterface, SenderInterface {
     protected Vector3f position;
     protected Color color;
     protected float size;
@@ -48,5 +52,10 @@ public class GameObject implements GameObjectInterface {
     public void draw(Graphics2D g2d) {
         g2d.setColor(color);
         g2d.fillOval((int)(position.x - size /2), (int)(position.y - size /2), (int)size, (int)size);
+    }
+
+    @Override
+    public <T extends Information> Information send(Class<T> type) {
+        return new PositionInformation(position);
     }
 }

@@ -35,5 +35,10 @@ public class SimpleStorage extends Component implements ObjectStorage{
     public void draw(Graphics2D g2d) {
 
     }
+
+    @Override
+    public void setParent(GameObject parent) {
+
+    }
 }
 

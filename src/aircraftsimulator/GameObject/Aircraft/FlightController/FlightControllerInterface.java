@@ -1,13 +1,13 @@
 package aircraftsimulator.GameObject.Aircraft.FlightController;
 
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
-import aircraftsimulator.GameObject.DestructibleObject;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
 
 import javax.vecmath.Vector3f;
 
 public interface FlightControllerInterface {
     Vector3f nextPoint(float delta);
-    void setTarget(DestructibleObject target);
+    void setTarget(Information target);
     float getInterval();
     float getIntervalCount();
     void setParent(Aircraft parent);

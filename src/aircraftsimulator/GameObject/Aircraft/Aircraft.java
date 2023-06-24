@@ -1,8 +1,12 @@
 package aircraftsimulator.GameObject.Aircraft;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
+import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
+import aircraftsimulator.GameObject.Aircraft.Communication.SenderInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.FlightControllerInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
-import aircraftsimulator.GameObject.Aircraft.Radar.SimpleRadar;
 import aircraftsimulator.GameObject.Aircraft.Thruster.SimpleThruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
 import aircraftsimulator.GameObject.Component.Component;
@@ -14,7 +18,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Aircraft extends DestructibleObject implements AircraftInterface{
+public class Aircraft extends DestructibleObject implements AircraftInterface, ReceiverInterface, SenderInterface {
     private final Vector3f velocity;
     private final Vector3f direction;
 
@@ -60,23 +64,20 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
         angularAccelerationMagnitude = ANGULAR_ACCELERATION;
         maxG = MAX_G_FORCE;
         components = new ArrayList<>();
-
-        components.add(new SimpleRadar(this, 100, o-> {}));
     }
 
     public void update(float delta)
     {
-//        components.forEach(o -> o.update(delta));
+        components.forEach(o -> o.update(delta));
         angularAcceleration = 0;
 
         Vector3f waypoint = flightControl.nextPoint(delta);
 
-        if(waypoint != null)
-        {
-            angularAcceleration = flightControl.calculateAngularAcceleration(delta);
-            angularSpeed += angularAcceleration * delta;
-            float angle = angularSpeed * delta;
+        angularAcceleration = flightControl.calculateAngularAcceleration(delta);
+        angularSpeed += angularAcceleration * delta;
+        float angle = angularSpeed * delta;
 
+        if(angle != 0) {
             Vector3f directionNew = flightControl.rotatedDirection(angle);
             direction.set(directionNew);
         }
@@ -91,12 +92,6 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
         position.add(velocityScaled);
     }
 
-    // TODO
-    public void setTarget(DestructibleObject target)
-    {
-        flightControl.setTarget(target);
-    }
-
     @Override
     public void draw(Graphics2D g2d) {
         components.forEach(o -> o.draw(g2d));
@@ -105,7 +100,8 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
         direction2D.normalize();
         direction2D.scale(size);
         g2d.drawLine((int)position.x, (int)position.y, (int)(position.x + direction2D.x), (int)(position.y + direction2D.y));
-        String text = String.format("Thruster : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
+        String text = String.format("Height : %.5f\nThruster : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
+                direction.z,
                 thruster.generateForce().length(),
                 velocity.length(),
                 angularSpeed,
@@ -174,5 +170,30 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
     public void setThruster(Thruster thruster) {
         this.thruster = thruster;
         flightControl.configurationChanged();
+    }
+
+    public void addComponent(Component component)
+    {
+        component.setParent(this);
+        components.add(component);
+    }
+
+    @Override
+    public void receive(Information information) {
+        flightControl.setTarget(information);
+    }
+
+    @Override
+    public <T extends Information> Information send(Class<T> type) {
+        if(type == PositionInformation.class)
+        {
+            return new PositionInformation(position);
+        }
+        else if(type == MotionInformation.class)
+        {
+            return new MotionInformation(position, velocity, getAcceleration(), direction);
+        }
+        System.err.println("Type error in Aircraft.java send(Class<T>)");
+        return super.send(type);
     }
 }
