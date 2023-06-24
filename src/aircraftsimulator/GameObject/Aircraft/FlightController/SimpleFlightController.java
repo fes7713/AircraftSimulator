@@ -53,7 +53,11 @@ public class SimpleFlightController implements FlightControllerInterface {
             if(target == null && parentObject.getAngularSpeed() <= 0)
                 waypoint = null;
             else
-                waypoint = getTargetFuturePosition(delta, parentObject.getPosition(), parentObject.getVelocity());
+            {
+                Vector3f a = getTargetFuturePosition(delta, parentObject.getPosition(), parentObject.getVelocity());
+                if(a != null)
+                    waypoint = a;
+            }
         }
 
         intervalCount -= delta;
@@ -76,7 +80,7 @@ public class SimpleFlightController implements FlightControllerInterface {
     {
         if(target instanceof MotionInformation)
             return new Vector3f(((PositionInformation)target).getPosition());
-        return new Vector3f(0, 0, 0);
+        return null;
     }
 
     protected Vector3f getTargetVelocity(float delta){
@@ -125,6 +129,10 @@ public class SimpleFlightController implements FlightControllerInterface {
                 angularAcceleration = - angularAccelerationMagnitude;
             else
                 angularAcceleration =  - angularSpeed / delta ;
+        }
+        else if(Math.cos(angularSpeed / 2 / angularSpeed * delta) < angleDest)
+        {
+            angularAcceleration =  - angularSpeed / delta;
         }
         else
         {
