@@ -16,20 +16,18 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
     private Vector3f direction;
     private float angularSpeed;
     private float angularAcceleration;
-    private float angularAccelerationMagnitude;
-    private float maxG;
-    private float angularSpeedMax;
+    private final float angularAccelerationMagnitude;
+    private final float maxG;
 
     private final FlightControllerInterface flightControl;
     private Thruster thruster;
-    private AirResistance airResistance;
+    private final AirResistance airResistance;
 
     public static final float THRUSTER_MAGNITUDE = 1F;
     public static final float FLIGHT_CONTROLLER_INTERVAL = 1F;
     public static final float ANGULAR_ACCELERATION = 0.01F;
     public static final float MAX_G_FORCE = 0.5F;
     public static final float AIR_RESISTANCE_COEFFICIENT = 0.02F;
-    public static final float ANGULAR_SPEED_MAX = 0.05F;
 
     public Aircraft(Vector3f position, Color color, float size, float health) {
         this(new SimpleFlightController(FLIGHT_CONTROLLER_INTERVAL), position, color, size, health);
@@ -52,9 +50,7 @@ public class Aircraft extends DestructibleObject implements AircraftInterface{
         direction = new Vector3f(velocity);
         direction.normalize();
         angularSpeed = 0;
-        // TODO
         angularAcceleration = ANGULAR_ACCELERATION;
-        angularSpeedMax = ANGULAR_SPEED_MAX;
         angularAccelerationMagnitude = ANGULAR_ACCELERATION;
         maxG = MAX_G_FORCE;
     }

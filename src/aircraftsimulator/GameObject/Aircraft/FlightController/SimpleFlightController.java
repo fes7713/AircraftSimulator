@@ -1,20 +1,23 @@
 package aircraftsimulator.GameObject.Aircraft.FlightController;
 
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
-import aircraftsimulator.GameObject.Aircraft.ForceApplier;
 import aircraftsimulator.GameObject.DestructibleObject;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.vecmath.Matrix3f;
 import javax.vecmath.Vector3f;
-import java.util.List;
 
 public class SimpleFlightController implements FlightControllerInterface {
+    @NotNull
     protected Aircraft parentObject;
+    @Nullable
     protected DestructibleObject target;
-    private final float interval;
-    private float intervalCount;
+    @Nullable
     protected Vector3f waypoint;
 
+    private final float interval;
+    private float intervalCount;
     private float targetAngle;
 
     public static final float FLIGHT_CONTROLLER_INTERVAL = 1F;
