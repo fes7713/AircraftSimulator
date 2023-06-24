@@ -71,10 +71,13 @@ public class Aircraft extends DestructibleObject implements AircraftInterface, R
         components.forEach(o -> o.update(delta));
         angularAcceleration = 0;
 
-        Vector3f waypoint = flightControl.nextPoint(delta);
+        flightControl.update(delta);
 
         angularAcceleration = flightControl.calculateAngularAcceleration(delta);
         angularSpeed += angularAcceleration * delta;
+        // TODO need to remove if here
+        if(angularSpeed < 0.00000001F)
+            angularSpeed = 0;
         float angle = angularSpeed * delta;
 
         if(angle != 0) {
@@ -111,7 +114,7 @@ public class Aircraft extends DestructibleObject implements AircraftInterface, R
         int y = (int)(position.y - 5);
         for (String line : text.split("\n"))
             g2d.drawString(line, (int)position.x + 5, y += g2d.getFontMetrics().getHeight());
-        Vector3f waypoint = flightControl.nextPoint(0);
+        Vector3f waypoint = flightControl.getWaypoint();
 
         if(waypoint != null)
         {

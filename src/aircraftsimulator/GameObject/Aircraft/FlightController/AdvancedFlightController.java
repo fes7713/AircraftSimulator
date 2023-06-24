@@ -1,7 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft.FlightController;
 
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
 
 import javax.vecmath.Vector3f;
 
@@ -20,10 +19,10 @@ public class AdvancedFlightController extends SimpleFlightController{
     // Target is non-null in this context
     @Override
     public Vector3f getTargetFuturePosition(float delta, Vector3f position, Vector3f velocity) {
-        Vector3f targetPosition = super.getTargetPosition(delta);
-        Vector3f targetVelocity = getTargetVelocity(delta);
+        Vector3f targetPosition = getTargetPosition();
+        Vector3f targetVelocity = getTargetVelocity();
 
-        if(!(target instanceof MotionInformation))
+        if(targetVelocity == null)
             return targetPosition;
 
         Vector3f BA = new Vector3f(targetPosition);
@@ -68,8 +67,9 @@ public class AdvancedFlightController extends SimpleFlightController{
                     return targetPosition;
             }
 
-            targetVelocity.scaleAdd(time, targetPosition);
-            return targetVelocity;
+            Vector3f r = new Vector3f();
+            r.scaleAdd(time, targetVelocity, targetPosition);
+            return r;
         }
     }
 }

@@ -6,7 +6,8 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Information.Informati
 import javax.vecmath.Vector3f;
 
 public interface FlightControllerInterface {
-    Vector3f nextPoint(float delta);
+    void update(float delta);
+    void nextPoint(float delta);
     void setTarget(Information target);
     float getInterval();
     float getIntervalCount();
@@ -16,4 +17,5 @@ public interface FlightControllerInterface {
     Vector3f calculateLinearAcceleration(float delta);
     float calculateAngularAcceleration(float delta);
     void configurationChanged();
+    Vector3f getWaypoint();
 }

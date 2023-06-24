@@ -4,6 +4,9 @@ import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
+import aircraftsimulator.GameObject.Aircraft.FlightController.LostControl.LastSeenControl;
+import aircraftsimulator.GameObject.Aircraft.FlightController.LostControl.LostControlInterface;
+import aircraftsimulator.GameObject.Aircraft.FlightController.LostControl.PredictionControl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,12 +25,15 @@ public class SimpleFlightController implements FlightControllerInterface {
     private float intervalCount;
     private float targetAngle;
 
+    private final LostControlInterface lostControl;
+
     public static final float FLIGHT_CONTROLLER_INTERVAL = 1F;
 
     public SimpleFlightController(Aircraft parentObject, float interval){
         this.parentObject = parentObject;
         this.interval = interval;
         intervalCount = 0;
+        lostControl = new PredictionControl();
     }
 
     public SimpleFlightController(float interval)
@@ -41,52 +47,51 @@ public class SimpleFlightController implements FlightControllerInterface {
     }
 
     @Override
-    public Vector3f nextPoint(float delta) {
-//        Vector3f point = new Vector3f(parentObject.getDirection());
-//        point.scale(delta);
-//        point.add(parentObject.getPosition());
-        if(delta == 0)
-            return waypoint;
-        if(intervalCount <= 0)
-        {
+    public void update(float delta) {
+        if(intervalCount <= 0) {
             intervalCount = interval;
-            if(target == null && parentObject.getAngularSpeed() <= 0)
-                waypoint = null;
-            else
-            {
-                Vector3f a = getTargetFuturePosition(delta, parentObject.getPosition(), parentObject.getVelocity());
-                if(a != null)
-                    waypoint = a;
-            }
+            nextPoint(delta);
         }
 
+        lostControl.update(delta);
         intervalCount -= delta;
-        return waypoint;
     }
 
-    protected float timeToPoint(Vector3f point)
-    {
-        point.sub(parentObject.getPosition());
+    @Override
+    public void nextPoint(float delta) {
 
-        return (float)Math.sqrt(point.lengthSquared() / parentObject.getVelocity().lengthSquared());
+        if(target == null && parentObject.getAngularSpeed() <= 0)
+        {
+            waypoint = null;
+            lostControl.disable();
+        }
+        else {
+                Vector3f a = getTargetFuturePosition(delta, parentObject.getPosition(), parentObject.getVelocity());
+                if (a != null)
+                    waypoint = a;
+        }
     }
 
     protected Vector3f getTargetFuturePosition(float delta, Vector3f position, Vector3f velocity)
     {
-        return getTargetPosition(delta);
+        return getTargetPosition();
     }
 
-    protected Vector3f getTargetPosition(float delta)
+    protected Vector3f getTargetPosition()
     {
-        if(target instanceof MotionInformation)
+        if(lostControl.isLost())
+            return lostControl.getPosition();
+        if(target instanceof PositionInformation)
             return new Vector3f(((PositionInformation)target).getPosition());
         return null;
     }
 
-    protected Vector3f getTargetVelocity(float delta){
+    protected Vector3f getTargetVelocity(){
+        if(lostControl.isLost())
+            return lostControl.getVelocity();
         if(target instanceof MotionInformation)
             return new Vector3f(((MotionInformation)target).getVelocity());
-        return new Vector3f(0, 0, 0);
+        return null;
     }
 
     @Override
@@ -119,7 +124,7 @@ public class SimpleFlightController implements FlightControllerInterface {
 
 
         // Finished turning so angular acceleration is zero
-        if(angleDest > 0.99F && parentObject.getAngularAcceleration() < 0)
+        if(angleDest > 0.9999F && parentObject.getAngularSpeed() <= 0)
             angularAcceleration = 0;
         // Not yet hit the angular deceleration overhead zone where I need to decelerate in advance
         else if(Math.cos(angleToStopAtMaxAngAcc) < angleDest)
@@ -182,7 +187,11 @@ public class SimpleFlightController implements FlightControllerInterface {
     }
 
     @Override
-    public void setTarget(Information target) {
+    public void setTarget(@Nullable Information target) {
+        if(this.target != null && target == null)
+            lostControl.setInformation(this.target);
+        if(this.target != null && target != null)
+            lostControl.disable();
         this.target = target;
     }
 
@@ -204,5 +213,10 @@ public class SimpleFlightController implements FlightControllerInterface {
     @Override
     public void configurationChanged() {
 
+    }
+
+    @Override
+    public Vector3f getWaypoint() {
+        return waypoint;
     }
 }
