@@ -14,10 +14,10 @@ import java.util.List;
 
 public class SimpleRadar extends Component implements RadarInterface{
 //    private final Environment environment;
-    private GameObject parent;
-    private final float range;
-    private final List<GameObject> detectedObjects;
-    private final ReceiverInterface receiverInterface;
+    protected GameObject parent;
+    protected final float range;
+    protected final List<GameObject> detectedObjects;
+    protected final ReceiverInterface receiverInterface;
 
     public static Color radarColor = new Color(71,179,77, 100);
 

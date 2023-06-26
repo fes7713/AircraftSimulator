@@ -4,6 +4,7 @@ import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.FlightController.AdvancedFlightController;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
+import aircraftsimulator.GameObject.Aircraft.Radar.AngleRadar;
 import aircraftsimulator.GameObject.Aircraft.Radar.SimpleRadar;
 import aircraftsimulator.GameObject.Aircraft.Thruster.VariableThruster;
 import aircraftsimulator.GameObject.DestructibleObject;
@@ -33,7 +34,11 @@ public class GamePanel extends JPanel {
                 Aircraft.THRUSTER_MAGNITUDE * 2);
 
         aircraftAcc.setThruster(new VariableThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE * 2));
-        aircraftAcc.addComponent(new SimpleRadar(aircraftAcc, 100, info -> {
+//        aircraftAcc.addComponent(new SimpleRadar(aircraftAcc, 100, info -> {
+//            aircraftAcc.receive(info);
+//        }));
+
+        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 100, 30, aircraftAcc::getDirection, info -> {
             aircraftAcc.receive(info);
         }));
 

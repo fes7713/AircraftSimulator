@@ -1,7 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft.Radar;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
-import aircraftsimulator.GameObject.GameObject;
 
 public interface RadarInterface {
     // Access GamePanel and detect object within a range.
