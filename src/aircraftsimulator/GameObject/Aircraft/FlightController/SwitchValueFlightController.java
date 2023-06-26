@@ -40,7 +40,7 @@ public class SwitchValueFlightController <E extends Enum<E>>extends AdvancedFlig
     }
 
     @Override
-    public Vector3f calculateLinearAcceleration(float delta) {
+    public void calculateLinearAcceleration(float delta) {
         lengthMap.clear();
 
         for(SwitchTypesSimulator<E> sim: switchValuesList)
@@ -75,7 +75,6 @@ public class SwitchValueFlightController <E extends Enum<E>>extends AdvancedFlig
             }
             sim.simulateSwitchTypes(lengthMap.get(sim));
         }
-        return parentObject.getAcceleration();
     }
 
     public void configurationChanged()

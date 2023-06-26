@@ -87,6 +87,4 @@ public class SimpleRadar extends Component implements RadarInterface{
         g2d.setColor(radarColor);
         g2d.fillOval((int)(center.x - range), (int)(center.y - range), (int)range * 2, (int)range * 2);
     }
-
-
 }

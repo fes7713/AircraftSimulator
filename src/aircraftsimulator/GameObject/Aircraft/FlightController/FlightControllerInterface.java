@@ -15,9 +15,8 @@ public interface FlightControllerInterface {
     void setParent(Aircraft parent);
     Vector3f rotatedDirection(float radian);
     float getTargetAngle();
-    Vector3f calculateLinearAcceleration(float delta);
+    void calculateLinearAcceleration(float delta);
     float calculateAngularAcceleration(float delta);
     void configurationChanged();
-    Vector3f getWaypoint();
     void draw(Graphics2D g2d);
 }

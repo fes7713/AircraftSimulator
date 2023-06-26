@@ -4,20 +4,20 @@ import javax.vecmath.Vector3f;
 
 public class AirResistance implements ForceApplier{
 
-    private Aircraft aircraft;
-    private float coefficient;
-    public AirResistance(Aircraft aircraft, float coefficient)
+    private final MovingObjectInterface movingObject;
+    private final float coefficient;
+    public AirResistance(MovingObjectInterface movingObject, float coefficient)
     {
-        this.aircraft = aircraft;
+        this.movingObject = movingObject;
         this.coefficient = coefficient;
     }
 
     @Override
     public Vector3f generateForce() {
-        Vector3f force = new Vector3f(aircraft.getVelocity());
+        Vector3f force = new Vector3f(movingObject.getVelocity());
         force.negate();
         force.normalize();
-        force.scale(coefficient * aircraft.getVelocity().lengthSquared());
+        force.scale(coefficient * movingObject.getVelocity().lengthSquared());
         return force;
     }
 }

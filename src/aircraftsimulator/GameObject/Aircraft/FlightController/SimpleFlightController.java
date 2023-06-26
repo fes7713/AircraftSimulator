@@ -95,8 +95,8 @@ public class SimpleFlightController implements FlightControllerInterface {
     }
 
     @Override
-    public Vector3f calculateLinearAcceleration(float delta) {
-        return parentObject.getAcceleration();
+    public void calculateLinearAcceleration(float delta) {
+
     }
 
     @Override
@@ -213,11 +213,6 @@ public class SimpleFlightController implements FlightControllerInterface {
     @Override
     public void configurationChanged() {
 
-    }
-
-    @Override
-    public Vector3f getWaypoint() {
-        return waypoint;
     }
 
     @Override
