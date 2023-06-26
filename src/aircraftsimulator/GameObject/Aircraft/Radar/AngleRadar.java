@@ -14,6 +14,8 @@ public class AngleRadar extends SimpleRadar{
 
     private final AngleRadarDirectionInterface directionInterface;
     private final float angle;
+    private GameObject closestObject;
+    private float minLength;
 
     public AngleRadar(GameObject parent, float range, float angle, AngleRadarDirectionInterface directionInterface, ReceiverInterface receiverInterface) {
         super(parent, range, receiverInterface);
@@ -29,9 +31,11 @@ public class AngleRadar extends SimpleRadar{
 
         detectedObjects.clear();
         float rangeSquared = range * range;
-        float minLength = Float.MAX_VALUE;
-        GameObject closestObject = null;
-        for(GameObject o: objects)d
+
+        closestObject = null;
+        minLength = Float.MAX_VALUE;
+
+        for(GameObject o: objects)
         {
             if(parent == o)
                 continue;
@@ -41,7 +45,7 @@ public class AngleRadar extends SimpleRadar{
             if(lengthSquared < rangeSquared)
             {
                 float angleCos = direction.dot(v) / direction.length() / v.length();
-                if(angleCos > Math.cos(Math.toRadians(angle)))
+                if(angleCos > Math.cos(Math.toRadians(angle / 2)))
                 {
                     detectedObjects.add(o);
                     if(minLength > lengthSquared)

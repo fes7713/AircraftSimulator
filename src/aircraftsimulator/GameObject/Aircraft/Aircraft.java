@@ -33,7 +33,7 @@ public class Aircraft extends DestructibleObject implements AircraftInterface, R
     private final List<Component> components;
 
     public static final float THRUSTER_MAGNITUDE = 1F;
-    public static final float FLIGHT_CONTROLLER_INTERVAL = 1F;
+    public static final float FLIGHT_CONTROLLER_INTERVAL = 0.001F;
     public static final float ANGULAR_ACCELERATION = 0.01F;
     public static final float MAX_G_FORCE = 0.5F;
     public static final float AIR_RESISTANCE_COEFFICIENT = 0.02F;
@@ -99,12 +99,13 @@ public class Aircraft extends DestructibleObject implements AircraftInterface, R
     public void draw(Graphics2D g2d) {
         components.forEach(o -> o.draw(g2d));
         super.draw(g2d);
+        flightControl.draw(g2d);
         Vector2f direction2D = new Vector2f(direction.x, direction.y);
         direction2D.normalize();
         direction2D.scale(size);
         g2d.drawLine((int)position.x, (int)position.y, (int)(position.x + direction2D.x), (int)(position.y + direction2D.y));
         String text = String.format("Height : %.5f\nThruster : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
-                direction.z,
+                position.z,
                 thruster.generateForce().length(),
                 velocity.length(),
                 angularSpeed,
@@ -114,13 +115,6 @@ public class Aircraft extends DestructibleObject implements AircraftInterface, R
         int y = (int)(position.y - 5);
         for (String line : text.split("\n"))
             g2d.drawString(line, (int)position.x + 5, y += g2d.getFontMetrics().getHeight());
-        Vector3f waypoint = flightControl.getWaypoint();
-
-        if(waypoint != null)
-        {
-            g2d.drawLine((int)(waypoint.x - size), (int)(waypoint.y - size), (int)(waypoint.x + size), (int)(waypoint.y + size));
-            g2d.drawLine((int)(waypoint.x + size), (int)(waypoint.y - size), (int)(waypoint.x - size), (int)(waypoint.y + size));
-        }
     }
 
     public Vector3f getVelocity() {

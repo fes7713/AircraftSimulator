@@ -38,13 +38,13 @@ public class GamePanel extends JPanel {
 //            aircraftAcc.receive(info);
 //        }));
 
-        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 100, 30, aircraftAcc::getDirection, info -> {
+        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 100, 60, aircraftAcc::getDirection, info -> {
             aircraftAcc.receive(info);
         }));
 
         Aircraft aircraft1 = new Aircraft(
                 new SimpleFlightController(),
-                new Vector3f(500, 100, 100),
+                new Vector3f(500, 100, 140),
                 new Vector3f(-1, -0.1F, 0),
                 Color.BLUE, 5, 100,
                 Aircraft.THRUSTER_MAGNITUDE);

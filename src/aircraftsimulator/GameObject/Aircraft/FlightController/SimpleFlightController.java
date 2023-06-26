@@ -4,7 +4,6 @@ import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
-import aircraftsimulator.GameObject.Aircraft.FlightController.LostControl.LastSeenControl;
 import aircraftsimulator.GameObject.Aircraft.FlightController.LostControl.LostControlInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.LostControl.PredictionControl;
 import org.jetbrains.annotations.NotNull;
@@ -12,6 +11,9 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.vecmath.Matrix3f;
 import javax.vecmath.Vector3f;
+import java.awt.*;
+
+import static aircraftsimulator.GameObject.Aircraft.Aircraft.FLIGHT_CONTROLLER_INTERVAL;
 
 public class SimpleFlightController implements FlightControllerInterface {
     @NotNull
@@ -26,8 +28,6 @@ public class SimpleFlightController implements FlightControllerInterface {
     private float targetAngle;
 
     private final LostControlInterface lostControl;
-
-    public static final float FLIGHT_CONTROLLER_INTERVAL = 1F;
 
     public SimpleFlightController(Aircraft parentObject, float interval){
         this.parentObject = parentObject;
@@ -218,5 +218,23 @@ public class SimpleFlightController implements FlightControllerInterface {
     @Override
     public Vector3f getWaypoint() {
         return waypoint;
+    }
+
+    @Override
+    public void draw(Graphics2D g2d) {
+
+        float size = parentObject.getSize();
+        if(target != null && target instanceof PositionInformation)
+        {
+            Vector3f p = ((PositionInformation)target).getPosition();
+            g2d.drawLine((int)(p.x - size), (int)(p.y), (int)(p.x + size), (int)(p.y));
+            g2d.drawLine((int)(p.x), (int)(p.y - size), (int)(p.x), (int)(p.y + size));
+        }
+
+        if(waypoint != null)
+        {
+            g2d.drawLine((int)(waypoint.x - size), (int)(waypoint.y - size), (int)(waypoint.x + size), (int)(waypoint.y + size));
+            g2d.drawLine((int)(waypoint.x + size), (int)(waypoint.y - size), (int)(waypoint.x - size), (int)(waypoint.y + size));
+        }
     }
 }
