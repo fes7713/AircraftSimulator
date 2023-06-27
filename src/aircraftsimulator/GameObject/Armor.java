@@ -48,9 +48,18 @@ public class Armor implements DestructibleObjectInterface{
     }
 
     @Override
-    public boolean takeDamage(float damage) {
+    public void takeDamage(float damage) {
         // TODO
         // Reduce damage
+    }
+
+    @Override
+    public void destroyed() {
+
+    }
+
+    @Override
+    public boolean isAlive() {
         return false;
     }
 }

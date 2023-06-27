@@ -32,6 +32,11 @@ public class Environment extends JPanel{
         return gamePanel.getObjects();
     }
 
+    public void removeObject(GameObject o)
+    {
+        gamePanel.getObjects().remove(o);
+    }
+
     public void updateGame(float delta)
     {
         gamePanel.update(delta);

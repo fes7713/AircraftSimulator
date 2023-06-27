@@ -2,5 +2,7 @@ package aircraftsimulator.GameObject;
 
 public interface DestructibleObjectInterface extends GameObjectInterface{
     float getHealth();
-    boolean takeDamage(float damage);
+    void takeDamage(float damage);
+    void destroyed();
+    boolean isAlive();
 }

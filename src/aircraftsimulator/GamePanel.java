@@ -1,11 +1,9 @@
 package aircraftsimulator;
 
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
-import aircraftsimulator.GameObject.Aircraft.FlightController.AdvancedFlightController;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
 import aircraftsimulator.GameObject.Aircraft.Radar.AngleRadar;
-import aircraftsimulator.GameObject.Aircraft.Radar.SimpleRadar;
 import aircraftsimulator.GameObject.Aircraft.Thruster.VariableThruster;
 import aircraftsimulator.GameObject.DestructibleObject;
 import aircraftsimulator.GameObject.GameObject;
