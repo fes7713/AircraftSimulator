@@ -3,6 +3,7 @@ package aircraftsimulator;
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
+import aircraftsimulator.GameObject.Aircraft.Gun;
 import aircraftsimulator.GameObject.Aircraft.Radar.AngleRadar;
 import aircraftsimulator.GameObject.Aircraft.Thruster.VariableThruster;
 import aircraftsimulator.GameObject.DestructibleObject;
@@ -36,9 +37,8 @@ public class GamePanel extends JPanel {
 //            aircraftAcc.receive(info);
 //        }));
 
-        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 100, 60, aircraftAcc::getDirection, info -> {
-            aircraftAcc.receive(info);
-        }));
+        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 100, 60, aircraftAcc::getDirection));
+        aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 6));
 
         Aircraft aircraft1 = new Aircraft(
                 new SimpleFlightController(),

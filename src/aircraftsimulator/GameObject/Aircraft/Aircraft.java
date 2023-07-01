@@ -3,6 +3,7 @@ package aircraftsimulator.GameObject.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
+import aircraftsimulator.GameObject.Aircraft.Communication.InformationNetwork;
 import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
 import aircraftsimulator.GameObject.Aircraft.Communication.SenderInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.FlightControllerInterface;
@@ -10,6 +11,7 @@ import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightContro
 import aircraftsimulator.GameObject.Aircraft.Thruster.SimpleThruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
 import aircraftsimulator.GameObject.Component.Component;
+import org.jetbrains.annotations.Nullable;
 
 import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
@@ -26,12 +28,13 @@ public class Aircraft extends MovingObject implements AircraftInterface, Receive
     private final FlightControllerInterface flightControl;
     private Thruster thruster;
     private final List<Component> components;
+    private final InformationNetwork network;
 
     public static final float THRUSTER_MAGNITUDE = 1F;
     public static final float FLIGHT_CONTROLLER_INTERVAL = 0.001F;
     public static final float ANGULAR_ACCELERATION = 0.01F;
     public static final float MAX_G_FORCE = 0.5F;
-    public static final float AIR_RESISTANCE_COEFFICIENT = 0.02F;
+
 
     public Aircraft(Vector3f position, Color color, float size, float health) {
         this(new SimpleFlightController(FLIGHT_CONTROLLER_INTERVAL), position, color, size, health);
@@ -55,6 +58,7 @@ public class Aircraft extends MovingObject implements AircraftInterface, Receive
         angularAccelerationMagnitude = ANGULAR_ACCELERATION;
         maxG = MAX_G_FORCE;
         components = new ArrayList<>();
+        network = new InformationNetwork();
     }
 
     public void update(float delta)
@@ -142,22 +146,25 @@ public class Aircraft extends MovingObject implements AircraftInterface, Receive
     {
         component.setParent(this);
         components.add(component);
+        if(component instanceof ReceiverInterface)
+            network.addReceiver((ReceiverInterface)component);
     }
 
     @Override
-    public void receive(Information information) {
+    public void receive(@Nullable Information information) {
         flightControl.setTarget(information);
+        network.receive(information);
     }
 
     @Override
     public <T extends Information> Information send(Class<T> type) {
         if(type == PositionInformation.class)
         {
-            return new PositionInformation(position);
+            return new PositionInformation(this, position);
         }
         else if(type == MotionInformation.class)
         {
-            return new MotionInformation(position, velocity, getAcceleration(), direction);
+            return new MotionInformation(this, position, velocity, getAcceleration(), direction);
         }
         System.err.println("Type error in Aircraft.java send(Class<T>)");
         return super.send(type);

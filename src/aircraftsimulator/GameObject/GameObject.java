@@ -56,6 +56,6 @@ public class GameObject implements GameObjectInterface, SenderInterface {
 
     @Override
     public <T extends Information> Information send(Class<T> type) {
-        return new PositionInformation(position);
+        return new PositionInformation(this, position);
     }
 }

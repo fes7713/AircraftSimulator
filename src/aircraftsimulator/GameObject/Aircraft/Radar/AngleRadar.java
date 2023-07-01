@@ -3,6 +3,7 @@ package aircraftsimulator.GameObject.Aircraft.Radar;
 import aircraftsimulator.Environment;
 import aircraftsimulator.GameMath;
 import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
+import aircraftsimulator.GameObject.Aircraft.MovingObject;
 import aircraftsimulator.GameObject.GameObject;
 
 import javax.vecmath.Vector2f;
@@ -21,6 +22,12 @@ public class AngleRadar extends SimpleRadar{
         super(parent, range, receiverInterface);
         this.directionInterface = directionInterface;
         this.angle = angle;
+    }
+
+    // TODO
+    // If parent is not receiverInterface then run time error.
+    public AngleRadar(GameObject parent, float range, float angle, AngleRadarDirectionInterface directionInterface) {
+        this(parent, range, angle, directionInterface, (ReceiverInterface)parent);
     }
 
     @Override

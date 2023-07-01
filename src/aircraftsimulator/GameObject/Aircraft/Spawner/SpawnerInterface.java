@@ -1,7 +1,10 @@
 package aircraftsimulator.GameObject.Aircraft.Spawner;
 
-public interface  SpawnerInterface <T>{
+import aircraftsimulator.GameObject.Aircraft.Spawner.Trigger.TriggerInterface;
+import aircraftsimulator.GameObject.GameObject;
+
+public interface  SpawnerInterface <T extends GameObject>{
     void spawn();
     T createObject();
-    boolean trigger();
+    void setTrigger(TriggerInterface trigger);
 }

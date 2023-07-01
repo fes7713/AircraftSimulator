@@ -36,6 +36,7 @@ public class DestructibleObject extends GameObject implements DestructibleObject
     public void destroyed() {
         // remove from list
         Environment.getInstance().removeObject(this);
+        health = 0;
     }
 
     @Override
