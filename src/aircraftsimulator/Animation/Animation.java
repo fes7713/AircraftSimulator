@@ -24,7 +24,7 @@ public abstract class Animation implements AnimationInterface{
         time -= delta;
         if(time < 0 && animationEndSignal != null)
         {
-            animationEndSignal.finished();
+            animationEndSignal.finished(this);
             animationEndSignal = null;
         }
     }

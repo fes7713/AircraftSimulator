@@ -1,5 +1,5 @@
 package aircraftsimulator.Animation;
 
 public interface AnimationEndSignal {
-    void finished();
+    void finished(Animation source);
 }

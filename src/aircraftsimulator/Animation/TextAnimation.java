@@ -40,7 +40,7 @@ public class TextAnimation extends Animation{
     public static void main(String[] args)
     {
         TextAnimation textAnimation = new TextAnimation("Sample", new Vector2f(20, 20), Color.MAGENTA, 2, 0.5F);
-        textAnimation.setAnimationEndSignal(() -> {
+        textAnimation.setAnimationEndSignal(animation -> {
             System.out.println("Ended");
         });
         JFrame frame = new JFrame("Text Animation Test");
