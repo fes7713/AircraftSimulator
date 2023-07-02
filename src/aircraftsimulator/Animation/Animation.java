@@ -14,9 +14,16 @@ public abstract class Animation implements AnimationInterface{
 
     public Animation(Vector2f position, Color color, float lifespan) {
         this.position = position;
-        this.color = new Color(color.getRGB());
+        if(color != null)
+            this.color = new Color(color.getRGB());
         this.lifespan = lifespan;
         time = lifespan;
+    }
+
+    @Override
+    public Vector2f getPosition()
+    {
+        return position;
     }
 
     @Override
