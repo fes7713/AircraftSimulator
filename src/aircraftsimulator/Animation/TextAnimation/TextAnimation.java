@@ -1,14 +1,23 @@
-package aircraftsimulator.Animation;
+package aircraftsimulator.Animation.TextAnimation;
+
+import aircraftsimulator.Animation.Animation;
 
 import javax.swing.*;
 import javax.vecmath.Vector2f;
 import java.awt.*;
 
-public class TextAnimation extends Animation{
+public class TextAnimation extends Animation {
     private final String text;
 
     private float alpha;
     private final float alphaTime;
+
+    public final static float LIFESPAN = 2F;
+    public final  static float HIDE_START_PERCENTAGE = 0.5F;
+
+    public TextAnimation(String text, Vector2f position, Color color) {
+        this(text, position, color, LIFESPAN, HIDE_START_PERCENTAGE);
+    }
 
     public TextAnimation(String text, Vector2f position, Color color, float lifespan, float hideStartPercentage) {
         super(position, color, lifespan);

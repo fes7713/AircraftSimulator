@@ -8,7 +8,7 @@ public abstract class Animation implements AnimationInterface{
     protected Color color;
 
     protected float time;
-    private final float lifespan;
+    protected final float lifespan;
 
     private AnimationEndSignal animationEndSignal;
 

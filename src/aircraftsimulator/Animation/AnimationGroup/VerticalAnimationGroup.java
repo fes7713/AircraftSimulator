@@ -1,12 +1,19 @@
-package aircraftsimulator.Animation;
+package aircraftsimulator.Animation.AnimationGroup;
+
+import aircraftsimulator.Animation.AnimationInterface;
+import aircraftsimulator.Animation.TextAnimation.TextAnimation;
 
 import javax.swing.*;
 import javax.vecmath.Vector2f;
 import java.awt.*;
 
-public class VerticalAnimationGroup extends AnimationGroup{
+public class VerticalAnimationGroup extends AnimationGroup {
     public VerticalAnimationGroup(Vector2f position) {
         super(position, null, 0);
+    }
+
+    public VerticalAnimationGroup(Vector2f position, Color color, float lifespan) {
+        super(position, color, lifespan);
     }
 
     @Override

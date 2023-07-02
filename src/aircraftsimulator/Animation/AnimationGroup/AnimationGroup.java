@@ -1,4 +1,7 @@
-package aircraftsimulator.Animation;
+package aircraftsimulator.Animation.AnimationGroup;
+
+import aircraftsimulator.Animation.Animation;
+import aircraftsimulator.Animation.AnimationInterface;
 
 import javax.vecmath.Vector2f;
 import java.awt.*;
