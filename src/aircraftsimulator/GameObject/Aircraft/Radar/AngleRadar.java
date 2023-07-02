@@ -4,6 +4,7 @@ import aircraftsimulator.Environment;
 import aircraftsimulator.GameMath;
 import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
 import aircraftsimulator.GameObject.Aircraft.MovingObject;
+import aircraftsimulator.GameObject.DestructibleObjectInterface;
 import aircraftsimulator.GameObject.GameObject;
 
 import javax.vecmath.Vector2f;
@@ -33,7 +34,7 @@ public class AngleRadar extends SimpleRadar{
     @Override
     public void detect() {
         Environment environment = Environment.getInstance();
-        List<GameObject> objects = environment.getObjects();
+        List<GameObject> objects = environment.getObjects(parent.getTeam());
         Vector3f direction = directionInterface.getDirection();
 
         detectedObjects.clear();
@@ -44,7 +45,7 @@ public class AngleRadar extends SimpleRadar{
 
         for(GameObject o: objects)
         {
-            if(parent == o)
+            if(parent == o || !(o instanceof DestructibleObjectInterface))
                 continue;
             Vector3f v = new Vector3f(o.getPosition());
             v.sub(parent.getPosition());

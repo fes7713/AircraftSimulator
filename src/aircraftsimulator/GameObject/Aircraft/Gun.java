@@ -36,7 +36,7 @@ public class Gun extends TimeSpawner<Bullet> implements ReceiverInterface {
         }
         bulletVelocity.normalize();
         bulletVelocity.scale(bulletSpeed);
-        return new Bullet((DestructibleObjectInterface)target.getSource(), (Vector3f) parent.getPosition().clone(), bulletVelocity, bulletDamage);
+        return new Bullet(parent.getTeam(), (DestructibleObjectInterface)target.getSource(), (Vector3f) parent.getPosition().clone(), bulletVelocity, bulletDamage);
     }
 
     @Override

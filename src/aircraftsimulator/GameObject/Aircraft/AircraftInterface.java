@@ -1,17 +1,12 @@
 package aircraftsimulator.GameObject.Aircraft;
 
 import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
+import aircraftsimulator.GameObject.DestructibleObjectInterface;
 
-import javax.vecmath.Vector3f;
-import java.util.List;
-
-public interface AircraftInterface {
-    Vector3f getDirection();
-    Vector3f getAcceleration();
+public interface AircraftInterface extends DestructibleObjectInterface {
     float getAngularSpeed();
     float getAngularAcceleration();
     float getAngularAccelerationMagnitude();
     float getAngularSpeedMax();
-    List<ForceApplier> getForceList();
     void setThruster(Thruster thruster);
 }

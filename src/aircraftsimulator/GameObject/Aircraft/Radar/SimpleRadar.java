@@ -5,6 +5,7 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Information.Informati
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
 import aircraftsimulator.GameObject.Component.Component;
+import aircraftsimulator.GameObject.DestructibleObjectInterface;
 import aircraftsimulator.GameObject.GameObject;
 
 import javax.vecmath.Vector3f;
@@ -32,14 +33,14 @@ public class SimpleRadar extends Component implements RadarInterface{
     @Override
     public void detect() {
         Environment environment = Environment.getInstance();
-        List<GameObject> objects = environment.getObjects();
+        List<GameObject> objects = environment.getObjects(parent.getTeam());
         detectedObjects.clear();
         float rangeSquared = range * range;
         float minLength = Float.MAX_VALUE;
         GameObject closestObject = null;
         for(GameObject o: objects)
         {
-            if(parent == o)
+            if(parent == o || !(o instanceof DestructibleObjectInterface))
                 continue;
             Vector3f v = new Vector3f(parent.getPosition());
             v.sub(o.getPosition());

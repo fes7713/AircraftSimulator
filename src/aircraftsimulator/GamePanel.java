@@ -6,27 +6,35 @@ import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightC
 import aircraftsimulator.GameObject.Aircraft.Gun;
 import aircraftsimulator.GameObject.Aircraft.Radar.AngleRadar;
 import aircraftsimulator.GameObject.Aircraft.Thruster.VariableThruster;
-import aircraftsimulator.GameObject.DestructibleObject;
+import aircraftsimulator.GameObject.DestructibleStationaryObject;
 import aircraftsimulator.GameObject.GameObject;
+import aircraftsimulator.GameObject.Team;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 public class GamePanel extends JPanel {
     private final aircraftsimulator.Environment environment;
     List<GameObject> objects;
+    Map<Team, List<GameObject>> teamDetectionObjectMap;
 
     public GamePanel(Environment environment){
         this.environment = environment;
         objects = new ArrayList<>();
+        teamDetectionObjectMap = new HashMap<>();
 //        objects.add(new GameObject(new Vector3f(100, 100, 100), Color.CYAN, 5));
-
-        Aircraft aircraftAcc = new Aircraft(
+        Team A = newTeam();
+        Team B = newTeam();
+        Team C = newTeam();
+        Aircraft aircraftAcc = new Aircraft(A,
                 new SwitchValueFlightController<>(),
                 new Vector3f(100, 100, 100),
                 new Vector3f(1, 0, 0), Color.ORANGE, 5, 100,
@@ -38,27 +46,52 @@ public class GamePanel extends JPanel {
 //        }));
 
         aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 100, 60, aircraftAcc::getDirection));
-        aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 6));
+        aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
 
-        Aircraft aircraft1 = new Aircraft(
+        Aircraft aircraft1 = new Aircraft(B,
                 new SimpleFlightController(),
                 new Vector3f(500, 100, 140),
                 new Vector3f(-1, -0.1F, 0),
                 Color.BLUE, 5, 100,
                 Aircraft.THRUSTER_MAGNITUDE);
-        DestructibleObject target = new DestructibleObject(new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
-        Stream.of(target, aircraft1, aircraftAcc).forEach(objects::add);
+        DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
+        Stream.of(target, aircraft1, aircraftAcc).forEach(this::addObject);
     }
 
     public void update(float delta)
     {
-        for(GameObject go: objects)
-            go.update(delta);
+        for(int i = 0; i < objects.size(); i++)
+            objects.get(i).update(delta);
     }
 
-    public List<GameObject> getObjects()
+    public Team newTeam()
     {
-        return objects;
+        Team team = new Team("" + (teamDetectionObjectMap.size() + 1));
+        teamDetectionObjectMap.put(team, new ArrayList<>());
+        return team;
+    }
+
+    @NotNull
+    public List<GameObject> getObjects(Team team)
+    {
+        return teamDetectionObjectMap.get(team);
+    }
+
+    public void addObject(GameObject o)
+    {
+        objects.add(o);
+        for(Map.Entry<Team, List<GameObject>> e: teamDetectionObjectMap.entrySet())
+        {
+            if(e.getKey() != o.getTeam())
+            e.getValue().add(o);
+        }
+    }
+
+    public void removeObject(GameObject o)
+    {
+        objects.remove(o);
+        for(Map.Entry<Team, List<GameObject>> e: teamDetectionObjectMap.entrySet())
+            e.getValue().remove(o);
     }
 
     @Override

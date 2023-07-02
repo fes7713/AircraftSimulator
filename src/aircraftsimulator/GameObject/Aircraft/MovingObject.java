@@ -1,12 +1,13 @@
 package aircraftsimulator.GameObject.Aircraft;
 
-import aircraftsimulator.GameObject.DestructibleObject;
+import aircraftsimulator.GameObject.GameObject;
+import aircraftsimulator.GameObject.Team;
 
 import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.util.List;
 
-public class MovingObject extends DestructibleObject implements MovingObjectInterface{
+public class MovingObject extends GameObject implements MovingObjectInterface{
     protected final Vector3f velocity;
     protected final Vector3f direction;
 
@@ -14,9 +15,13 @@ public class MovingObject extends DestructibleObject implements MovingObjectInte
 
     public static final float AIR_RESISTANCE_COEFFICIENT = 0.02F;
 
-    public MovingObject(Vector3f position, Vector3f velocity, Color color, float size, float health) {
-        super(position, color, size, health);
-        airResistance = new AirResistance(this, AIR_RESISTANCE_COEFFICIENT);
+    public MovingObject(Team team, Vector3f position, Vector3f velocity, Color color, float size) {
+        this(team, position, velocity, color, size, AIR_RESISTANCE_COEFFICIENT);
+    }
+
+    public MovingObject(Team team, Vector3f position, Vector3f velocity, Color color, float size, float airResistanceCoefficient) {
+        super(team, position, color, size);
+        airResistance = new AirResistance(this, airResistanceCoefficient);
         this.velocity = velocity;
         direction = new Vector3f(velocity);
         direction.normalize();

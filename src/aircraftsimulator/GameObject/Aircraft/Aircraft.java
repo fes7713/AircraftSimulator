@@ -11,6 +11,8 @@ import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightContro
 import aircraftsimulator.GameObject.Aircraft.Thruster.SimpleThruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
 import aircraftsimulator.GameObject.Component.Component;
+import aircraftsimulator.GameObject.DestructibleMovingObject;
+import aircraftsimulator.GameObject.Team;
 import org.jetbrains.annotations.Nullable;
 
 import javax.vecmath.Vector2f;
@@ -19,7 +21,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Aircraft extends MovingObject implements AircraftInterface, ReceiverInterface, SenderInterface {
+public class Aircraft extends DestructibleMovingObject implements AircraftInterface, ReceiverInterface, SenderInterface {
     private float angularSpeed;
     private float angularAcceleration;
     private final float angularAccelerationMagnitude;
@@ -36,20 +38,20 @@ public class Aircraft extends MovingObject implements AircraftInterface, Receive
     public static final float MAX_G_FORCE = 0.5F;
 
 
-    public Aircraft(Vector3f position, Color color, float size, float health) {
-        this(new SimpleFlightController(FLIGHT_CONTROLLER_INTERVAL), position, color, size, health);
+    public Aircraft(Team team, Vector3f position, Color color, float size, float health) {
+        this(team, new SimpleFlightController(FLIGHT_CONTROLLER_INTERVAL), position, color, size, health);
     }
 
-    public Aircraft(FlightControllerInterface fci, Vector3f position, Color color, float size, float health){
-        this(fci, position, color, size, health, THRUSTER_MAGNITUDE);
+    public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Color color, float size, float health){
+        this(team, fci, position, color, size, health, THRUSTER_MAGNITUDE);
     }
 
-    public Aircraft(FlightControllerInterface fci, Vector3f position, Color color, float size, float health, float thrusterMagnitude){
-        this(fci, position, new Vector3f(-1 , -1, 0), color, size, health, thrusterMagnitude);
+    public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Color color, float size, float health, float thrusterMagnitude){
+        this(team, fci, position, new Vector3f(-1 , -1, 0), color, size, health, thrusterMagnitude);
     }
 
-    public Aircraft(FlightControllerInterface fci, Vector3f position, Vector3f velocity, Color color, float size, float health, float thrusterMagnitude) {
-        super(position, velocity, color, size, health);
+    public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Vector3f velocity, Color color, float size, float health, float thrusterMagnitude) {
+        super(team, position, velocity, color, size, health);
         flightControl = fci;
         fci.setParent(this);
         thruster = new SimpleThruster(this, thrusterMagnitude);

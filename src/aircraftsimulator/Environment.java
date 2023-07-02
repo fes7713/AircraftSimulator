@@ -1,6 +1,7 @@
 package aircraftsimulator;
 
 import aircraftsimulator.GameObject.GameObject;
+import aircraftsimulator.GameObject.Team;
 import map.NoiseMapPanel;
 
 import javax.swing.*;
@@ -28,17 +29,17 @@ public class Environment extends JPanel{
         this.add(mapPanel);
     }
 
-    public List<GameObject> getObjects() {
-        return gamePanel.getObjects();
+    public List<GameObject> getObjects(Team team) {
+        return gamePanel.getObjects(team);
     }
 
     public void addObject(GameObject o) {
-        gamePanel.getObjects().add(o);
+        gamePanel.addObject(o);
     }
 
     public void removeObject(GameObject o)
     {
-        gamePanel.getObjects().remove(o);
+        gamePanel.removeObject(o);
     }
 
     public void updateGame(float delta)

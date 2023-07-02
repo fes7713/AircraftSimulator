@@ -2,7 +2,6 @@ package aircraftsimulator.GameObject.Aircraft.Spawner;
 
 import aircraftsimulator.Environment;
 import aircraftsimulator.GameObject.Aircraft.Spawner.Trigger.AllTrueTrigger;
-import aircraftsimulator.GameObject.Aircraft.Spawner.Trigger.TimeTrigger;
 import aircraftsimulator.GameObject.Aircraft.Spawner.Trigger.TriggerInterface;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.GameObject.GameObject;
