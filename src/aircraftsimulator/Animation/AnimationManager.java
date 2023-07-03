@@ -1,8 +1,19 @@
 package aircraftsimulator.Animation;
 
-import aircraftsimulator.GamePanel;
+import aircraftsimulator.Animation.AnimationGroup.AnimationGroup;
 
-public class AnimationManager {
-    private GamePanel parentPanel;
+public class AnimationManager extends AnimationGroup implements AnimationManagerInterface {
 
+    private static AnimationManager instance;
+
+    private AnimationManager() {
+        super(null, null, 0);
+    }
+
+    public static AnimationManager getInstance()
+    {
+        if(instance == null)
+            instance = new AnimationManager();
+        return instance;
+    }
 }

@@ -1,5 +1,6 @@
 package aircraftsimulator;
 
+import aircraftsimulator.Animation.AnimationManager;
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
@@ -25,9 +26,11 @@ public class GamePanel extends JPanel {
     private final aircraftsimulator.Environment environment;
     List<GameObject> objects;
     Map<Team, List<GameObject>> teamDetectionObjectMap;
+    AnimationManager animationManager;
 
     public GamePanel(Environment environment){
         this.environment = environment;
+        animationManager = AnimationManager.getInstance();
         objects = new ArrayList<>();
         teamDetectionObjectMap = new HashMap<>();
 //        objects.add(new GameObject(new Vector3f(100, 100, 100), Color.CYAN, 5));
@@ -60,6 +63,7 @@ public class GamePanel extends JPanel {
 
     public void update(float delta)
     {
+        animationManager.update(delta);
         for(int i = 0; i < objects.size(); i++)
             objects.get(i).update(delta);
     }
@@ -98,12 +102,13 @@ public class GamePanel extends JPanel {
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
-        g2d.setColor(Color.BLACK);
         AffineTransform at = g2d.getTransform();
         at.scale(1/environment.getZoom(), 1/environment.getZoom());
         at.translate(environment.getStartLeft(), environment.getStartTop());
 
         g2d.setTransform(at);
+        animationManager.draw(g2d);
+        g2d.setColor(Color.BLACK);
         for(GameObject object: objects)
         {
             object.draw(g2d);

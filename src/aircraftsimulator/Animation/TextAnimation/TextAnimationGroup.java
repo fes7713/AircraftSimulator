@@ -68,8 +68,6 @@ public class TextAnimationGroup extends VerticalAnimationGroup {
                     e.printStackTrace();
                 }
             }
-
-
         }).start();
 
         while(true)

@@ -4,6 +4,7 @@ import aircraftsimulator.Animation.Animation;
 
 import javax.swing.*;
 import javax.vecmath.Vector2f;
+import javax.vecmath.Vector3f;
 import java.awt.*;
 
 public class TextAnimation extends Animation {
@@ -15,7 +16,7 @@ public class TextAnimation extends Animation {
     public final static float LIFESPAN = 2F;
     public final  static float HIDE_START_PERCENTAGE = 0.5F;
 
-    public TextAnimation(String text, Vector2f position, Color color) {
+    private TextAnimation(String text, Vector2f position, Color color) {
         this(text, position, color, LIFESPAN, HIDE_START_PERCENTAGE);
     }
 
@@ -44,6 +45,16 @@ public class TextAnimation extends Animation {
     public void draw(Graphics2D g2d) {
         super.draw(g2d);
         g2d.drawString(text, (int)position.x, (int)position.y);
+    }
+
+    public static TextAnimation make(String text, Vector2f position, Color color)
+    {
+        return new TextAnimation(text, position, color);
+    }
+
+    public static TextAnimation make(String text, Vector3f position, Color color)
+    {
+        return new TextAnimation(text, new Vector2f(position.x, position.y), color);
     }
 
     public static void main(String[] args)
