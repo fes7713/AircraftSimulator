@@ -8,25 +8,59 @@ import javax.vecmath.Vector2f;
 import java.awt.*;
 
 public class VerticalAnimationGroup extends AnimationGroup {
+    private float animationPercentage;
+    private final float animationAcceleration;
+    private float animationSpeed;
+
+    private final float animationSpeedMax;
+
+    public final static float ANIMATION_ACCELERATION = 80;
+    public final static float ANIMATION_SPEED_MAX = 20;
+
     public VerticalAnimationGroup(Vector2f position) {
-        super(position, null, 0);
+        this(position, null, 0);
     }
 
     public VerticalAnimationGroup(Vector2f position, Color color, float lifespan) {
         super(position, color, lifespan);
+        animationPercentage = 0;
+        animationAcceleration = ANIMATION_ACCELERATION;
+        animationSpeed = 0;
+        animationSpeedMax = ANIMATION_SPEED_MAX;
+    }
+
+    @Override
+    public void update(float delta) {
+        super.update(delta);
+        if(animationPercentage < 0)
+        {
+            animationSpeed = 0;
+            return;
+        }
+        if(animationSpeed < animationSpeedMax)
+            animationSpeed += animationAcceleration * delta;
+
+        animationPercentage -= animationSpeed * delta;
     }
 
     @Override
     public void draw(Graphics2D g2d) {
         for(int i = 0; i < animations.size(); i++)
-            animations.get(i).getPosition().set(position.x, position.y + g2d.getFontMetrics().getHeight() * i);
+            animations.get(i).getPosition().set(position.x, position.y + getRowHeight(g2d) * (i - animationPercentage));
 
         super.draw(g2d);
+    }
+
+    public float getRowHeight(Graphics2D g2d)
+    {
+        // Fixed
+        return 10;
     }
 
     @Override
     public void addAnimation(AnimationInterface animationInterface) {
         super.addAnimation(animationInterface);
+        animationPercentage = 1;
     }
 
     public static int counter = 0;

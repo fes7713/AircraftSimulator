@@ -7,20 +7,17 @@ import javax.vecmath.Vector2f;
 import java.awt.*;
 
 public class TextAnimationGroup extends VerticalAnimationGroup {
-    private float hideStartPercentage;
-
-    public TextAnimationGroup(Vector2f position) {
-        super(position);
-    }
+    private final float hideStartPercentage;
 
     public TextAnimationGroup(Vector2f position, Color color, float lifespan, float hideStartPercentage) {
         super(position, color, lifespan);
         this.hideStartPercentage = hideStartPercentage;
+
     }
 
     public void createNewText(String text)
     {
-        addAnimation(new TextAnimation(text, new Vector2f(0, 0), color, lifespan, hideStartPercentage));
+        createNewText(text, color, lifespan, hideStartPercentage);
     }
 
     public void createNewText(String text, Color color, float lifespan, float hideStartPercentage)
@@ -32,6 +29,11 @@ public class TextAnimationGroup extends VerticalAnimationGroup {
             removeAnimation(animation);
         });
         addAnimation(textAnimation);
+    }
+
+    public float getRowHeight(Graphics2D g2d)
+    {
+        return g2d.getFontMetrics().getHeight();
     }
 
     public static void main(String[] args)
