@@ -19,4 +19,5 @@ public interface FlightControllerInterface {
     float calculateAngularAcceleration(float delta);
     void configurationChanged();
     void draw(Graphics2D g2d);
+    Information getInformation();
 }

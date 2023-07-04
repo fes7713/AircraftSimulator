@@ -27,10 +27,10 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     private final float angularAccelerationMagnitude;
     private final float maxG;
 
-    private final FlightControllerInterface flightControl;
-    private Thruster thruster;
-    private final List<Component> components;
-    private final InformationNetwork network;
+    protected final FlightControllerInterface flightControl;
+    protected Thruster thruster;
+    protected final List<Component> components;
+    protected final InformationNetwork network;
 
     public static final float THRUSTER_MAGNITUDE = 1F;
     public static final float FLIGHT_CONTROLLER_INTERVAL = 0.001F;
@@ -144,12 +144,18 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         flightControl.configurationChanged();
     }
 
+    @Override
     public void addComponent(Component component)
     {
         component.setParent(this);
         components.add(component);
         if(component instanceof ReceiverInterface)
             network.addReceiver((ReceiverInterface)component);
+    }
+
+    @Override
+    public void addToNetwork(ReceiverInterface receiverInterface){
+        network.addReceiver(receiverInterface);
     }
 
     @Override
@@ -170,5 +176,12 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         }
         System.err.println("Type error in Aircraft.java send(Class<T>)");
         return super.send(type);
+    }
+
+    @Override
+    public void remove() {
+        super.remove();
+        if(parent != null && parent instanceof Aircraft)
+            ((Aircraft)parent).network.removeReceiver(this);
     }
 }

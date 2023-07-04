@@ -232,4 +232,9 @@ public class SimpleFlightController implements FlightControllerInterface {
             g2d.drawLine((int)(waypoint.x + size), (int)(waypoint.y - size), (int)(waypoint.x - size), (int)(waypoint.y + size));
         }
     }
+
+    @Override
+    public Information getInformation() {
+        return target;
+    }
 }

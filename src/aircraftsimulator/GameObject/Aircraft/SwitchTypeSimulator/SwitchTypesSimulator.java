@@ -5,4 +5,5 @@ public interface SwitchTypesSimulator<E extends Enum<E>> {
     void simulateSwitchTypes(E type);
     E getCurrentType();
     void setDefault();
+    E getDefault();
 }

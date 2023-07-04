@@ -12,6 +12,7 @@ import java.util.List;
 
 public class GameObject implements GameObjectInterface, SenderInterface {
     protected final Team team;
+    protected GameObject parent;
     protected final Vector3f position;
     protected final Color color;
     protected final float size;
@@ -39,6 +40,11 @@ public class GameObject implements GameObjectInterface, SenderInterface {
     @Override
     public Color getColor() {
         return color;
+    }
+
+    @Override
+    public void setParent(GameObject parent) {
+        this.parent = parent;
     }
 
     @Override

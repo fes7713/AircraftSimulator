@@ -2,9 +2,11 @@ package aircraftsimulator;
 
 import aircraftsimulator.Animation.AnimationManager;
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
-import aircraftsimulator.GameObject.Aircraft.Gun;
+import aircraftsimulator.GameObject.Aircraft.Missile;
+import aircraftsimulator.GameObject.Aircraft.Spawner.Gun;
 import aircraftsimulator.GameObject.Aircraft.Radar.AngleRadar;
 import aircraftsimulator.GameObject.Aircraft.Thruster.VariableThruster;
 import aircraftsimulator.GameObject.DestructibleStationaryObject;
@@ -48,17 +50,24 @@ public class GamePanel extends JPanel {
 //            aircraftAcc.receive(info);
 //        }));
 
-        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 100, 60, aircraftAcc::getDirection));
+        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 1000, 60, aircraftAcc::getDirection));
         aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
+
+
 
         Aircraft aircraft1 = new Aircraft(B,
                 new SimpleFlightController(),
-                new Vector3f(500, 100, 140),
-                new Vector3f(-1, -0.1F, 0),
+                new Vector3f(500, 100, 100),
+                new Vector3f(-1, -0F, 0),
                 Color.BLUE, 5, 100,
                 Aircraft.THRUSTER_MAGNITUDE);
+
+        Missile missile = new Missile(A, aircraft1.send(MotionInformation.class), new Vector3f(100, 105, 100),
+                new Vector3f(9, 0, 0), 100, 150);
+        aircraftAcc.addToNetwork(missile);
+
         DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
-        Stream.of(target, aircraft1, aircraftAcc).forEach(this::addObject);
+        Stream.of(target, aircraft1, aircraftAcc, missile).forEach(this::addObject);
     }
 
     public void update(float delta)
@@ -109,9 +118,8 @@ public class GamePanel extends JPanel {
         g2d.setTransform(at);
         animationManager.draw(g2d);
         g2d.setColor(Color.BLACK);
-        for(GameObject object: objects)
-        {
-            object.draw(g2d);
+        for(int i = 0; i < objects.size(); i++){
+            objects.get(i).draw(g2d);
         }
     }
 

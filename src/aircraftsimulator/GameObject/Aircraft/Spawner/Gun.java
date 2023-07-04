@@ -1,9 +1,10 @@
-package aircraftsimulator.GameObject.Aircraft;
+package aircraftsimulator.GameObject.Aircraft.Spawner;
 
+import aircraftsimulator.GameObject.Aircraft.Bullet;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
-import aircraftsimulator.GameObject.Aircraft.Spawner.TimeSpawner;
+import aircraftsimulator.GameObject.Aircraft.MovingObjectInterface;
 import aircraftsimulator.GameObject.DestructibleObjectInterface;
 import aircraftsimulator.GameObject.GameObject;
 import org.jetbrains.annotations.Nullable;

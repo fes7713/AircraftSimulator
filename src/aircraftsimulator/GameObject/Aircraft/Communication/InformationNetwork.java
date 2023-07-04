@@ -19,6 +19,11 @@ public class InformationNetwork implements ReceiverInterface {
         receivers.add(receiverInterface);
     }
 
+    public void removeReceiver(ReceiverInterface receiverInterface)
+    {
+        receivers.remove(receiverInterface);
+    }
+
     @Override
     public void receive(@Nullable Information information) {
         for(ReceiverInterface r: receivers)

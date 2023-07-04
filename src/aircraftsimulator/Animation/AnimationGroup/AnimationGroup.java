@@ -18,24 +18,35 @@ public class AnimationGroup extends Animation implements AnimationGroupInterface
     // TODO Multithread
     @Override
     public void update(float delta) {
-        for(int i = 0; i < animations.size(); i++)
-            animations.get(i).update(delta);
+        synchronized (this){
+            for (AnimationInterface animation : animations) {
+                animation.update(delta);
+            }
+        }
+
     }
 
     @Override
     public void draw(Graphics2D g2d) {
-        for(int i = 0; i < animations.size(); i++)
-            animations.get(i).draw(g2d);
+        synchronized (this){
+            for (AnimationInterface animation : animations) {
+                animation.draw(g2d);
+            }
+        }
     }
 
     @Override
     public void addAnimation(AnimationInterface animationInterface) {
-        animations.addFirst(animationInterface);
+        synchronized (this){
+            animations.addFirst(animationInterface);
+        }
     }
 
     @Override
     public void removeAnimation(AnimationInterface animationInterface) {
-        animations.remove(animationInterface);
+        synchronized (this){
+            animations.remove(animationInterface);
+        }
     }
 
     @Override

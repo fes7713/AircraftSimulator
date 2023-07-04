@@ -1,6 +1,5 @@
 package aircraftsimulator.GameObject;
 
-import aircraftsimulator.Environment;
 import aircraftsimulator.GameObject.Aircraft.DamageReceiver;
 import aircraftsimulator.GameObject.Aircraft.MovingObject;
 

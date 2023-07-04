@@ -2,7 +2,6 @@ package aircraftsimulator;
 
 import javax.swing.*;
 import java.util.Timer;
-import java.util.TimerTask;
 
 public class Game {
     public static long prevTime;
@@ -18,13 +17,18 @@ public class Game {
 
         java.util.Timer timer = new Timer();
 
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
+        new Thread(()->{
+            while(true)
+            {
                 env.updateGame(20 / 1000F);
                 frame.repaint();
                 prevTime = System.currentTimeMillis();
+                try {
+                    Thread.sleep(20);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
-        }, 1000, 20);
+        }).start();
     }
 }

@@ -5,7 +5,7 @@ import javax.vecmath.Vector3f;
 public class AirResistance implements ForceApplier{
 
     private final MovingObjectInterface movingObject;
-    private final float coefficient;
+    private float coefficient;
     public AirResistance(MovingObjectInterface movingObject, float coefficient)
     {
         this.movingObject = movingObject;
@@ -19,5 +19,10 @@ public class AirResistance implements ForceApplier{
         force.normalize();
         force.scale(coefficient * movingObject.getVelocity().lengthSquared());
         return force;
+    }
+
+    public void setCoefficient(float value)
+    {
+        coefficient = value;
     }
 }

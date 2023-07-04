@@ -42,6 +42,8 @@ public class VariableThruster extends SimpleThruster implements SwitchTypesSimul
 
     public void setThrusterActionType(ThrusterActionType type)
     {
+        if(type == null)
+            System.out.println("NULL");
         thrusterActionType = type;
     }
 
@@ -63,5 +65,10 @@ public class VariableThruster extends SimpleThruster implements SwitchTypesSimul
     @Override
     public void setDefault() {
         setThrusterActionType(ThrusterActionType.NORMAL);
+    }
+
+    @Override
+    public ThrusterActionType getDefault() {
+        return ThrusterActionType.NORMAL;
     }
 }

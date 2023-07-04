@@ -16,4 +16,9 @@ public class AnimationManager extends AnimationGroup implements AnimationManager
             instance = new AnimationManager();
         return instance;
     }
+
+    public static void Add(AnimationInterface animationInterface)
+    {
+        getInstance().addAnimation(animationInterface);
+    }
 }
