@@ -63,11 +63,15 @@ public class GamePanel extends JPanel {
                 Aircraft.THRUSTER_MAGNITUDE);
 
         Missile missile = new Missile(A, aircraft1.send(MotionInformation.class), new Vector3f(100, 105, 100),
-                new Vector3f(9, 0, 0), 100, 150);
+                new Vector3f(8, 0, 0), 100, 129);
         aircraftAcc.addToNetwork(missile);
 
+        Missile missile1 = new Missile(A, aircraft1.send(MotionInformation.class), new Vector3f(90, 95, 100),
+                new Vector3f(16, 0, 0), 100, 129);
+        aircraftAcc.addToNetwork(missile1);
+
         DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
-        Stream.of(target, aircraft1, aircraftAcc, missile).forEach(this::addObject);
+        Stream.of(target, aircraft1, aircraftAcc, missile, missile1).forEach(this::addObject);
     }
 
     public void update(float delta)

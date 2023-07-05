@@ -24,7 +24,7 @@ public class Game {
                 frame.repaint();
                 prevTime = System.currentTimeMillis();
                 try {
-                    Thread.sleep(20);
+                    Thread.sleep(10);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
