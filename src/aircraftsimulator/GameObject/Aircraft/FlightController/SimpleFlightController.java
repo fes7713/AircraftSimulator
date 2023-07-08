@@ -60,15 +60,7 @@ public class SimpleFlightController implements FlightControllerInterface {
 
     @Override
     public void nextPoint(float delta) {
-        if(target != null && target.getSource() instanceof DestructibleObjectInterface o)
-        {
-            if(!o.isAlive()){
-                target = null;
-                waypoint = null;
-                lostControl.disable();
-            }
-        }
-        else if(parentObject.getAngularSpeed() <= 0 && (lostControl.isLost() || target == null)) {
+        if(parentObject.getAngularSpeed() <= 0 && (lostControl.isLost() || target == null)) {
             waypoint = null;
             lostControl.disable();
         }
@@ -112,7 +104,7 @@ public class SimpleFlightController implements FlightControllerInterface {
         float angularAcceleration;
         float angularSpeed = parentObject.getAngularSpeed();
         final float angularAccelerationMagnitude = parentObject.getAngularAccelerationMagnitude();
-        if(waypoint == null)
+        if((target == null && !lostControl.isLost()) || waypoint == null)
         {
             if(angularSpeed - angularAccelerationMagnitude * delta >= 0)
                 angularAcceleration = -angularAccelerationMagnitude;
@@ -198,7 +190,12 @@ public class SimpleFlightController implements FlightControllerInterface {
     @Override
     public void setTarget(@Nullable Information target) {
         if(this.target != null && target == null)
-            lostControl.setInformation(this.target);
+        {
+            if(this.target.getSource() instanceof DestructibleObjectInterface o && !o.isAlive())
+                lostControl.setInformation(null);
+            else
+                lostControl.setInformation(this.target);
+        }
         if(this.target != null && target != null)
             lostControl.disable();
         this.target = target;

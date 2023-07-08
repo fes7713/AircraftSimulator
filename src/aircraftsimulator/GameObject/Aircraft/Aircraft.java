@@ -1,6 +1,5 @@
 package aircraftsimulator.GameObject.Aircraft;
 
-import aircraftsimulator.Game;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
@@ -73,8 +72,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         components.forEach(o -> o.update(delta));
         angularAcceleration = 0;
 
-        if(Game.getFrames() >= 2750)
-            System.out.println("here");
         flightControl.update(delta);
 
         angularAcceleration = flightControl.calculateAngularAcceleration(delta);
@@ -105,7 +102,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         g2d.drawLine((int)position.x, (int)position.y, (int)(position.x + direction2D.x), (int)(position.y + direction2D.y));
         String text = String.format("Height : %.5f\nThruster : %.5f\nFuel : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
                 position.z,
-                thruster.generateForce().length(),
+                thruster.getMagnitude(),
                 thruster.getFuel(),
                 velocity.length(),
                 angularSpeed,
