@@ -4,39 +4,40 @@ import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.SwitchTypeSimulator.SwitchTypesSimulator;
 
 import javax.vecmath.Vector3f;
+import java.util.Map;
+
+import static aircraftsimulator.GameObject.Aircraft.Thruster.ThrusterActionType.*;
 
 public class VariableThruster extends SimpleThruster implements SwitchTypesSimulator<ThrusterActionType> {
-    private final float minimumMagnitudePercentage;
-    private final float maximumMagnitudePercentage;
+    private final Map<ThrusterActionType, Float> magnitudeMap;
 
     private ThrusterActionType thrusterActionType;
 
-    public VariableThruster(Aircraft aircraft, float magnitude, float maximumMagnitudePercentage, float minimumMagnitudePercentage) {
-        super(aircraft, magnitude);
+    public VariableThruster(Aircraft aircraft, float fuel, float magnitude, float maximumMagnitudePercentage, float minimumMagnitudePercentage) {
+        super(aircraft, fuel, magnitude);
         if(maximumMagnitudePercentage < 1)
             throw new RuntimeException("Invalid max value");
         if(minimumMagnitudePercentage < 0 || minimumMagnitudePercentage > 1)
             throw new RuntimeException("Invalid percentage value");
 
-        this.maximumMagnitudePercentage = maximumMagnitudePercentage;
-        this.minimumMagnitudePercentage = minimumMagnitudePercentage;
+        magnitudeMap = Map.of(ACCELERATION, maximumMagnitudePercentage, NORMAL, magnitude, DECELERATION, minimumMagnitudePercentage);
         thrusterActionType = ThrusterActionType.NORMAL;
     }
 
-    public VariableThruster(Aircraft aircraft, float magnitude)
+    public VariableThruster(Aircraft aircraft, float fuel, float magnitude)
     {
-        this(aircraft, magnitude, magnitude, magnitude / 2F);
+        this(aircraft, fuel, magnitude, magnitude, magnitude / 2F);
+    }
+
+    @Override
+    public void update(float delta) {
+        fuel -= fuelCoefficient *  magnitudeMap.get(thrusterActionType) * delta;
     }
 
     @Override
     public Vector3f generateForce() {
         Vector3f force = normalizedForce();
-        switch (thrusterActionType)
-        {
-            case ACCELERATION -> force.scale(maximumMagnitudePercentage);
-            case DECELERATION -> force.scale(minimumMagnitudePercentage);
-            case NORMAL -> force.scale(magnitude);
-        }
+        force.scale(magnitudeMap.get(thrusterActionType));
         return force;
     }
 
@@ -45,6 +46,20 @@ public class VariableThruster extends SimpleThruster implements SwitchTypesSimul
         if(type == null)
             System.out.println("NULL");
         thrusterActionType = type;
+    }
+
+    @Override
+    public float getMaxTime() {
+        return super.getMaxTime() / magnitudeMap.get(NORMAL);
+    }
+
+    @Override
+    public float getMagnitude() {
+        return magnitudeMap.get(thrusterActionType);
+    }
+
+    public float getMagnitude(ThrusterActionType type) {
+        return magnitudeMap.get(type);
     }
 
     @Override

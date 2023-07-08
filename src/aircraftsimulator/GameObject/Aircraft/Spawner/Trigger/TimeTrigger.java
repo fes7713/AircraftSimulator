@@ -19,4 +19,9 @@ public class TimeTrigger implements TriggerInterface{
         }
         return false;
     }
+
+    @Override
+    public boolean isAvailable() {
+        return interval < 0;
+    }
 }

@@ -16,7 +16,9 @@ public class Bullet extends MovingObject implements DamageGenerator {
     private final DestructibleObjectInterface target;
     private final FuseInterface fuse;
     private final float baseDamage;
-    private final float minimumSpeed;
+//
+//    private final float flightTime;
+//    private final float distanceTraveled;
 
     public final static float BULLET_SIZE = 2;
     public final static Color BULLET_COLOR = Color.ORANGE;
@@ -57,5 +59,10 @@ public class Bullet extends MovingObject implements DamageGenerator {
     @Override
     public float getDamage() {
         return baseDamage;
+    }
+
+    public float getFlightTime()
+    {
+        return (1 / minimumSpeed - 1 / velocity.length()) / airResistance.getCoefficient();
     }
 }

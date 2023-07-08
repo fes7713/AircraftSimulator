@@ -6,6 +6,7 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInf
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
 import aircraftsimulator.GameObject.Aircraft.FlightController.LostControl.LostControlInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.LostControl.PredictionControl;
+import aircraftsimulator.GameObject.DestructibleObjectInterface;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,9 +60,15 @@ public class SimpleFlightController implements FlightControllerInterface {
 
     @Override
     public void nextPoint(float delta) {
-
-        if((lostControl.isLost() || target == null) && parentObject.getAngularSpeed() <= 0)
+        if(target != null && target.getSource() instanceof DestructibleObjectInterface o)
         {
+            if(!o.isAlive()){
+                target = null;
+                waypoint = null;
+                lostControl.disable();
+            }
+        }
+        else if(parentObject.getAngularSpeed() <= 0 && (lostControl.isLost() || target == null)) {
             waypoint = null;
             lostControl.disable();
         }
@@ -105,7 +112,7 @@ public class SimpleFlightController implements FlightControllerInterface {
         float angularAcceleration;
         float angularSpeed = parentObject.getAngularSpeed();
         final float angularAccelerationMagnitude = parentObject.getAngularAccelerationMagnitude();
-        if(target == null || waypoint == null)
+        if(waypoint == null)
         {
             if(angularSpeed - angularAccelerationMagnitude * delta >= 0)
                 angularAcceleration = -angularAccelerationMagnitude;

@@ -45,7 +45,7 @@ public class GamePanel extends JPanel {
                 new Vector3f(1, 0, 0), Color.ORANGE, 5, 100,
                 Aircraft.THRUSTER_MAGNITUDE * 2);
 
-        aircraftAcc.setThruster(new VariableThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE * 2));
+        aircraftAcc.setThruster(new VariableThruster(aircraftAcc, 3600, Aircraft.THRUSTER_MAGNITUDE * 2));
 //        aircraftAcc.addComponent(new SimpleRadar(aircraftAcc, 100, info -> {
 //            aircraftAcc.receive(info);
 //        }));

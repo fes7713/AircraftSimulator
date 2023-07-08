@@ -10,10 +10,12 @@ import java.util.List;
 public class MovingObject extends GameObject implements MovingObjectInterface{
     protected final Vector3f velocity;
     protected final Vector3f direction;
+    protected float minimumSpeed;
 
     protected final AirResistance airResistance;
 
     public static final float AIR_RESISTANCE_COEFFICIENT = 0.02F;
+    public final static float MINIMUM_SPEED = 1;
 
     public MovingObject(Team team, Vector3f position, Vector3f velocity, Color color, float size) {
         this(team, position, velocity, color, size, AIR_RESISTANCE_COEFFICIENT);
@@ -25,6 +27,7 @@ public class MovingObject extends GameObject implements MovingObjectInterface{
         this.velocity = velocity;
         direction = new Vector3f(velocity);
         direction.normalize();
+        minimumSpeed = MINIMUM_SPEED;
     }
 
     public void update(float delta)
@@ -60,5 +63,11 @@ public class MovingObject extends GameObject implements MovingObjectInterface{
     @Override
     public List<ForceApplier> getForceList() {
         return List.of(airResistance);
+    }
+
+    public float getRange() {
+        if(minimumSpeed <= 0)
+            return Float.MAX_VALUE;
+        return (float)(Math.log(velocity.length() / minimumSpeed) / airResistance.getCoefficient());
     }
 }

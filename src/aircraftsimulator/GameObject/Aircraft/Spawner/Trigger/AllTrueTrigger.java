@@ -5,4 +5,9 @@ public class AllTrueTrigger implements TriggerInterface{
     public boolean update(float delta) {
         return true;
     }
+
+    @Override
+    public boolean isAvailable() {
+        return true;
+    }
 }

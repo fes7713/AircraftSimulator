@@ -21,8 +21,18 @@ public class AirResistance implements ForceApplier{
         return force;
     }
 
+    public float getCoefficient()
+    {
+        return coefficient;
+    }
+
     public void setCoefficient(float value)
     {
         coefficient = value;
+    }
+
+    public static float MaxSpeedForForce(AirResistance airResistance, float force)
+    {
+        return (float) Math.sqrt(force / airResistance.getCoefficient());
     }
 }

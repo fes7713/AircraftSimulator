@@ -1,18 +1,13 @@
 package aircraftsimulator.GameObject.Aircraft.Spawner;
 
 import aircraftsimulator.GameObject.Aircraft.Bullet;
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
-import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
 import aircraftsimulator.GameObject.Aircraft.MovingObjectInterface;
 import aircraftsimulator.GameObject.DestructibleObjectInterface;
 import aircraftsimulator.GameObject.GameObject;
-import org.jetbrains.annotations.Nullable;
 
 import javax.vecmath.Vector3f;
 
-public class Gun extends TimeSpawner<Bullet> implements ReceiverInterface {
-    private PositionInformation target;
+public class Gun extends TargetTimerSpawner<Bullet> {
     private final float bulletDamage;
     private final float bulletSpeed;
 
@@ -38,16 +33,5 @@ public class Gun extends TimeSpawner<Bullet> implements ReceiverInterface {
         bulletVelocity.normalize();
         bulletVelocity.scale(bulletSpeed);
         return new Bullet(parent.getTeam(), (DestructibleObjectInterface)target.getSource(), (Vector3f) parent.getPosition().clone(), bulletVelocity, bulletDamage);
-    }
-
-    @Override
-    public void receive(@Nullable Information information) {
-        if(information == null)
-        {
-            this.target = null;
-            return;
-        }
-        if(information.getSource() instanceof DestructibleObjectInterface)
-            this.target = (PositionInformation) information;
     }
 }

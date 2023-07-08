@@ -1,5 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft;
 
+import aircraftsimulator.Game;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
@@ -10,6 +11,8 @@ import aircraftsimulator.GameObject.Aircraft.FlightController.FlightControllerIn
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.Aircraft.Thruster.SimpleThruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
+import aircraftsimulator.GameObject.Aircraft.Thruster.ThrusterActionType;
+import aircraftsimulator.GameObject.Aircraft.Thruster.VariableThruster;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.GameObject.DestructibleMovingObject;
 import aircraftsimulator.GameObject.Team;
@@ -33,7 +36,8 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     protected final InformationNetwork network;
 
     public static final float THRUSTER_MAGNITUDE = 1F;
-    public static final float FLIGHT_CONTROLLER_INTERVAL = 0.001F;
+    public static final float THRUSTER_FUEL = 3600F;
+    public static final float FLIGHT_CONTROLLER_INTERVAL = 1F;
     public static final float ANGULAR_ACCELERATION = 0.01F;
     public static final float MAX_G_FORCE = 0.5F;
 
@@ -54,13 +58,14 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         super(team, position, velocity, color, size, health);
         flightControl = fci;
         fci.setParent(this);
-        thruster = new SimpleThruster(this, thrusterMagnitude);
+        thruster = new SimpleThruster(this, THRUSTER_FUEL, thrusterMagnitude);
         angularSpeed = 0;
         angularAcceleration = ANGULAR_ACCELERATION;
         angularAccelerationMagnitude = ANGULAR_ACCELERATION;
         maxG = MAX_G_FORCE;
         components = new ArrayList<>();
         network = new InformationNetwork();
+        addComponent(thruster);
     }
 
     public void update(float delta)
@@ -68,6 +73,8 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         components.forEach(o -> o.update(delta));
         angularAcceleration = 0;
 
+        if(Game.getFrames() >= 2750)
+            System.out.println("here");
         flightControl.update(delta);
 
         angularAcceleration = flightControl.calculateAngularAcceleration(delta);
@@ -96,9 +103,10 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         direction2D.normalize();
         direction2D.scale(size);
         g2d.drawLine((int)position.x, (int)position.y, (int)(position.x + direction2D.x), (int)(position.y + direction2D.y));
-        String text = String.format("Height : %.5f\nThruster : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
+        String text = String.format("Height : %.5f\nThruster : %.5f\nFuel : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
                 position.z,
                 thruster.generateForce().length(),
+                thruster.getFuel(),
                 velocity.length(),
                 angularSpeed,
                 angularAcceleration,
@@ -140,8 +148,20 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 
     @Override
     public void setThruster(Thruster thruster) {
+        removeComponent(this.thruster);
+        addComponent(thruster);
         this.thruster = thruster;
         flightControl.configurationChanged();
+    }
+
+    @Override
+    public float getRange() {
+        float magnitude;
+        if(thruster instanceof VariableThruster t)
+            magnitude = t.getMagnitude(ThrusterActionType.NORMAL);
+        else
+            magnitude = thruster.getMagnitude();
+        return thruster.getMaxTime() * AirResistance.MaxSpeedForForce(airResistance, magnitude) + super.getRange();
     }
 
     @Override
@@ -149,8 +169,16 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     {
         component.setParent(this);
         components.add(component);
-        if(component instanceof ReceiverInterface)
-            network.addReceiver((ReceiverInterface)component);
+        if(component instanceof ReceiverInterface receiver)
+            network.addReceiver(receiver);
+    }
+
+    @Override
+    public void removeComponent(Component component)
+    {
+        components.remove(component);
+        if(component instanceof ReceiverInterface receiver)
+            network.removeReceiver(receiver);
     }
 
     @Override

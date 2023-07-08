@@ -13,4 +13,5 @@ public interface AircraftInterface extends DestructibleObjectInterface {
     void setThruster(Thruster thruster);
     void addToNetwork(ReceiverInterface receiverInterface);
     void addComponent(Component component);
+    void removeComponent(Component component);
 }
