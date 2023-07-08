@@ -25,7 +25,6 @@ public class Game {
                 frame.repaint();
                 Game.frames++;
                 prevTime = System.currentTimeMillis();
-                System.out.println(getFrames());
                 try {
                     Thread.sleep(10);
                 } catch (InterruptedException e) {

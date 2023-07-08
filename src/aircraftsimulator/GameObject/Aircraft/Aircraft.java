@@ -46,18 +46,21 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     }
 
     public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Color color, float size, float health){
-        this(team, fci, position, color, size, health, THRUSTER_MAGNITUDE);
+        this(team, fci, position, color, size, health, THRUSTER_MAGNITUDE, THRUSTER_FUEL);
     }
 
-    public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Color color, float size, float health, float thrusterMagnitude){
-        this(team, fci, position, new Vector3f(-1 , -1, 0), color, size, health, thrusterMagnitude);
+    public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Color color, float size, float health, float thrusterMagnitude, float fuel){
+        this(team, fci, position, new Vector3f(-1 , -1, 0), color, size, health, thrusterMagnitude, fuel);
     }
-
     public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Vector3f velocity, Color color, float size, float health, float thrusterMagnitude) {
+        this(team, fci, position, velocity, color, size, health, thrusterMagnitude, THRUSTER_FUEL);
+    }
+
+    public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Vector3f velocity, Color color, float size, float health, float thrusterMagnitude, float fuel) {
         super(team, position, velocity, color, size, health);
         flightControl = fci;
         fci.setParent(this);
-        thruster = new SimpleThruster(this, THRUSTER_FUEL, thrusterMagnitude);
+        thruster = new SimpleThruster(this, fuel, thrusterMagnitude);
         angularSpeed = 0;
         angularAcceleration = ANGULAR_ACCELERATION;
         angularAccelerationMagnitude = ANGULAR_ACCELERATION;

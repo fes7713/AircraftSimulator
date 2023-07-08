@@ -20,6 +20,7 @@ public class Missile extends Aircraft implements DamageGenerator{
     public final static float MISSILE_SIZE = 4;
     public final static Color MISSILE_COLOR = Color.GRAY;
     public final static float MISSILE_THRUST = 4;
+    public final static float MISSILE_FUEL = 100;
     public final static float MINIMUM_SPEED = 8;
     public final static float MISSILE_AIR_RESISTANCE = 0.015F;
 
@@ -32,13 +33,14 @@ public class Missile extends Aircraft implements DamageGenerator{
     }
 
     public Missile(Team team, Information target, Vector3f position, Vector3f velocity, Color color, float size, float health, float thrusterMagnitude, float baseDamage) {
-        super(team, new SwitchValueFlightController<>(), position, velocity, color, size, health, thrusterMagnitude);
+        super(team, new SwitchValueFlightController<>(), position, velocity, color, size, health, thrusterMagnitude, MISSILE_FUEL);
         flightControl.setParent(this);
         this.baseDamage = baseDamage;
         fuse = new ContactFuse(this);
         minimumSpeed = MINIMUM_SPEED;
         airResistance.setCoefficient(MISSILE_AIR_RESISTANCE);
         receive(target);
+        System.out.println(getRange());
     }
 
     @Override
