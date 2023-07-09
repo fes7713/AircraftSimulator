@@ -9,6 +9,11 @@ import java.awt.*;
 public class DestructibleMovingObject extends MovingObject implements DestructibleObjectInterface, DamageReceiver {
     private float health;
 
+    protected DestructibleMovingObject(DestructibleMovingObject d) {
+        super(d);
+        health = d.health;
+    }
+
     public DestructibleMovingObject(Team team, Vector3f position, Vector3f velocity, Color color, float size, float health) {
         super(team, position, velocity, color, size);
         this.health = health;

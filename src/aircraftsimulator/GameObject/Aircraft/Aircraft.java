@@ -6,8 +6,10 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionI
 import aircraftsimulator.GameObject.Aircraft.Communication.InformationNetwork;
 import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
 import aircraftsimulator.GameObject.Aircraft.Communication.SenderInterface;
+import aircraftsimulator.GameObject.Aircraft.FlightController.AdvancedFlightController;
 import aircraftsimulator.GameObject.Aircraft.FlightController.FlightControllerInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
+import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
 import aircraftsimulator.GameObject.Aircraft.Thruster.SimpleThruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.ThrusterActionType;
@@ -40,6 +42,27 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     public static final float ANGULAR_ACCELERATION = 0.01F;
     public static final float MAX_G_FORCE = 0.5F;
 
+    protected Aircraft(Aircraft a) {
+        super(a);
+
+        switch (a.flightControl)
+        {
+            case SwitchValueFlightController swfc -> flightControl = new SwitchValueFlightController<>();
+            case AdvancedFlightController afc -> flightControl = new AdvancedFlightController();
+            case SimpleFlightController sfc -> flightControl = new SimpleFlightController();
+
+            default -> throw new RuntimeException("Error in copy constructor of Aircraft");
+        }
+        flightControl.setParent(this);
+        thruster = a.thruster.clone();
+        angularSpeed = 0;
+        angularAcceleration = a.angularAcceleration;
+        angularAccelerationMagnitude = a.angularAccelerationMagnitude;
+        maxG = a.maxG;
+        components = new ArrayList<>();
+        network = new InformationNetwork();
+        addComponent(thruster);
+    }
 
     public Aircraft(Team team, Vector3f position, Color color, float size, float health) {
         this(team, new SimpleFlightController(FLIGHT_CONTROLLER_INTERVAL), position, color, size, health);

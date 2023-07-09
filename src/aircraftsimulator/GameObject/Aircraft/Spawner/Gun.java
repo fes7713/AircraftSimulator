@@ -12,6 +12,13 @@ public class Gun extends TargetTimerSpawner<Bullet> implements WeaponSystem {
 
     private final Bullet sample;
 
+    public Gun(GameObject parent, Bullet sample, float interval, float bulletSpeed) {
+        super(parent, interval);
+        this.bulletSpeed = bulletSpeed;
+
+        this.sample = sample;
+    }
+
     public Gun(GameObject parent, float interval, float bulletDamage, float bulletSpeed) {
         super(parent, interval);
         this.bulletSpeed = bulletSpeed;
