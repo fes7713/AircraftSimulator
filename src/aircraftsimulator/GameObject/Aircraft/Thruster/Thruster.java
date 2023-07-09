@@ -7,7 +7,7 @@ import aircraftsimulator.GameObject.GameObject;
 
 import java.awt.*;
 
-public abstract class Thruster extends Component implements ForceApplier, Cloneable{
+public abstract class Thruster extends Component implements ForceApplier{
     protected Aircraft parent;
 
     protected float fuel;
@@ -59,12 +59,6 @@ public abstract class Thruster extends Component implements ForceApplier, Clonea
 
     @Override
     public Thruster clone() {
-        try {
-            Thruster clone = (Thruster) super.clone();
-            // TODO: copy mutable state here, so the clone can't change the internals of the original
-            return clone;
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
+        return (Thruster) super.clone();
     }
 }

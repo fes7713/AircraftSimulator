@@ -10,4 +10,13 @@ public class AllTrueTrigger implements TriggerInterface{
     public boolean isAvailable() {
         return true;
     }
+
+    @Override
+    public AllTrueTrigger clone() {
+        try {
+            return (AllTrueTrigger)super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
 }

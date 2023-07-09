@@ -17,8 +17,8 @@ public class SimpleRadar extends Component implements RadarInterface{
 //    private final Environment environment;
     protected GameObject parent;
     protected final float range;
-    protected final List<GameObject> detectedObjects;
-    protected final ReceiverInterface receiverInterface;
+    protected List<GameObject> detectedObjects;
+    protected ReceiverInterface receiverInterface;
 
     public static Color radarColor = new Color(71,179,77, 100);
 
@@ -35,6 +35,7 @@ public class SimpleRadar extends Component implements RadarInterface{
         Environment environment = Environment.getInstance();
         List<GameObject> objects = environment.getObjects(parent.getTeam());
         detectedObjects.clear();
+
         float rangeSquared = range * range;
         float minLength = Float.MAX_VALUE;
         GameObject closestObject = null;
@@ -75,6 +76,10 @@ public class SimpleRadar extends Component implements RadarInterface{
     @Override
     public void setParent(GameObject parent) {
         this.parent = parent;
+        if(parent instanceof ReceiverInterface receiver)
+            receiverInterface = receiver;
+        else
+            receiverInterface = (v) -> {};
     }
 
     @Override
@@ -87,5 +92,12 @@ public class SimpleRadar extends Component implements RadarInterface{
         Vector3f center = parent.getPosition();
         g2d.setColor(radarColor);
         g2d.fillOval((int)(center.x - range), (int)(center.y - range), (int)range * 2, (int)range * 2);
+    }
+
+    @Override
+    public SimpleRadar clone() {
+        SimpleRadar clone = (SimpleRadar) super.clone();
+        clone.detectedObjects = new ArrayList<>();
+        return clone;
     }
 }

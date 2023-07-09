@@ -9,7 +9,7 @@ import java.awt.*;
 public class DestructibleMovingObject extends MovingObject implements DestructibleObjectInterface, DamageReceiver {
     private float health;
 
-    protected DestructibleMovingObject(DestructibleMovingObject d) {
+    public DestructibleMovingObject(DestructibleMovingObject d) {
         super(d);
         health = d.health;
     }

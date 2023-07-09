@@ -18,7 +18,7 @@ public class MovingObject extends GameObject implements MovingObjectInterface, S
     public static final float AIR_RESISTANCE_COEFFICIENT = 0.02F;
     public final static float MINIMUM_SPEED = 1;
 
-    protected MovingObject(MovingObject m)
+    public MovingObject(MovingObject m)
     {
         this(m.team, new Vector3f(), new Vector3f(), m.color, m.size, m.airResistance.getCoefficient());
         minimumSpeed = m.minimumSpeed;

@@ -3,7 +3,7 @@ package aircraftsimulator.GameObject.Aircraft.Radar;
 import aircraftsimulator.Environment;
 import aircraftsimulator.GameMath;
 import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
-import aircraftsimulator.GameObject.Aircraft.MovingObject;
+import aircraftsimulator.GameObject.Aircraft.MovingObjectInterface;
 import aircraftsimulator.GameObject.DestructibleObjectInterface;
 import aircraftsimulator.GameObject.GameObject;
 
@@ -14,34 +14,30 @@ import java.util.List;
 
 public class AngleRadar extends SimpleRadar{
 
-    private final AngleRadarDirectionInterface directionInterface;
+    private Vector3f direction;
     private final float angle;
-    private GameObject closestObject;
-    private float minLength;
 
-    public AngleRadar(GameObject parent, float range, float angle, AngleRadarDirectionInterface directionInterface, ReceiverInterface receiverInterface) {
+    public AngleRadar(GameObject parent, float range, float angle, Vector3f direction, ReceiverInterface receiverInterface) {
         super(parent, range, receiverInterface);
-        this.directionInterface = directionInterface;
+        this.direction = direction;
         this.angle = angle;
     }
 
     // TODO
     // If parent is not receiverInterface then run time error.
-    public AngleRadar(GameObject parent, float range, float angle, AngleRadarDirectionInterface directionInterface) {
-        this(parent, range, angle, directionInterface, (ReceiverInterface)parent);
+    public AngleRadar(GameObject parent, float range, float angle, Vector3f direction) {
+        this(parent, range, angle, direction, (ReceiverInterface)parent);
     }
 
     @Override
     public void detect() {
-        Environment environment = Environment.getInstance();
-        List<GameObject> objects = environment.getObjects(parent.getTeam());
-        Vector3f direction = directionInterface.getDirection();
-
+        List<GameObject> objects = Environment.getInstance().getObjects(parent.getTeam());
         detectedObjects.clear();
-        float rangeSquared = range * range;
 
-        closestObject = null;
-        minLength = Float.MAX_VALUE;
+        GameObject closestObject = null;
+
+        float rangeSquared = range * range;
+        float minLength = Float.MAX_VALUE;
 
         for(GameObject o: objects)
         {
@@ -73,14 +69,23 @@ public class AngleRadar extends SimpleRadar{
     @Override
     public void draw(Graphics2D g2d) {
         g2d.setColor(radarColor);
-        Vector3f d = directionInterface.getDirection();
-        double angleCos = Math.sqrt((d.x * d.x + d.y * d.y) / (d.x * d.x + d.y * d.y + d.z * d.z));
+        double angleCos =
+                Math.sqrt((direction.x * direction.x + direction.y * direction.y)
+                        / (direction.x * direction.x + direction.y * direction.y + direction.z * direction.z));
         double length = range * angleCos;
 
 
         Vector3f center = parent.getPosition();
-        double centerAngle = GameMath.directionToAngle(new Vector2f(d.x, d.y)) % 360;
+        double centerAngle = GameMath.directionToAngle(new Vector2f(direction.x, direction.y)) % 360;
 
         g2d.fillArc((int)(center.x - length), (int)(center.y - length), (int)(length * 2), (int)(length * 2), (int)(centerAngle - angle / 2), (int)angle);
+    }
+
+    @Override
+    public void setParent(GameObject parent) {
+        super.setParent(parent);
+        if(parent instanceof MovingObjectInterface m)
+            direction = m.getDirection();
+        super.setParent(parent);
     }
 }

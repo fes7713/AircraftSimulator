@@ -8,7 +8,7 @@ import aircraftsimulator.GameObject.GameObject;
 
 import java.awt.*;
 
-public abstract class Spawner<T extends GameObject> extends Component implements SpawnerInterface<T> {
+public abstract class Spawner<T extends GameObject> extends Component implements SpawnerInterface<T>{
     protected GameObject parent;
     protected TriggerInterface trigger;
 
@@ -54,5 +54,13 @@ public abstract class Spawner<T extends GameObject> extends Component implements
     @Override
     public void setTrigger(TriggerInterface trigger) {
         this.trigger = trigger;
+    }
+
+
+    @Override
+    public Spawner<T> clone() {
+        Spawner<T> clone = (Spawner<T>) super.clone();
+        clone.trigger = trigger.clone();
+        return clone;
     }
 }

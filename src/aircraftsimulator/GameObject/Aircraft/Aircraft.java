@@ -42,7 +42,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     public static final float ANGULAR_ACCELERATION = 0.01F;
     public static final float MAX_G_FORCE = 0.5F;
 
-    protected Aircraft(Aircraft a) {
+    public Aircraft(Aircraft a) {
         super(a);
 
         switch (a.flightControl)
@@ -62,6 +62,9 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         components = new ArrayList<>();
         network = new InformationNetwork();
         addComponent(thruster);
+        for(Component c: a.components)
+            if(!(c instanceof Thruster))
+                addComponent(c.clone());
     }
 
     public Aircraft(Team team, Vector3f position, Color color, float size, float health) {
@@ -102,7 +105,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 
         angularAcceleration = flightControl.calculateAngularAcceleration(delta);
         angularSpeed += angularAcceleration * delta;
-        // TODO need to remove if here
+
         if(angularSpeed < 0.00000001F)
             angularSpeed = 0;
         float angle = angularSpeed * delta;

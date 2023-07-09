@@ -50,14 +50,14 @@ public class GamePanel extends JPanel {
 //            aircraftAcc.receive(info);
 //        }));
 
-        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 1000, 60, aircraftAcc::getDirection));
+        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 1000, 60, aircraftAcc.getDirection()));
         aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
 
 
 
         Aircraft aircraft1 = new Aircraft(B,
                 new SimpleFlightController(),
-                new Vector3f(500, 100, 100),
+                new Vector3f(500, 120, 100),
                 new Vector3f(-1, -0F, 0),
                 Color.BLUE, 5, 100,
                 Aircraft.THRUSTER_MAGNITUDE);
@@ -71,7 +71,13 @@ public class GamePanel extends JPanel {
         aircraftAcc.addToNetwork(missile1);
 
         DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
-        Stream.of(target, aircraft1, aircraftAcc, missile, missile1).forEach(this::addObject);
+
+        Aircraft aircraftCopy = new Aircraft(aircraftAcc);
+        aircraftCopy.activate(
+                new Vector3f(120, 120, 100),
+                new Vector3f(1, 0, 0),
+                new Vector3f(1, 0, 0));
+        Stream.of(target, aircraft1, aircraftAcc, aircraftCopy, missile, missile1).forEach(this::addObject);
     }
 
     public void update(float delta)
