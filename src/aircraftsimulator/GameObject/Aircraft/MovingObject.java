@@ -1,5 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft;
 
+import aircraftsimulator.GameObject.Aircraft.Spawner.Spawnable;
 import aircraftsimulator.GameObject.GameObject;
 import aircraftsimulator.GameObject.Team;
 
@@ -7,7 +8,7 @@ import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.util.List;
 
-public class MovingObject extends GameObject implements MovingObjectInterface{
+public class MovingObject extends GameObject implements MovingObjectInterface, Spawnable {
     protected final Vector3f velocity;
     protected final Vector3f direction;
     protected float minimumSpeed;
@@ -16,6 +17,12 @@ public class MovingObject extends GameObject implements MovingObjectInterface{
 
     public static final float AIR_RESISTANCE_COEFFICIENT = 0.02F;
     public final static float MINIMUM_SPEED = 1;
+
+    public MovingObject(MovingObject m)
+    {
+        this(m.team, new Vector3f(), new Vector3f(), m.color, m.size, m.airResistance.getCoefficient());
+        minimumSpeed = m.minimumSpeed;
+    }
 
     public MovingObject(Team team, Vector3f position, Vector3f velocity, Color color, float size) {
         this(team, position, velocity, color, size, AIR_RESISTANCE_COEFFICIENT);
@@ -69,5 +76,12 @@ public class MovingObject extends GameObject implements MovingObjectInterface{
         if(minimumSpeed <= 0)
             return Float.MAX_VALUE;
         return (float)(Math.log(velocity.length() / minimumSpeed) / airResistance.getCoefficient());
+    }
+
+    @Override
+    public void activate(Vector3f position, Vector3f velocity, Vector3f direction) {
+        this.position.set(position);
+        this.velocity.set(velocity);
+        this.direction.set(direction);
     }
 }

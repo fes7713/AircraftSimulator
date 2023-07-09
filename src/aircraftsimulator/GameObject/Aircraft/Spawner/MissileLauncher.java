@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MissileLauncher<T extends  Missile> extends TargetTimerSpawner<T>{
+public class MissileLauncher<T extends  Missile> extends TargetTimerSpawner<T> implements WeaponSystem{
 
     private Map<DestructibleObjectInterface, List<T>> missileMap;
     private int numMissiles;
@@ -22,5 +22,11 @@ public class MissileLauncher<T extends  Missile> extends TargetTimerSpawner<T>{
     public void shareMissileFireInformation()
     {
 
+    }
+
+
+    @Override
+    public float getRange() {
+        return 0;
     }
 }
