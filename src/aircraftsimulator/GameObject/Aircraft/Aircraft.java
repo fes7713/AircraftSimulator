@@ -25,7 +25,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Aircraft extends DestructibleMovingObject implements AircraftInterface, ReceiverInterface, SenderInterface {
+public class Aircraft extends DestructibleMovingObject implements AircraftInterface, ReceiverInterface, SenderInterface, Cloneable {
     private float angularSpeed;
     private float angularAcceleration;
     private final float angularAccelerationMagnitude;
@@ -237,5 +237,10 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         super.remove();
         if(parent != null && parent instanceof Aircraft)
             ((Aircraft)parent).network.removeReceiver(this);
+    }
+
+    @Override
+    public Aircraft clone() {
+        return new Aircraft(this);
     }
 }
