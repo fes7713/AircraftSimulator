@@ -47,9 +47,9 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 
         switch (a.flightControl)
         {
-            case SwitchValueFlightController swfc -> flightControl = new SwitchValueFlightController<>();
-            case AdvancedFlightController afc -> flightControl = new AdvancedFlightController();
-            case SimpleFlightController sfc -> flightControl = new SimpleFlightController();
+            case SwitchValueFlightController ignored -> flightControl = new SwitchValueFlightController<>(a.flightControl.getInterval());
+            case AdvancedFlightController ignored1 -> flightControl = new AdvancedFlightController(a.flightControl.getInterval());
+            case SimpleFlightController ignored2 -> flightControl = new SimpleFlightController(a.flightControl.getInterval());
 
             default -> throw new RuntimeException("Error in copy constructor of Aircraft");
         }

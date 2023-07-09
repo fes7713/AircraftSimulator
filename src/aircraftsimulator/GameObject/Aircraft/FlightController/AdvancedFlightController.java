@@ -49,7 +49,7 @@ public class AdvancedFlightController extends SimpleFlightController{
         else
         {
             float positiveTop = (float)(- b + Math.sqrt(determination));
-            float timePositive = positiveTop / 2 / a;;
+            float timePositive = positiveTop / 2 / a;
 
             float negativeTop = (float)(- b -  Math.sqrt(determination));
             float timeNegative = negativeTop / 2 / a;
