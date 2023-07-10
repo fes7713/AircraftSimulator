@@ -12,8 +12,6 @@ import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightContro
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
 import aircraftsimulator.GameObject.Aircraft.Thruster.SimpleThruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
-import aircraftsimulator.GameObject.Aircraft.Thruster.ThrusterActionType;
-import aircraftsimulator.GameObject.Aircraft.Thruster.VariableThruster;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.GameObject.DestructibleMovingObject;
 import aircraftsimulator.GameObject.Team;
@@ -181,16 +179,28 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     }
 
     @Override
-    public float getRange() {
-        float magnitude;
-        if(thruster instanceof VariableThruster t)
-            magnitude = t.getMagnitude(ThrusterActionType.NORMAL);
-        else
-            magnitude = thruster.getMagnitude();
+    public float getRange()
+    {
+        float L = (float)Math.sqrt(thruster.getMagnitude() * airResistance.getCoefficient());
+        float v_inf = (float)Math.sqrt(thruster.getMagnitude() / airResistance.getCoefficient());
 
-        // TODO
-        float maxTime = thruster.getMaxTime();
-        return thruster.getMaxTime() * AirResistance.MaxSpeedForForce(airResistance, magnitude) + super.getRange();
+        float speed = velocity.length();
+        float log_coef = v_inf / L;
+        float sinh_coef = speed / v_inf;
+
+        float max_time = thruster.getMaxTime();
+        float Ltime = L * max_time;
+
+        double tanh = Math.tanh(Ltime);
+        float max_speed = (float)(
+                v_inf *
+                        (speed + v_inf * tanh)
+                        /
+                        (v_inf + speed * tanh));
+
+        double no_thruster_distance = (Math.log(max_speed / minimumSpeed) / airResistance.getCoefficient());
+
+        return (float) (log_coef * Math.log(Math.cosh(Ltime) + sinh_coef * Math.sinh(Ltime)) + no_thruster_distance);
     }
 
     @Override
