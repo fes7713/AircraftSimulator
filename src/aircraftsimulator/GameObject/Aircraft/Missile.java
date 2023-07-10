@@ -20,9 +20,12 @@ public class Missile extends Aircraft implements DamageGenerator{
     public final static float MISSILE_SIZE = 4;
     public final static Color MISSILE_COLOR = Color.GRAY;
     public final static float MISSILE_THRUST = 4;
-    public final static float MISSILE_FUEL = 100;
+    public final static float MISSILE_FUEL = 50;
     public final static float MINIMUM_SPEED = 8;
     public final static float MISSILE_AIR_RESISTANCE = 0.015F;
+
+    float time = 0;
+    float distance = 0;
 
     public Missile(Missile m)
     {
@@ -55,7 +58,13 @@ public class Missile extends Aircraft implements DamageGenerator{
 
     @Override
     public void update(float delta) {
+        Vector3f p = new Vector3f(position);
         super.update(delta);
+        p.sub(position);
+        distance += p.length();
+        time += delta;
+        System.out.println("Time : " + time + " Speed : " + velocity.length() + " Distance : " + distance);
+
         Information target = flightControl.getInformation();
 
         if(target == null || !(target.getSource() instanceof DestructibleObjectInterface))
@@ -91,5 +100,30 @@ public class Missile extends Aircraft implements DamageGenerator{
     @Override
     public Missile clone() {
         return new Missile(this);
+    }
+
+    @Override
+    public float getRange()
+    {
+        float L = (float)Math.sqrt(thruster.getMagnitude() * airResistance.getCoefficient());
+        float v_inf = (float)Math.sqrt(thruster.getMagnitude() / airResistance.getCoefficient());
+
+        float speed = velocity.length();
+        float log_coef = v_inf / L;
+        float sinh_coef = speed / v_inf;
+
+        float max_time = thruster.getMaxTime();
+        float Ltime = L * max_time;
+
+        double tanh = Math.tanh(Ltime);
+        float max_speed = (float)(
+                v_inf *
+                (speed + v_inf * tanh)
+                /
+                (v_inf + speed * tanh));
+
+        double no_thruster_distance = (Math.log(max_speed / minimumSpeed) / airResistance.getCoefficient());
+
+        return (float) (log_coef * Math.log(Math.cosh(Ltime) + sinh_coef * Math.sinh(Ltime)) + no_thruster_distance);
     }
 }

@@ -45,7 +45,7 @@ public class GamePanel extends JPanel {
                 new Vector3f(1, 0, 0), Color.ORANGE, 5, 100,
                 Aircraft.THRUSTER_MAGNITUDE * 2);
 
-        aircraftAcc.setThruster(new VariableThruster(aircraftAcc, 3600, Aircraft.THRUSTER_MAGNITUDE * 2));
+        aircraftAcc.setThruster(new VariableThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE * 2, 3600));
 //        aircraftAcc.addComponent(new SimpleRadar(aircraftAcc, 100, info -> {
 //            aircraftAcc.receive(info);
 //        }));
@@ -66,9 +66,9 @@ public class GamePanel extends JPanel {
                 new Vector3f(8, 0, 0), 100, 129);
         aircraftAcc.addToNetwork(missile);
 
-        Missile missile1 = new Missile(A, aircraft1.send(MotionInformation.class), new Vector3f(90, 95, 100),
-                new Vector3f(16, 0, 0), 100, 129);
-        aircraftAcc.addToNetwork(missile1);
+//        Missile missile1 = new Missile(A, aircraft1.send(MotionInformation.class), new Vector3f(90, 95, 100),
+//                new Vector3f(16, 0, 0), 100, 129);
+//        aircraftAcc.addToNetwork(missile1);
 
         DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
 
@@ -77,7 +77,7 @@ public class GamePanel extends JPanel {
                 new Vector3f(120, 120, 100),
                 new Vector3f(1, 0, 0),
                 new Vector3f(1, 0, 0));
-        Stream.of(target, aircraft1, aircraftAcc, aircraftCopy, missile, missile1).forEach(this::addObject);
+        Stream.of(target, aircraft1, aircraftAcc, aircraftCopy, missile).forEach(this::addObject);
     }
 
     public void update(float delta)

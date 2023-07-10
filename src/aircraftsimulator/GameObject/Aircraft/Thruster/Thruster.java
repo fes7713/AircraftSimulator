@@ -9,15 +9,16 @@ import java.awt.*;
 
 public abstract class Thruster extends Component implements ForceApplier{
     protected Aircraft parent;
-
+    protected float magnitude;
     protected float fuel;
     protected final float fuelCoefficient;
 
     public final static float FUEL_COEFFICIENT = 1;
 
-    public Thruster(Aircraft parent, float fuel)
+    public Thruster(Aircraft parent, float magnitude, float fuel)
     {
         this.parent = parent;
+        this.magnitude = magnitude;
         this.fuel = fuel;
         fuelCoefficient = FUEL_COEFFICIENT;
     }
@@ -27,9 +28,25 @@ public abstract class Thruster extends Component implements ForceApplier{
         return fuel;
     }
 
+    public float getMagnitude() {
+        return magnitude;
+    }
+
     @Override
     public void update(float delta) {
-        fuel -= fuelCoefficient * delta;
+        if(fuel == 0)
+        {
+            magnitude = 0;
+        }
+        else if(fuel < getMagnitude() * delta * fuelCoefficient)
+        {
+            magnitude = fuel / delta / fuelCoefficient;
+            fuel = 0;
+        }
+        else{
+            magnitude = getMagnitude();
+            fuel -= magnitude * delta * fuelCoefficient;
+        }
     }
 
     @Override
@@ -45,16 +62,9 @@ public abstract class Thruster extends Component implements ForceApplier{
             throw new RuntimeException("Error in Simple Thruster");
     }
 
-    public float getMagnitude()
-    {
-        return 0;
-    }
-
     public float getMaxTime()
     {
-        if(fuel < 0)
-            return 0;
-        return fuel / fuelCoefficient;
+        return fuel / fuelCoefficient / getMagnitude();
     }
 
     @Override

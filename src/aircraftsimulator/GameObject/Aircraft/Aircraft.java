@@ -86,7 +86,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         super(team, position, velocity, color, size, health);
         flightControl = fci;
         fci.setParent(this);
-        thruster = new SimpleThruster(this, fuel, thrusterMagnitude);
+        thruster = new SimpleThruster(this, thrusterMagnitude, fuel);
         angularSpeed = 0;
         angularAcceleration = ANGULAR_ACCELERATION;
         angularAccelerationMagnitude = ANGULAR_ACCELERATION;
@@ -187,6 +187,9 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
             magnitude = t.getMagnitude(ThrusterActionType.NORMAL);
         else
             magnitude = thruster.getMagnitude();
+
+        // TODO
+        float maxTime = thruster.getMaxTime();
         return thruster.getMaxTime() * AirResistance.MaxSpeedForForce(airResistance, magnitude) + super.getRange();
     }
 

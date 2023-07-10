@@ -5,12 +5,10 @@ import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import javax.vecmath.Vector3f;
 
 public class SimpleThruster extends Thruster {
-    protected float magnitude;
 
-    public SimpleThruster(Aircraft parent, float fuel, float magnitude)
+    public SimpleThruster(Aircraft parent, float magnitude, float fuel)
     {
-        super(parent, fuel);
-        this.magnitude = magnitude;
+        super(parent, magnitude, fuel);
     }
 
     protected Vector3f normalizedForce()
@@ -27,10 +25,5 @@ public class SimpleThruster extends Thruster {
         Vector3f force = normalizedForce();
         force.scale(magnitude);
         return force ;
-    }
-
-    @Override
-    public float getMagnitude() {
-        return magnitude;
     }
 }

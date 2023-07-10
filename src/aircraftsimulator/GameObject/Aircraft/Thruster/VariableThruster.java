@@ -13,8 +13,8 @@ public class VariableThruster extends SimpleThruster implements SwitchTypesSimul
 
     private ThrusterActionType thrusterActionType;
 
-    public VariableThruster(Aircraft aircraft, float fuel, float magnitude, float maximumMagnitudePercentage, float minimumMagnitudePercentage) {
-        super(aircraft, fuel, magnitude);
+    public VariableThruster(Aircraft aircraft, float magnitude, float fuel, float maximumMagnitudePercentage, float minimumMagnitudePercentage) {
+        super(aircraft, magnitude, fuel);
         if(maximumMagnitudePercentage < 1)
             throw new RuntimeException("Invalid max value");
         if(minimumMagnitudePercentage < 0 || minimumMagnitudePercentage > 1)
@@ -24,14 +24,9 @@ public class VariableThruster extends SimpleThruster implements SwitchTypesSimul
         thrusterActionType = ThrusterActionType.NORMAL;
     }
 
-    public VariableThruster(Aircraft aircraft, float fuel, float magnitude)
+    public VariableThruster(Aircraft aircraft, float magnitude, float fuel)
     {
-        this(aircraft, fuel, magnitude, magnitude, magnitude / 2F);
-    }
-
-    @Override
-    public void update(float delta) {
-        fuel -= fuelCoefficient *  magnitudeMap.get(thrusterActionType) * delta;
+        this(aircraft, magnitude, fuel, magnitude, magnitude / 2F);
     }
 
     @Override
@@ -55,6 +50,8 @@ public class VariableThruster extends SimpleThruster implements SwitchTypesSimul
 
     @Override
     public float getMagnitude() {
+        if(fuel <= 0)
+            return 0;
         return magnitudeMap.get(thrusterActionType);
     }
 
