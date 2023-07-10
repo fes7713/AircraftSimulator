@@ -79,6 +79,11 @@ public class MovingObject extends GameObject implements MovingObjectInterface, S
     }
 
     @Override
+    public float getMinimumSpeed() {
+        return minimumSpeed;
+    }
+
+    @Override
     public void activate(Vector3f position, Vector3f velocity, Vector3f direction) {
         this.position.set(position);
         this.velocity.set(velocity);

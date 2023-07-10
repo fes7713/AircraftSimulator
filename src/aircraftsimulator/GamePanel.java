@@ -2,12 +2,12 @@ package aircraftsimulator;
 
 import aircraftsimulator.Animation.AnimationManager;
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
 import aircraftsimulator.GameObject.Aircraft.Missile;
-import aircraftsimulator.GameObject.Aircraft.Spawner.Gun;
 import aircraftsimulator.GameObject.Aircraft.Radar.AngleRadar;
+import aircraftsimulator.GameObject.Aircraft.Spawner.Gun;
+import aircraftsimulator.GameObject.Aircraft.Spawner.MissileLauncher;
 import aircraftsimulator.GameObject.Aircraft.Thruster.VariableThruster;
 import aircraftsimulator.GameObject.DestructibleStationaryObject;
 import aircraftsimulator.GameObject.GameObject;
@@ -53,7 +53,8 @@ public class GamePanel extends JPanel {
         aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 1000, 60, aircraftAcc.getDirection()));
         aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
 
-
+        Missile missile = new Missile(A, 100, 129);
+        aircraftAcc.addComponent(new MissileLauncher(aircraftAcc, missile, 1, 2));
 
         Aircraft aircraft1 = new Aircraft(B,
                 new SimpleFlightController(),
@@ -62,9 +63,7 @@ public class GamePanel extends JPanel {
                 Color.BLUE, 5, 100,
                 Aircraft.THRUSTER_MAGNITUDE);
 
-        Missile missile = new Missile(A, aircraft1.send(MotionInformation.class), new Vector3f(100, 105, 100),
-                new Vector3f(8, 0, 0), 100, 129);
-        aircraftAcc.addToNetwork(missile);
+
 
 //        Missile missile1 = new Missile(A, aircraft1.send(MotionInformation.class), new Vector3f(90, 95, 100),
 //                new Vector3f(16, 0, 0), 100, 129);
@@ -72,12 +71,7 @@ public class GamePanel extends JPanel {
 
         DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
 
-        Aircraft aircraftCopy = new Aircraft(aircraftAcc);
-        aircraftCopy.activate(
-                new Vector3f(120, 120, 100),
-                new Vector3f(1, 0, 0),
-                new Vector3f(1, 0, 0));
-        Stream.of(target, aircraft1, aircraftAcc, aircraftCopy, missile).forEach(this::addObject);
+        Stream.of(target, aircraft1, aircraftAcc).forEach(this::addObject);
     }
 
     public void update(float delta)

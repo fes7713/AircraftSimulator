@@ -58,7 +58,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         angularAccelerationMagnitude = a.angularAccelerationMagnitude;
         maxG = a.maxG;
         components = new ArrayList<>();
-        network = new InformationNetwork();
+        network = new InformationNetwork(this);
         addComponent(thruster);
         for(Component c: a.components)
             if(!(c instanceof Thruster))
@@ -90,7 +90,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         angularAccelerationMagnitude = ANGULAR_ACCELERATION;
         maxG = MAX_G_FORCE;
         components = new ArrayList<>();
-        network = new InformationNetwork();
+        network = new InformationNetwork(this);
         addComponent(thruster);
     }
 
@@ -121,6 +121,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     @Override
     public void draw(Graphics2D g2d) {
         components.forEach(o -> o.draw(g2d));
+        network.update();
         super.draw(g2d);
         flightControl.draw(g2d);
         Vector2f direction2D = new Vector2f(direction.x, direction.y);
@@ -139,6 +140,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         int y = (int)(position.y - 5);
         for (String line : text.split("\n"))
             g2d.drawString(line, (int)position.x + 5, y += g2d.getFontMetrics().getHeight());
+        network.draw(g2d);
     }
 
     @Override
@@ -243,13 +245,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         }
         System.err.println("Type error in Aircraft.java send(Class<T>)");
         return super.send(type);
-    }
-
-    @Override
-    public void remove() {
-        super.remove();
-        if(parent != null && parent instanceof Aircraft)
-            ((Aircraft)parent).network.removeReceiver(this);
     }
 
     @Override

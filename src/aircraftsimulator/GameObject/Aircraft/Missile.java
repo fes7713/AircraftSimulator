@@ -20,7 +20,7 @@ public class Missile extends Aircraft implements DamageGenerator{
     public final static Color MISSILE_COLOR = Color.GRAY;
     public final static float MISSILE_THRUST = 4;
     public final static float MISSILE_FUEL = 50;
-    public final static float MINIMUM_SPEED = 8;
+    public final static float MINIMUM_SPEED = 4;
     public final static float MISSILE_AIR_RESISTANCE = 0.015F;
 
     public Missile(Missile m)
@@ -57,34 +57,27 @@ public class Missile extends Aircraft implements DamageGenerator{
         super.update(delta);
         Information target = flightControl.getInformation();
 
+        // Less than minimum speed
+        if(velocity.lengthSquared() < minimumSpeed * minimumSpeed)
+        {
+            destroyed();
+            AnimationManager.Add(TextAnimation.make("Missed", position, color));
+        }
+
         if(target == null || !(target.getSource() instanceof DestructibleObjectInterface))
             return;
 
         if(fuse.trigger((DestructibleObjectInterface) target.getSource()))
         {
             ((DestructibleObjectInterface) target.getSource()).takeDamage(getDamage());
-            remove();
+            destroyed();
             AnimationManager.Add(TextAnimation.make("Hit", position, color));
-        }
-
-        // Less than minimum speed
-        if(velocity.lengthSquared() < minimumSpeed * minimumSpeed)
-        {
-            System.out.println(velocity.lengthSquared());
-            remove();
-            AnimationManager.Add(TextAnimation.make("Missed", position, color));
         }
     }
 
     @Override
     public float getDamage() {
         return baseDamage;
-    }
-
-    @Override
-    public void remove() {
-        super.remove();
-        System.out.println("Reasdsad");
     }
 
     @Override

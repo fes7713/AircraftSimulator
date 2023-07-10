@@ -1,5 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft.Spawner;
 
+import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.Missile;
 import aircraftsimulator.GameObject.Aircraft.MovingObjectInterface;
 import aircraftsimulator.GameObject.DestructibleObjectInterface;
@@ -17,12 +18,22 @@ public class MissileLauncher extends TargetTimerSpawner<Missile> implements Weap
 
     private final Missile sample;
 
-    public MissileLauncher(GameObject parent, float interval, int numMissiles) {
+    private static final float MISSILE_HEALTH = 10;
+
+    public MissileLauncher(GameObject parent, float interval, int numMissiles, float damage) {
         super(parent, interval);
         missileMap = new HashMap<>();
         this.numMissiles = numMissiles;
 
-        sample = new Missile(parent.getTeam(), 10, 120);
+        sample = new Missile(parent.getTeam(), MISSILE_HEALTH, damage);
+    }
+
+    public MissileLauncher(GameObject parent, Missile sample, float interval, int numMissiles) {
+        super(parent, interval);
+        missileMap = new HashMap<>();
+        this.numMissiles = numMissiles;
+
+        this.sample = sample;
     }
 
     public void shareMissileFireInformation()
@@ -37,17 +48,28 @@ public class MissileLauncher extends TargetTimerSpawner<Missile> implements Weap
         if(numMissiles <= 0)
             return null;
 
-        Missile clone = sample.clone();
+        Missile clone;
         if(parent instanceof MovingObjectInterface m)
+        {
+            if(sample.getMinimumSpeed() * sample.getMinimumSpeed() > m.getVelocity().lengthSquared())
+                return null;
+            clone = sample.clone();
             clone.activate(parent.getPosition(), m.getVelocity(), m.getDirection());
+        }
         else
         {
+            clone = sample.clone();
             Vector3f direction= new Vector3f(target.getPosition());
             direction.sub(parent.getPosition());
-            clone.activate(parent.getPosition(), new Vector3f(), direction);
+            direction.scale(clone.getMinimumSpeed());
+            clone.activate(parent.getPosition(), direction, direction);
         }
         numMissiles--;
 
+        // TODo may need to remove this line
+        // No need to share the enemy info?
+        if(parent instanceof Aircraft a)
+            a.addToNetwork(clone);
         return clone;
     }
 
