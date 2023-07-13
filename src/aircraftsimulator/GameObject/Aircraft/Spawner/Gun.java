@@ -1,13 +1,14 @@
 package aircraftsimulator.GameObject.Aircraft.Spawner;
 
 import aircraftsimulator.GameObject.Aircraft.Bullet;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.FireInformation;
 import aircraftsimulator.GameObject.Aircraft.MovingObjectInterface;
 import aircraftsimulator.GameObject.DestructibleObjectInterface;
 import aircraftsimulator.GameObject.GameObject;
 
 import javax.vecmath.Vector3f;
 
-public class Gun extends TargetTimerSpawner<Bullet> implements WeaponSystem {
+public class Gun extends TargetTimerSpawner<Bullet> implements CloseRangeWeaponSystem {
     private final float bulletSpeed;
 
     private final Bullet sample;
@@ -56,5 +57,16 @@ public class Gun extends TargetTimerSpawner<Bullet> implements WeaponSystem {
         else
             sample.getVelocity().set(bulletSpeed, 0, 0);
         return sample.getRange();
+    }
+
+    @Override
+    public void fire(FireInformation fireInformation) {
+        receive(fireInformation);
+    }
+
+    // TODO mau need to change later
+    @Override
+    public boolean isAvailable() {
+        return true;
     }
 }

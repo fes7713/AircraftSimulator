@@ -21,12 +21,12 @@ public class Game {
         new Thread(()->{
             while(true)
             {
-                env.updateGame(5 / 1000F);
+                env.updateGame(10 / 1000F);
                 frame.repaint();
                 Game.frames++;
                 prevTime = System.currentTimeMillis();
                 try {
-                    Thread.sleep(5);
+                    Thread.sleep(2);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

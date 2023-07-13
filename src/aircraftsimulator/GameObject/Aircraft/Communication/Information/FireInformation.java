@@ -1,4 +1,4 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.Information;
 
-public class FireInformation {
+public interface FireInformation extends PositionInformation{
 }

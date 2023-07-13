@@ -2,7 +2,7 @@ package aircraftsimulator.GameObject;
 
 import aircraftsimulator.Environment;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformationImp;
 import aircraftsimulator.GameObject.Aircraft.Communication.SenderInterface;
 
 import javax.vecmath.Vector3f;
@@ -75,6 +75,6 @@ public class GameObject implements GameObjectInterface, SenderInterface {
 
     @Override
     public <T extends Information> Information send(Class<T> type) {
-        return new PositionInformation(this, position);
+        return new PositionInformationImp(this, position);
     }
 }

@@ -1,8 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft;
 
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
+import aircraftsimulator.GameObject.Aircraft.CentralStrategy.CentralStrategy;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.*;
 import aircraftsimulator.GameObject.Aircraft.Communication.InformationNetwork;
 import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
 import aircraftsimulator.GameObject.Aircraft.Communication.SenderInterface;
@@ -10,6 +9,7 @@ import aircraftsimulator.GameObject.Aircraft.FlightController.AdvancedFlightCont
 import aircraftsimulator.GameObject.Aircraft.FlightController.FlightControllerInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
+import aircraftsimulator.GameObject.Aircraft.Spawner.WeaponSystem;
 import aircraftsimulator.GameObject.Aircraft.Thruster.SimpleThruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
 import aircraftsimulator.GameObject.Component.Component;
@@ -23,12 +23,13 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Aircraft extends DestructibleMovingObject implements AircraftInterface, ReceiverInterface, SenderInterface, Cloneable {
+public class Aircraft extends DestructibleMovingObject implements AircraftInterface, ReceiverInterface, SenderInterface, Cloneable, GuideNetwork {
     private float angularSpeed;
     private float angularAcceleration;
     private final float angularAccelerationMagnitude;
     private final float maxG;
 
+    protected final CentralStrategy centralStrategy;
     protected final FlightControllerInterface flightControl;
     protected Thruster thruster;
     protected final List<Component> components;
@@ -51,6 +52,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 
             default -> throw new RuntimeException("Error in copy constructor of Aircraft");
         }
+        centralStrategy = new CentralStrategy(this);
         flightControl.setParent(this);
         thruster = a.thruster.clone();
         angularSpeed = 0;
@@ -82,6 +84,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 
     public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Vector3f velocity, Color color, float size, float health, float thrusterMagnitude, float fuel) {
         super(team, position, velocity, color, size, health);
+        centralStrategy = new CentralStrategy(this);
         flightControl = fci;
         fci.setParent(this);
         thruster = new SimpleThruster(this, thrusterMagnitude, fuel);
@@ -97,6 +100,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     public void update(float delta)
     {
         components.forEach(o -> o.update(delta));
+        centralStrategy.update(delta);
         angularAcceleration = 0;
 
         flightControl.update(delta);
@@ -205,6 +209,11 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         return (float) (log_coef * Math.log(Math.cosh(Ltime) + sinh_coef * Math.sinh(Ltime)) + no_thruster_distance);
     }
 
+    public void addToGuidNetwork(Guided guidedObject, PositionInformation keyInformation)
+    {
+        centralStrategy.addToGuidance(guidedObject, keyInformation);
+    }
+
     @Override
     public void addComponent(Component component)
     {
@@ -212,14 +221,18 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         components.add(component);
         if(component instanceof ReceiverInterface receiver)
             network.addReceiver(receiver);
+        if(component instanceof WeaponSystem weaponSystem)
+            centralStrategy.addWeaponSystem(weaponSystem);
     }
 
     @Override
     public void removeComponent(Component component)
     {
         components.remove(component);
-        if(component instanceof ReceiverInterface receiver)
-            network.removeReceiver(receiver);
+//        if(component instanceof ReceiverInterface receiver)
+//            network.removeReceiver(receiver);
+        if(component instanceof WeaponSystem w)
+            centralStrategy.addWeaponSystem(w);
     }
 
     @Override
@@ -230,18 +243,19 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     @Override
     public void receive(@Nullable Information information) {
         flightControl.setTarget(information);
-        network.receive(information);
+//        network.receive(information);
+        centralStrategy.receive(information);
     }
 
     @Override
     public <T extends Information> Information send(Class<T> type) {
         if(type == PositionInformation.class)
         {
-            return new PositionInformation(this, position);
+            return new PositionInformationImp(this, position);
         }
         else if(type == MotionInformation.class)
         {
-            return new MotionInformation(this, position, velocity, getAcceleration(), direction);
+            return new MotionInformationImp(this, position, velocity, getAcceleration(), direction);
         }
         System.err.println("Type error in Aircraft.java send(Class<T>)");
         return super.send(type);

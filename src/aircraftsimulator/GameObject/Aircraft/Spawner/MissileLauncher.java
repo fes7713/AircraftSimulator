@@ -1,6 +1,8 @@
 package aircraftsimulator.GameObject.Aircraft.Spawner;
 
-import aircraftsimulator.GameObject.Aircraft.Aircraft;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.FireInformation;
+import aircraftsimulator.GameObject.Aircraft.GuideNetwork;
+import aircraftsimulator.GameObject.Aircraft.Guided;
 import aircraftsimulator.GameObject.Aircraft.Missile;
 import aircraftsimulator.GameObject.Aircraft.MovingObjectInterface;
 import aircraftsimulator.GameObject.DestructibleObjectInterface;
@@ -11,34 +13,40 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MissileLauncher extends TargetTimerSpawner<Missile> implements WeaponSystem{
+public class MissileLauncher extends TargetTimerSpawner<Missile> implements LongRangeWeaponSystem{
 
-    private Map<DestructibleObjectInterface, List<Missile>> missileMap;
+    private final Map<DestructibleObjectInterface, List<Missile>> missileMap;
     private int numMissiles;
+    private int missilePerTarget;
 
     private final Missile sample;
 
     private static final float MISSILE_HEALTH = 10;
+    private static final int MISSILE_PER_TARGET = 2;
 
     public MissileLauncher(GameObject parent, float interval, int numMissiles, float damage) {
-        super(parent, interval);
-        missileMap = new HashMap<>();
-        this.numMissiles = numMissiles;
-
-        sample = new Missile(parent.getTeam(), MISSILE_HEALTH, damage);
+        this(parent, new Missile(parent.getTeam(), MISSILE_HEALTH, damage), interval, numMissiles);
     }
 
     public MissileLauncher(GameObject parent, Missile sample, float interval, int numMissiles) {
-        super(parent, interval);
-        missileMap = new HashMap<>();
-        this.numMissiles = numMissiles;
-
-        this.sample = sample;
+        this(parent, sample, new HashMap<>(), interval, numMissiles);
     }
 
-    public void shareMissileFireInformation()
-    {
+    public MissileLauncher(GameObject parent, Map<DestructibleObjectInterface, List<Missile>> missileMap, float interval, int numMissiles, float damage) {
+        this(parent, new Missile(parent.getTeam(), MISSILE_HEALTH, damage), missileMap, interval, numMissiles);
+    }
 
+    public MissileLauncher(GameObject parent, Missile sample, Map<DestructibleObjectInterface, List<Missile>> missileMap, float interval, int numMissiles) {
+        super(parent, interval);
+        this.missileMap = missileMap;
+        this.numMissiles = numMissiles;
+        this.sample = sample;
+        missilePerTarget = MISSILE_PER_TARGET;
+    }
+
+    public Map<DestructibleObjectInterface, List<Missile>> getMissileMap()
+    {
+        return missileMap;
     }
 
     @Override
@@ -68,8 +76,8 @@ public class MissileLauncher extends TargetTimerSpawner<Missile> implements Weap
 
         // TODo may need to remove this line
         // No need to share the enemy info?
-        if(parent instanceof Aircraft a)
-            a.addToNetwork(clone);
+        if(parent instanceof GuideNetwork n && clone instanceof Guided g)
+            n.addToGuidNetwork(g, target);
         return clone;
     }
 
@@ -80,5 +88,15 @@ public class MissileLauncher extends TargetTimerSpawner<Missile> implements Weap
         else
             sample.getVelocity().set(0, 0, 0);
         return sample.getRange();
+    }
+
+    @Override
+    public void fire(FireInformation fireInformation) {
+        receive(fireInformation);
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return numMissiles > 0;
     }
 }
