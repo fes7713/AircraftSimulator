@@ -4,6 +4,7 @@ import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
+import aircraftsimulator.GameObject.Aircraft.FlightController.LostControl.LastSeenControl;
 import aircraftsimulator.GameObject.Aircraft.FlightController.LostControl.LostControlInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.LostControl.PredictionControl;
 import aircraftsimulator.GameObject.DestructibleObjectInterface;
@@ -28,7 +29,7 @@ public class SimpleFlightController implements FlightControllerInterface {
     private float intervalCount;
     private float targetAngle;
 
-    private final LostControlInterface lostControl;
+    private LostControlInterface lostControl;
 
     public SimpleFlightController(Aircraft parentObject, float interval){
         this.parentObject = parentObject;
@@ -194,7 +195,14 @@ public class SimpleFlightController implements FlightControllerInterface {
             if(this.target.getSource() instanceof DestructibleObjectInterface o && !o.isAlive())
                 lostControl.setInformation(null);
             else
+            {
+                if(this.target.getSource() instanceof Aircraft)
+                    lostControl = new LastSeenControl();
+                else
+                    lostControl = new PredictionControl();
+
                 lostControl.setInformation(this.target);
+            }
         }
         if(this.target != null && target != null)
             lostControl.disable();

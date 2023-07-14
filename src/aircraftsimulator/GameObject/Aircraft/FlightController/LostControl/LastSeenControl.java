@@ -1,6 +1,8 @@
 package aircraftsimulator.GameObject.Aircraft.FlightController.LostControl;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformationImp;
 import aircraftsimulator.GameObject.DestructibleObjectInterface;
 
 public class LastSeenControl implements LostControlInterface{
@@ -38,6 +40,8 @@ public class LastSeenControl implements LostControlInterface{
 
     @Override
     public Information getTarget() {
+        if(lastSeenInformation instanceof PositionInformation p)
+            return new PositionInformationImp(p);
         return lastSeenInformation;
     }
 

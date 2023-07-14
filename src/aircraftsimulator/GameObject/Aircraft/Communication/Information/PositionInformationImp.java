@@ -8,6 +8,11 @@ public class PositionInformationImp implements PositionInformation{
     private final GameObject source;
     private final Vector3f position;
 
+    public PositionInformationImp(PositionInformation positionInformation){
+        this.source = positionInformation.getSource();
+        this.position = new Vector3f(positionInformation.getPosition());
+    }
+
     public PositionInformationImp(GameObject source, Vector3f position){
         this.source = source;
         this.position = new Vector3f(position);
