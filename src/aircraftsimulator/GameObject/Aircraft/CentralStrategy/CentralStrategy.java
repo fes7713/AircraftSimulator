@@ -23,20 +23,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class CentralStrategy extends Component implements CentralStrategyInterface, ReceiverInterface {
-    // Distance information
     private GameObject parent;
     private final List<PositionInformation> detectedTargets;
-//
-//    // Range??
-    // Missiles
-    private final List<LongRangeWeaponSystem> longRangeWeaponSystems;
 
-    // Guns. Autostart
+    private final List<LongRangeWeaponSystem> longRangeWeaponSystems;
     private final List<CloseRangeWeaponSystem> closeRangeWeaponSystems;
-//
-//    Map<Component, List<Information>> detectionMap;
-//
-//    Map<DamageGenerator, List<Information>> attackingMap;
 
     private final Map<PositionInformation, List<Guided>> guideMap;
 
@@ -303,6 +294,14 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
     @Override
     public void receive(@Nullable Information information) {
         if(information instanceof PositionInformation p)
+        {
+            for(PositionInformation pi: detectedTargets)
+            {
+                if(pi.getSource() == p.getSource())
+                    return;
+            }
             detectedTargets.add(p);
+        }
+
     }
 }
