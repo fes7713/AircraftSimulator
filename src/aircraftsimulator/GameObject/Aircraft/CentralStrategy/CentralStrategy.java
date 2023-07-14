@@ -1,5 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft.CentralStrategy;
 
+import aircraftsimulator.Game;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.FireInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.FirePositionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
@@ -158,6 +159,10 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
                 continue;
             }
 
+            // Gun>??
+            // TODO ??
+            if(guideMap.get(info) == null)
+                continue;
             guideMap.get(info).removeIf(g -> !g.isActive());
         }
     }
@@ -168,7 +173,7 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
         Map<PositionInformation, PositionInformation> newToOldTracking = newToOldPositionTracking();
         removeUntrackedPositionFromTrackingMap(newToOldTracking);
         checkGuideStatus();
-
+        System.out.println(Game.getFrames());
         int j = 0;
 
         for(int i = 0; i < detectedTargets.size(); i++)

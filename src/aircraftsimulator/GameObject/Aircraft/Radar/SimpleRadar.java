@@ -4,9 +4,12 @@ import aircraftsimulator.Environment;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
+import aircraftsimulator.GameObject.Aircraft.Radar.DetectPredicate.DetectPredicate;
+import aircraftsimulator.GameObject.Aircraft.Radar.DetectPredicate.RangeDetect;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.GameObject.DestructibleObjectInterface;
 import aircraftsimulator.GameObject.GameObject;
+import aircraftsimulator.GameObject.GameObjectInterface;
 
 import javax.vecmath.Vector3f;
 import java.awt.*;
@@ -15,19 +18,26 @@ import java.util.List;
 
 public class SimpleRadar extends Component implements RadarInterface{
 //    private final Environment environment;
-    protected GameObject parent;
+    protected GameObjectInterface parent;
     protected final float range;
     protected List<GameObject> detectedObjects;
     protected ReceiverInterface receiverInterface;
+    protected DetectPredicate detectPredicate;
 
     public static Color radarColor = new Color(71,179,77, 100);
 
-    public SimpleRadar(GameObject parent, float range, ReceiverInterface receiverInterface)
+    public SimpleRadar(GameObjectInterface parent, float range, ReceiverInterface receiverInterface)
+    {
+        this(parent, range, receiverInterface, new RangeDetect(parent, range));
+    }
+
+    public SimpleRadar(GameObjectInterface parent, float range, ReceiverInterface receiverInterface, DetectPredicate detectPredicate)
     {
         this.parent = parent;
         this.range = range;
         detectedObjects = new ArrayList<>();
         this.receiverInterface = receiverInterface;
+        this.detectPredicate = detectPredicate;
     }
 
     @Override
@@ -35,32 +45,19 @@ public class SimpleRadar extends Component implements RadarInterface{
         Environment environment = Environment.getInstance();
         List<GameObject> objects = environment.getObjects(parent.getTeam());
         detectedObjects.clear();
-
-        float rangeSquared = range * range;
-        float minLength = Float.MAX_VALUE;
-        GameObject closestObject = null;
+        boolean detected = false;
         for(GameObject o: objects)
         {
             if(parent == o || !(o instanceof DestructibleObjectInterface))
                 continue;
-            Vector3f v = new Vector3f(parent.getPosition());
-            v.sub(o.getPosition());
-            float lengthSquared = v.lengthSquared();
-            if(lengthSquared < rangeSquared)
+            if(detectPredicate.test(o))
             {
                 receiverInterface.receive(o.send(detectType()));
-//                detectedObjects.add(o);
-//                if(minLength > lengthSquared)
-//                {
-//                    minLength = lengthSquared;
-//                    closestObject = o;
-//                }
+                detected = true;
             }
         }
-//        if(closestObject != null)
-//            receiverInterface.receive(closestObject.send(detectType()));
-//        else
-//            receiverInterface.receive(null);
+        if(!detected)
+            receiverInterface.receive(null);
     }
 
     @Override

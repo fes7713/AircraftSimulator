@@ -24,4 +24,15 @@ public class TargetTimerSpawner<T extends GameObject> extends TimeSpawner<T> imp
         if(information.getSource() instanceof DestructibleObjectInterface)
             this.target = (PositionInformation) information;
     }
+
+    @Override
+    public void spawn(){
+        super.spawn();
+        resetTarget();
+    }
+
+    public void resetTarget()
+    {
+        this.target = null;
+    }
 }

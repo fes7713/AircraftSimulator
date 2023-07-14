@@ -10,7 +10,6 @@ import aircraftsimulator.GameObject.Aircraft.SemiActiveMissile;
 import aircraftsimulator.GameObject.Aircraft.Spawner.Gun;
 import aircraftsimulator.GameObject.Aircraft.Spawner.MissileLauncher;
 import aircraftsimulator.GameObject.Aircraft.Thruster.VariableThruster;
-import aircraftsimulator.GameObject.DestructibleStationaryObject;
 import aircraftsimulator.GameObject.GameObject;
 import aircraftsimulator.GameObject.Team;
 import org.jetbrains.annotations.NotNull;
@@ -54,8 +53,8 @@ public class GamePanel extends JPanel {
         aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 1000, 60, aircraftAcc.getDirection()));
         aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
 
-        Missile missile = new SemiActiveMissile(A, 100, 129);
-        aircraftAcc.addComponent(new MissileLauncher(aircraftAcc, missile, 1, 2));
+        Missile missile = new SemiActiveMissile(A, 100, 80);
+        aircraftAcc.addComponent(new MissileLauncher(aircraftAcc, missile, 1, 3));
 
         Aircraft aircraft1 = new Aircraft(B,
                 new SimpleFlightController(),
@@ -74,9 +73,9 @@ public class GamePanel extends JPanel {
 //                new Vector3f(16, 0, 0), 100, 129);
 //        aircraftAcc.addToNetwork(missile1);
 
-        DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
+//        DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
 
-        Stream.of(target, aircraft1, aircraft2, aircraftAcc).forEach(this::addObject);
+        Stream.of(aircraft1, aircraft2, aircraftAcc).forEach(this::addObject);
     }
 
     public void update(float delta)
