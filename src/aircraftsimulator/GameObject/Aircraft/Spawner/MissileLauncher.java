@@ -77,7 +77,7 @@ public class MissileLauncher extends TargetTimerSpawner<Missile> implements Long
         // TODo may need to remove this line
         // No need to share the enemy info?
         if(parent instanceof GuideNetwork n && clone instanceof Guided g)
-            n.addToGuidNetwork(g, target);
+            n.connectToGuidance(g, target);
         return clone;
     }
 

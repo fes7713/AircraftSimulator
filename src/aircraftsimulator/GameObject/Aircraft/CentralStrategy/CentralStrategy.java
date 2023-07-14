@@ -271,16 +271,17 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
             list.add(guided);
     }
 
-    public static void main(String[] args)
-    {
-//        // TODO
-//        CentralStrategy centralStrategy = new CentralStrategy();
-//        Bullet bullet = new Bullet(null, null, null, new Vector3f(50, 0, 0), 50);
-//        Bullet bullet1 = new Bullet(null, null, null, new Vector3f(60, 0, 0), 50);
-//        Bullet bullet2 = new Bullet(null, null, null, new Vector3f(80, 0, 0), 50);
-//        Bullet bullet3 = new Bullet(null, null, null, new Vector3f(30, 0, 0), 50);
-//
-//        Stream.of(bullet, bullet1, bullet2, bullet3).forEach(centralStrategy::addDamageGenerator);
+    public void removeFromGuidance(Guided guided){
+        PositionInformation key = null;
+        for(PositionInformation p: guideMap.keySet())
+        {
+            if(guideMap.get(p).contains(guided))
+            {
+                key = p;
+                break;
+            }
+        }
+        guideMap.remove(key);
     }
 
     @Override

@@ -209,9 +209,14 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         return (float) (log_coef * Math.log(Math.cosh(Ltime) + sinh_coef * Math.sinh(Ltime)) + no_thruster_distance);
     }
 
-    public void addToGuidNetwork(Guided guidedObject, PositionInformation keyInformation)
+    public void connectToGuidance(Guided guidedObject, PositionInformation keyInformation)
     {
         centralStrategy.addToGuidance(guidedObject, keyInformation);
+    }
+
+    @Override
+    public void disconnectFromGuidance(Guided guidedObject) {
+        centralStrategy.removeFromGuidance(guidedObject);
     }
 
     @Override
@@ -233,11 +238,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 //            network.removeReceiver(receiver);
         if(component instanceof WeaponSystem w)
             centralStrategy.addWeaponSystem(w);
-    }
-
-    @Override
-    public void addToNetwork(ReceiverInterface receiverInterface){
-        network.addReceiver(receiverInterface);
     }
 
     @Override
