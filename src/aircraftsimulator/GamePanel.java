@@ -54,7 +54,7 @@ public class GamePanel extends JPanel {
         aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
 
         Missile missile = new SemiActiveMissile(A, 100, 80);
-        aircraftAcc.addComponent(new MissileLauncher(aircraftAcc, missile, 1, 3));
+        aircraftAcc.addComponent(new MissileLauncher(aircraftAcc, missile, 1, 2));
 
         Aircraft aircraft1 = new Aircraft(B,
                 new SimpleFlightController(),

@@ -123,7 +123,8 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
         boolean flag = false;
         for(int i = closeRangeWeaponSystems.size() - 1; i >= 0; i--)
         {
-            if(distanceSqrt < closeRangeWeaponSystems.get(i).getRange())
+            float range = closeRangeWeaponSystems.get(i).getRange();
+            if(distanceSqrt < range * range)
             {
                 FireInformation fireInformation = new FirePositionInformation(information);
                 closeRangeWeaponSystems.get(i).fire(fireInformation);
