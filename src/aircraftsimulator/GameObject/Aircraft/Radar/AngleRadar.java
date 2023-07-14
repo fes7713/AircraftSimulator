@@ -51,19 +51,21 @@ public class AngleRadar extends SimpleRadar{
                 float angleCos = direction.dot(v) / direction.length() / v.length();
                 if(angleCos > Math.cos(Math.toRadians(angle / 2)))
                 {
-                    detectedObjects.add(o);
-                    if(minLength > lengthSquared)
-                    {
-                        minLength = lengthSquared;
-                        closestObject = o;
-                    }
+                    receiverInterface.receive(o.send(detectType()));
+//                    detectedObjects.add(o);
+//                    if(minLength > lengthSquared)
+//                    {
+//                        minLength = lengthSquared;
+//                        closestObject = o;
+//                    }
                 }
             }
         }
-        if(closestObject != null)
-            receiverInterface.receive(closestObject.send(detectType()));
-        else
-            receiverInterface.receive(null);
+//        if(closestObject != null)
+//            receiverInterface.receive(closestObject.send(detectType()));
+//        else
+//            receiverInterface.receive(null);
+
     }
 
     @Override

@@ -48,18 +48,19 @@ public class SimpleRadar extends Component implements RadarInterface{
             float lengthSquared = v.lengthSquared();
             if(lengthSquared < rangeSquared)
             {
-                detectedObjects.add(o);
-                if(minLength > lengthSquared)
-                {
-                    minLength = lengthSquared;
-                    closestObject = o;
-                }
+                receiverInterface.receive(o.send(detectType()));
+//                detectedObjects.add(o);
+//                if(minLength > lengthSquared)
+//                {
+//                    minLength = lengthSquared;
+//                    closestObject = o;
+//                }
             }
         }
-        if(closestObject != null)
-            receiverInterface.receive(closestObject.send(detectType()));
-        else
-            receiverInterface.receive(null);
+//        if(closestObject != null)
+//            receiverInterface.receive(closestObject.send(detectType()));
+//        else
+//            receiverInterface.receive(null);
     }
 
     @Override

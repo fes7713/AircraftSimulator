@@ -64,7 +64,11 @@ public class GamePanel extends JPanel {
                 Color.BLUE, 5, 100,
                 Aircraft.THRUSTER_MAGNITUDE);
 
-
+        Aircraft aircraft2 = aircraft1.clone();
+        aircraft2.activate(
+                new Vector3f(500, 100, 100),
+                new Vector3f(-1, -0F, 0),
+                new Vector3f(-1, -0F, 0));
 
 //        Missile missile1 = new Missile(A, aircraft1.send(MotionInformation.class), new Vector3f(90, 95, 100),
 //                new Vector3f(16, 0, 0), 100, 129);
@@ -72,7 +76,7 @@ public class GamePanel extends JPanel {
 
         DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
 
-        Stream.of(target, aircraft1, aircraftAcc).forEach(this::addObject);
+        Stream.of(target, aircraft1, aircraft2, aircraftAcc).forEach(this::addObject);
     }
 
     public void update(float delta)

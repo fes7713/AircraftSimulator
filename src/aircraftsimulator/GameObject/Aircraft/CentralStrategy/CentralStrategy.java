@@ -195,8 +195,8 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
             // Long range
             if(guidedList == null || guidedList.isEmpty())
             {
-                if(longRangeWeaponSystems.size() == 0)
-                    return;
+                if(j >=longRangeWeaponSystems.size())
+                    break;
                 LongRangeWeaponSystem weaponSystem = longRangeWeaponSystems.get(j);
                 while(!weaponSystem.isAvailable())
                 {
