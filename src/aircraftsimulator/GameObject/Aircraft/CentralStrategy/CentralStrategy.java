@@ -260,6 +260,22 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
         }
     }
 
+    public void removeWeaponSystem(WeaponSystem weaponSystem)
+    {
+        switch(weaponSystem)
+        {
+            case LongRangeWeaponSystem lrws -> {
+                longRangeWeaponSystems.remove(lrws);
+                longRangeWeaponSystems.sort((w1, w2) -> (int)Math.ceil(w1.getRange() - w2.getRange()));
+            }
+            case CloseRangeWeaponSystem crws -> {
+                closeRangeWeaponSystems.remove(crws);
+                closeRangeWeaponSystems.sort((w1, w2) -> (int)Math.ceil(w1.getRange() - w2.getRange()));
+            }
+            default -> throw new RuntimeException("Error in weapon system in center strategy");
+        }
+    }
+
     public void addToGuidance(Guided guided, PositionInformation information){
         List<Guided> list = guideMap.getOrDefault(information, null);
         if(list == null)

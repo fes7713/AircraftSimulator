@@ -237,7 +237,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 //        if(component instanceof ReceiverInterface receiver)
 //            network.removeReceiver(receiver);
         if(component instanceof WeaponSystem w)
-            centralStrategy.addWeaponSystem(w);
+            centralStrategy.removeWeaponSystem(w);
     }
 
     @Override

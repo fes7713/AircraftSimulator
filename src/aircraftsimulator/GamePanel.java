@@ -5,7 +5,7 @@ import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
 import aircraftsimulator.GameObject.Aircraft.Missile;
 import aircraftsimulator.GameObject.Aircraft.Radar.AngleRadar;
-import aircraftsimulator.GameObject.Aircraft.SemiActiveMissile;
+import aircraftsimulator.GameObject.Aircraft.GuidedMissile;
 import aircraftsimulator.GameObject.Aircraft.Spawner.Gun;
 import aircraftsimulator.GameObject.Aircraft.Spawner.MissileLauncher;
 import aircraftsimulator.GameObject.Aircraft.Thruster.VariableThruster;
@@ -52,7 +52,7 @@ public class GamePanel extends JPanel {
         aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 1000, 60, aircraftAcc.getDirection()));
         aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
 
-        Missile missile = new SemiActiveMissile(A, 100, 80);
+        Missile missile = new GuidedMissile(A, 100, 80);
         aircraftAcc.addComponent(new MissileLauncher(aircraftAcc, missile, 1, 2));
 
         Aircraft aircraftAcc1 = new Aircraft(B,
@@ -69,7 +69,7 @@ public class GamePanel extends JPanel {
         aircraftAcc1.addComponent(new AngleRadar(aircraftAcc1, 1000, 60, aircraftAcc1.getDirection()));
         aircraftAcc1.addComponent(new Gun(aircraftAcc1, 0.2F, 2, 50));
 
-        Missile missile1 = new SemiActiveMissile(B, 100, 80);
+        Missile missile1 = new GuidedMissile(B, 100, 80);
         aircraftAcc1.addComponent(new MissileLauncher(aircraftAcc1, missile1, 1, 2));
 
 //        Missile missile1 = new Missile(A, aircraft1.send(MotionInformation.class), new Vector3f(90, 95, 100),
