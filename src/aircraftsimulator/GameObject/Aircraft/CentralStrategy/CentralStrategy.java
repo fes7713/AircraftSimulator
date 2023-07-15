@@ -30,8 +30,13 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
     private final List<CloseRangeWeaponSystem> closeRangeWeaponSystems;
 
     private final Map<PositionInformation, List<Guided>> guideMap;
+    private final List<Guided> unguidedMissiles;
 
     private BehaviorPolicy policy;
+    private final int maxMissilePerTarget;
+
+
+    public final static int MAX_MISSILE_PER_TARGET = 1;
 
     public CentralStrategy(GameObject parent)
     {
@@ -42,6 +47,8 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
         detectedTargets = new LinkedList<>();
 
         guideMap = new HashMap<>();
+        unguidedMissiles = new LinkedList<>();
+        maxMissilePerTarget = MAX_MISSILE_PER_TARGET;
     }
 
     private void sortMapByDistance(List<PositionInformation> informationList, Map<Information, Float> distanceMap)
@@ -61,7 +68,7 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
         informationList.sort((v1, v2) -> (int) Math.ceil(distanceMap.get(v1) - distanceMap.get(v2)));
     }
 
-    private PositionInformation findClosestObject(Vector3f p, Set<PositionInformation> informationSet)
+    private PositionInformation findClosestObject(Vector3f p, @NotNull Set<PositionInformation> informationSet)
     {
         float min = Float.MAX_VALUE;
         PositionInformation selected = null;
@@ -80,7 +87,7 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
         return selected;
     }
 
-    public Map<PositionInformation, PositionInformation>  newToOldPositionTracking()
+    private @NotNull Map<PositionInformation, PositionInformation>  newToOldPositionTracking()
     {
         Map<PositionInformation, PositionInformation> newToOldPositionMap = new HashMap<>();
         sortMapByDistance(detectedTargets, new HashMap<>());
@@ -119,7 +126,6 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
             {
                 FireInformation fireInformation = new FirePositionInformation(information);
                 closeRangeWeaponSystems.get(i).fire(fireInformation);
-                guideMap.put(fireInformation, null);
                 flag = true;
             }
         }
@@ -134,6 +140,7 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
         {
             if(!newToOldTracking.containsValue(oldP))
             {
+                unguidedMissiles.addAll(guideMap.get(oldP));
                 guideMap.remove(oldP);
             }
         }
@@ -157,6 +164,44 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
                 continue;
             guideMap.get(info).removeIf(g -> !g.isActive());
         }
+        unguidedMissiles.removeIf(g -> !g.isActive());
+    }
+
+    public void updateGuideMap(Map<PositionInformation, PositionInformation> newToOldTracking)
+    {
+        for(PositionInformation newP: newToOldTracking.keySet())
+        {
+            if(guideMap.containsKey(newToOldTracking.get(newP)))
+            {
+                guideMap.put(newP, guideMap.get(newToOldTracking.get(newP)));
+                guideMap.remove(newToOldTracking.get(newP));
+            }
+        }
+    }
+
+    private void sendNewPositionToGuided()
+    {
+        for(PositionInformation p: guideMap.keySet())
+            for(Guided g: guideMap.get(p))
+                g.receive(p);
+    }
+
+    private void reassignUnguidedMissiles()
+    {
+        if(guideMap.isEmpty())
+            return;
+        int i = 0;
+        Set<PositionInformation> infoList = new HashSet<>(guideMap.keySet());
+        while(!unguidedMissiles.isEmpty())
+        {
+            Guided g = unguidedMissiles.get(0);
+            PositionInformation p = findClosestObject(g.getPosition(), infoList);
+
+            guideMap.get(p).add(g);
+            unguidedMissiles.remove(g);
+            System.out.println("Missile reassigned");
+            i++;
+        }
     }
 
     @Override
@@ -165,18 +210,19 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
         Map<PositionInformation, PositionInformation> newToOldTracking = newToOldPositionTracking();
         removeUntrackedPositionFromTrackingMap(newToOldTracking);
         checkGuideStatus();
-        System.out.println(Game.getFrames());
+        updateGuideMap(newToOldTracking);
+        reassignUnguidedMissiles();
+
+
         int j = 0;
 
         for(int i = 0; i < detectedTargets.size(); i++)
         {
             @NotNull
             PositionInformation newP = detectedTargets.get(i);
-            @Nullable
-            PositionInformation oldP = newToOldTracking.get(newP);
             List<Guided> guidedList = null;
-            if(oldP != null)
-                guidedList = guideMap.get(oldP);
+            if(guideMap.containsKey(newP))
+                guidedList = guideMap.get(newP);
 
             Vector3f p = new Vector3f(parent.getPosition());
             p.sub(newP.getPosition());
@@ -185,15 +231,14 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
             // Close range
             if(activateCloseRangeWeapon(newP, distanceSqrt))
             {
-                guideMap.remove(oldP);
                 continue;
             }
 
             // Long range
-            if(guidedList == null || guidedList.isEmpty())
+            if(guidedList == null || guidedList.size() < maxMissilePerTarget)
             {
                 if(j >=longRangeWeaponSystems.size())
-                    break;
+                    continue;
                 LongRangeWeaponSystem weaponSystem = longRangeWeaponSystems.get(j);
                 while(!weaponSystem.isAvailable())
                 {
@@ -203,25 +248,25 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
                     weaponSystem = longRangeWeaponSystems.get(j);
                 }
 
+                if(j >= longRangeWeaponSystems.size())
+                    continue;
+
                 float range = weaponSystem.getRange();
                 if(range * range > distanceSqrt)
                 {
-                    FireInformation fireInformation = new FirePositionInformation(newP);
-                    weaponSystem.fire(fireInformation);
-                    guideMap.put(fireInformation, new ArrayList<>());
-                    guideMap.remove(oldP);
+                    weaponSystem.fire(newP);
+                    guideMap.put(newP, new ArrayList<>());
+//                    if(!guideMap.containsKey(newP))
+//                    {
+//                        guideMap.put(newP, new ArrayList<>(unguidedMissiles));
+//                        unguidedMissiles.clear();
+//                    }
                     j++;
                 }
             }
-            else{
-                guideMap.put(newP, guidedList);
-                guideMap.remove(oldP);
-                for(Guided g: guidedList)
-                {
-                    g.receive(newP);
-                }
-            }
         }
+
+        sendNewPositionToGuided();
         detectedTargets.clear();
     }
 
@@ -269,10 +314,10 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
 
     public void addToGuidance(Guided guided, PositionInformation information){
         List<Guided> list = guideMap.getOrDefault(information, null);
+        System.out.println(Game.getFrames() + "Launch");
         if(list == null)
         {
-            guideMap.put(information, new ArrayList<>(List.of(guided)));
-            System.out.println("Gun attack??");
+            unguidedMissiles.add(guided);
         }
         else
             list.add(guided);
@@ -295,6 +340,7 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
     public void receive(@Nullable Information information) {
         if(information instanceof PositionInformation p)
         {
+            // TODO may need to chgange when we accept the multiple info for the same target.
             for(PositionInformation pi: detectedTargets)
             {
                 if(pi.getSource() == p.getSource())

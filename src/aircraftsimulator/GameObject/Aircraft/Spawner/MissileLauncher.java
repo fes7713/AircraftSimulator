@@ -1,6 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft.Spawner;
 
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.FireInformation;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
 import aircraftsimulator.GameObject.Aircraft.GuideNetwork;
 import aircraftsimulator.GameObject.Aircraft.Guided;
 import aircraftsimulator.GameObject.Aircraft.Missile;
@@ -15,11 +15,11 @@ import java.util.Map;
 
 public class MissileLauncher extends TargetTimerSpawner<Missile> implements LongRangeWeaponSystem{
 
-    private final Map<DestructibleObjectInterface, List<Missile>> missileMap;
+    private Map<DestructibleObjectInterface, List<Missile>> missileMap;
     private int numMissiles;
     private int missilePerTarget;
 
-    private final Missile sample;
+    private Missile sample;
 
     private static final float MISSILE_HEALTH = 10;
     private static final int MISSILE_PER_TARGET = 2;
@@ -91,12 +91,22 @@ public class MissileLauncher extends TargetTimerSpawner<Missile> implements Long
     }
 
     @Override
-    public void fire(FireInformation fireInformation) {
+    public void fire(PositionInformation fireInformation) {
         receive(fireInformation);
     }
 
     @Override
     public boolean isAvailable() {
         return numMissiles > 0;
+    }
+
+    @Override
+    public MissileLauncher clone()
+    {
+        MissileLauncher missileLauncher = (MissileLauncher)super.clone();
+        missileLauncher.missileMap = new HashMap<>();
+        missileLauncher.sample = sample.clone();
+
+        return missileLauncher;
     }
 }

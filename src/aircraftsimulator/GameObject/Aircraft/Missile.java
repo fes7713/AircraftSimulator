@@ -18,10 +18,10 @@ public class Missile extends Aircraft implements DamageGenerator{
 
     public final static float MISSILE_SIZE = 4;
     public final static Color MISSILE_COLOR = Color.GRAY;
-    public final static float MISSILE_THRUST = 4;
-    public final static float MISSILE_FUEL = 50;
+    public final static float MISSILE_THRUST = 8;
+    public final static float MISSILE_FUEL = 300;
     public final static float MINIMUM_SPEED = 4;
-    public final static float MISSILE_AIR_RESISTANCE = 0.015F;
+    public final static float MISSILE_AIR_RESISTANCE = 0.010F;
 
     public Missile(Missile m)
     {

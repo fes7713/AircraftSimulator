@@ -38,7 +38,7 @@ public class AdvancedFlightController extends SimpleFlightController{
 
         if(determination < 0)
         {
-            System.out.println("Desonot hit");
+//            System.out.println("Desonot hit");
             return targetPosition;
         }
         else if(determination == 0)

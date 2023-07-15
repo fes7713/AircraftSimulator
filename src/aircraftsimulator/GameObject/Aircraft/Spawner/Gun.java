@@ -1,7 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.Spawner;
 
 import aircraftsimulator.GameObject.Aircraft.Bullet;
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.FireInformation;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
 import aircraftsimulator.GameObject.Aircraft.MovingObjectInterface;
 import aircraftsimulator.GameObject.DestructibleObjectInterface;
 import aircraftsimulator.GameObject.GameObject;
@@ -60,7 +60,7 @@ public class Gun extends TargetTimerSpawner<Bullet> implements CloseRangeWeaponS
     }
 
     @Override
-    public void fire(FireInformation fireInformation) {
+    public void fire(PositionInformation fireInformation) {
         receive(fireInformation);
     }
 

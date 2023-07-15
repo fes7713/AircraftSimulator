@@ -132,18 +132,18 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         direction2D.normalize();
         direction2D.scale(size);
         g2d.drawLine((int)position.x, (int)position.y, (int)(position.x + direction2D.x), (int)(position.y + direction2D.y));
-        String text = String.format("Height : %.5f\nThruster : %.5f\nFuel : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
-                position.z,
-                thruster.getMagnitude(),
-                thruster.getFuel(),
-                velocity.length(),
-                angularSpeed,
-                angularAcceleration,
-                velocity.length() * angularSpeed,
-                flightControl.getTargetAngle());
+//        String text = String.format("Height : %.5f\nThruster : %.5f\nFuel : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
+//                position.z,
+//                thruster.getMagnitude(),
+//                thruster.getFuel(),
+//                velocity.length(),
+//                angularSpeed,
+//                angularAcceleration,
+//                velocity.length() * angularSpeed,
+//                flightControl.getTargetAngle());
         int y = (int)(position.y - 5);
-        for (String line : text.split("\n"))
-            g2d.drawString(line, (int)position.x + 5, y += g2d.getFontMetrics().getHeight());
+//        for (String line : text.split("\n"))
+//            g2d.drawString(line, (int)position.x + 5, y += g2d.getFontMetrics().getHeight());
         network.draw(g2d);
     }
 

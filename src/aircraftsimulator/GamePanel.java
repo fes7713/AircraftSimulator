@@ -49,16 +49,16 @@ public class GamePanel extends JPanel {
 //            aircraftAcc.receive(info);
 //        }));
 
-        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 1000, 60, aircraftAcc.getDirection()));
+        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, 1000, 80, aircraftAcc.getDirection()));
         aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
 
         Missile missile = new GuidedMissile(A, 100, 80);
-        aircraftAcc.addComponent(new MissileLauncher(aircraftAcc, missile, 1, 2));
+        aircraftAcc.addComponent(new MissileLauncher(aircraftAcc, missile, 1F, 6));
 
         Aircraft aircraftAcc1 = new Aircraft(B,
                 new SwitchValueFlightController<>(),
-                new Vector3f(500, 120, 100),
-                new Vector3f(-1, 0, 0), Color.ORANGE, 5, 100,
+                new Vector3f(1000, 120, 100),
+                new Vector3f(-1, 0, 0), Color.BLUE, 5, 100,
                 Aircraft.THRUSTER_MAGNITUDE * 2);
 
         aircraftAcc1.setThruster(new VariableThruster(aircraftAcc1, Aircraft.THRUSTER_MAGNITUDE * 2, 3600));
@@ -69,8 +69,15 @@ public class GamePanel extends JPanel {
         aircraftAcc1.addComponent(new AngleRadar(aircraftAcc1, 1000, 60, aircraftAcc1.getDirection()));
         aircraftAcc1.addComponent(new Gun(aircraftAcc1, 0.2F, 2, 50));
 
-        Missile missile1 = new GuidedMissile(B, 100, 80);
-        aircraftAcc1.addComponent(new MissileLauncher(aircraftAcc1, missile1, 1, 2));
+        Missile missile1 = new GuidedMissile(B, 10, 80);
+        aircraftAcc1.addComponent(new MissileLauncher(aircraftAcc1, missile1, 4, 2));
+
+        Aircraft aircraftAcc2 = aircraftAcc1.clone();
+        aircraftAcc2.activate(
+                new Vector3f(1000, 90, 100),
+                new Vector3f(-1, 0, 0),
+                new Vector3f(-1, 0, 0)
+        );
 
 //        Missile missile1 = new Missile(A, aircraft1.send(MotionInformation.class), new Vector3f(90, 95, 100),
 //                new Vector3f(16, 0, 0), 100, 129);
@@ -78,7 +85,7 @@ public class GamePanel extends JPanel {
 
 //        DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
 
-        Stream.of(aircraftAcc1, aircraftAcc).forEach(this::addObject);
+        Stream.of(aircraftAcc1, aircraftAcc, aircraftAcc2).forEach(this::addObject);
     }
 
     public void update(float delta)
