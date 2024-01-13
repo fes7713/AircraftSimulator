@@ -1,7 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.Information;
 
-import aircraftsimulator.GameObject.GameObject;
+import aircraftsimulator.GameObject.GameObjectInterface;
 
-public abstract interface Information {
-    GameObject getSource();
+public interface Information {
+    GameObjectInterface getSource();
 }

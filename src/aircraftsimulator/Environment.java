@@ -1,5 +1,6 @@
 package aircraftsimulator;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.LaserInformation;
 import aircraftsimulator.GameObject.GameObject;
 import aircraftsimulator.GameObject.Team;
 import map.NoiseMapPanel;
@@ -40,6 +41,16 @@ public class Environment extends JPanel{
     public void removeObject(GameObject o)
     {
         gamePanel.removeObject(o);
+    }
+
+    public void addLaser(LaserInformation o)
+    {
+        gamePanel.addLaser(o);
+    }
+
+    public List<LaserInformation> getLasers(float frequency)
+    {
+        return gamePanel.getLasers(frequency);
     }
 
     public void updateGame(float delta)

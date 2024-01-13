@@ -1,4 +1,4 @@
-package aircraftsimulator.GameObject.Aircraft.Radar;
+package aircraftsimulator.GameObject.Aircraft.Radar.Detector;
 
 import aircraftsimulator.GameMath;
 import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
@@ -13,35 +13,35 @@ import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
 import java.awt.*;
 
-public class AngleRadar extends SimpleRadar{
+public class AngleDetector extends SimpleDetector {
     private Vector3f direction;
     private final float angle;
 
-    public AngleRadar(GameObjectInterface parent, float range, float angle, Vector3f direction, ReceiverInterface receiverInterface) {
-        super(parent, range, receiverInterface, new MultiDetect(parent, new RangeDetect(parent, range), new AngleDetect(parent, direction, angle)));
+    public AngleDetector(GameObjectInterface parent, float frequency, float range, float angle, Vector3f direction, ReceiverInterface receiverInterface) {
+        super(parent, frequency, range, receiverInterface, new MultiDetect(parent, new RangeDetect(parent, range), new AngleDetect(parent, direction, angle)));
         this.direction = direction;
         this.angle = angle;
     }
 
-    public AngleRadar(MovingObjectInterface parent, float range, float angle, ReceiverInterface receiverInterface) {
-        super(parent, range, receiverInterface, new MultiDetect(parent, new RangeDetect(parent, range), new AngleDetect(parent, angle)));
+    public AngleDetector(MovingObjectInterface parent, float frequency, float range, float angle, ReceiverInterface receiverInterface) {
+        super(parent, frequency, range, receiverInterface, new MultiDetect(parent, new RangeDetect(parent, range), new AngleDetect(parent, angle)));
         this.direction = parent.getDirection();
         this.angle = angle;
     }
 
     // TODO
     // If parent is not receiverInterface then run time error.
-    public AngleRadar(GameObjectInterface parent, float range, float angle, Vector3f direction) {
-        this(parent, range, angle, direction, (ReceiverInterface)parent);
+    public AngleDetector(GameObjectInterface parent, float frequency, float range, float angle, Vector3f direction) {
+        this(parent, frequency, range, angle, direction, (ReceiverInterface)parent);
     }
 
-    public AngleRadar(MovingObjectInterface parent, float range, float angle) {
-        this(parent, range, angle, (ReceiverInterface)parent);
+    public AngleDetector(MovingObjectInterface parent, float frequency, float range, float angle) {
+        this(parent, frequency, range, angle, (ReceiverInterface)parent);
     }
 
     @Override
     public void draw(Graphics2D g2d) {
-        g2d.setColor(radarColor);
+        g2d.setColor(detectorColor);
         double angleCos =
                 Math.sqrt((direction.x * direction.x + direction.y * direction.y)
                         / (direction.x * direction.x + direction.y * direction.y + direction.z * direction.z));

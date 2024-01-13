@@ -2,6 +2,7 @@ package aircraftsimulator.GameObject.Aircraft.Radar.DetectPredicate;
 
 import aircraftsimulator.GameObject.Aircraft.MovingObjectInterface;
 import aircraftsimulator.GameObject.GameObjectInterface;
+import aircraftsimulator.GameObject.PositionnInterface;
 
 import javax.vecmath.Vector3f;
 
@@ -22,8 +23,9 @@ public class AngleDetect extends BaseDetect{
     }
 
     @Override
-    public boolean test(GameObjectInterface testingObject) {
-        super.test(testingObject);
+    public boolean test(PositionnInterface testingObject) {
+        if(targetVector == null)
+            return false;
         float angleCos = direction.dot(targetVector) / direction.length() / targetVector.length();
         return angleCos > Math.cos(Math.toRadians(angle / 2));
     }
@@ -33,5 +35,22 @@ public class AngleDetect extends BaseDetect{
         super.setParent(parent);
         if(parent instanceof MovingObjectInterface m)
             direction = m.getDirection();
+    }
+
+    @Override
+    public AngleDetect copy() {
+        if(parent instanceof MovingObjectInterface m)
+            return new AngleDetect(m, angle);
+        return new AngleDetect(parent, new Vector3f(), angle);
+    }
+
+    public void setDirection(Vector3f direction)
+    {
+        this.direction = direction;
+    }
+
+    public AngleDetect clone()
+    {
+        return copy();
     }
 }

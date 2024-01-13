@@ -1,11 +1,11 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.Information;
 
-import aircraftsimulator.GameObject.GameObject;
+import aircraftsimulator.GameObject.GameObjectInterface;
 
 import javax.vecmath.Vector3f;
 
 public class PositionInformationImp implements PositionInformation{
-    private final GameObject source;
+    private final GameObjectInterface source;
     private final Vector3f position;
 
     public PositionInformationImp(PositionInformation positionInformation){
@@ -13,7 +13,7 @@ public class PositionInformationImp implements PositionInformation{
         this.position = new Vector3f(positionInformation.getPosition());
     }
 
-    public PositionInformationImp(GameObject source, Vector3f position){
+    public PositionInformationImp(GameObjectInterface source, Vector3f position){
         this.source = source;
         this.position = new Vector3f(position);
     }
@@ -24,7 +24,7 @@ public class PositionInformationImp implements PositionInformation{
     }
 
     @Override
-    public GameObject getSource() {
+    public GameObjectInterface getSource() {
         return source;
     }
 }

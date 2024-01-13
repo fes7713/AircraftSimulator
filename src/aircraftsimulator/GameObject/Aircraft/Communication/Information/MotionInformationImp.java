@@ -1,6 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.Information;
 
-import aircraftsimulator.GameObject.GameObject;
+import aircraftsimulator.GameObject.GameObjectInterface;
 
 import javax.vecmath.Vector3f;
 
@@ -9,7 +9,7 @@ public class MotionInformationImp extends PositionInformationImp implements Moti
     private final Vector3f acceleration;
     private final Vector3f direction;
 
-    public MotionInformationImp(GameObject source, Vector3f position, Vector3f velocity, Vector3f acceleration, Vector3f direction) {
+    public MotionInformationImp(GameObjectInterface source, Vector3f position, Vector3f velocity, Vector3f acceleration, Vector3f direction) {
         super(source, position);
         this.velocity = new Vector3f(velocity);
         this.acceleration = new Vector3f(acceleration);

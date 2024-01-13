@@ -1,6 +1,9 @@
 package aircraftsimulator.GameObject.Aircraft.Thruster;
 
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
+import aircraftsimulator.GameObject.Aircraft.Communication.Event.Event;
+import aircraftsimulator.GameObject.Aircraft.Communication.LocalRouter;
+import aircraftsimulator.GameObject.Aircraft.Communication.PortEnum;
 import aircraftsimulator.GameObject.Aircraft.ForceApplier;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.GameObject.GameObject;
@@ -70,5 +73,15 @@ public abstract class Thruster extends Component implements ForceApplier{
     @Override
     public Thruster clone() {
         return (Thruster) super.clone();
+    }
+
+    @Override
+    public void receiveEvent(Event e) {
+
+    }
+
+    @Override
+    public void addToRouter(LocalRouter router) {
+        router.addRouting(PortEnum.THRUSTER, this);
     }
 }

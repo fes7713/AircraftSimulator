@@ -1,13 +1,14 @@
-package aircraftsimulator.GameObject.Aircraft.Radar;
+package aircraftsimulator.GameObject.Aircraft.Radar.Detector;
 
 import aircraftsimulator.Environment;
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
+import aircraftsimulator.GameObject.Aircraft.Communication.Event.Event;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.LaserInformation;
+import aircraftsimulator.GameObject.Aircraft.Communication.LocalRouter;
+import aircraftsimulator.GameObject.Aircraft.Communication.PortEnum;
 import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
 import aircraftsimulator.GameObject.Aircraft.Radar.DetectPredicate.DetectPredicate;
 import aircraftsimulator.GameObject.Aircraft.Radar.DetectPredicate.RangeDetect;
 import aircraftsimulator.GameObject.Component.Component;
-import aircraftsimulator.GameObject.DestructibleObjectInterface;
 import aircraftsimulator.GameObject.GameObject;
 import aircraftsimulator.GameObject.GameObjectInterface;
 
@@ -16,24 +17,27 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SimpleRadar extends Component implements RadarInterface{
-//    private final Environment environment;
+public class SimpleDetector extends Component implements DetectorInterface {
+
     protected GameObjectInterface parent;
     protected final float range;
+    protected final float frequency;
+
     protected List<GameObject> detectedObjects;
     protected ReceiverInterface receiverInterface;
     protected DetectPredicate detectPredicate;
 
-    public static Color radarColor = new Color(71,179,77, 100);
+    public static Color detectorColor = new Color(0,0,0, 20);
 
-    public SimpleRadar(GameObjectInterface parent, float range, ReceiverInterface receiverInterface)
+    public SimpleDetector(GameObjectInterface parent, float frequency, float range, ReceiverInterface receiverInterface)
     {
-        this(parent, range, receiverInterface, new RangeDetect(parent, range));
+        this(parent, frequency, range, receiverInterface, new RangeDetect(parent, range));
     }
 
-    public SimpleRadar(GameObjectInterface parent, float range, ReceiverInterface receiverInterface, DetectPredicate detectPredicate)
+    public SimpleDetector(GameObjectInterface parent, float frequency, float range, ReceiverInterface receiverInterface, DetectPredicate detectPredicate)
     {
         this.parent = parent;
+        this.frequency = frequency;
         this.range = range;
         detectedObjects = new ArrayList<>();
         this.receiverInterface = receiverInterface;
@@ -43,31 +47,26 @@ public class SimpleRadar extends Component implements RadarInterface{
     @Override
     public void detect() {
         Environment environment = Environment.getInstance();
-        List<GameObject> objects = environment.getObjects(parent.getTeam());
+        List<LaserInformation> lasers = environment.getLasers(frequency);
         detectedObjects.clear();
         boolean detected = false;
-        for(GameObject o: objects)
+        for(LaserInformation laser: lasers)
         {
-            if(parent == o || !(o instanceof DestructibleObjectInterface))
+            if(parent == laser.getSource())
                 continue;
-            if(detectPredicate.test(o))
+
+            // IFF here
+            if(laser.getCode().equals(parent.getTeam().getTeamName()))
+                continue;
+
+            if(detectPredicate.test(laser))
             {
-                receiverInterface.receive(o.send(detectType()));
+                receiverInterface.receive(laser.getInformation());
                 detected = true;
             }
         }
         if(!detected)
             receiverInterface.receive(null);
-    }
-
-    @Override
-    public void setFilter() {
-
-    }
-
-    @Override
-    public Class<? extends Information> detectType() {
-        return MotionInformation.class;
     }
 
     // TODO May cause bug here Parent does not match or already defined
@@ -88,14 +87,25 @@ public class SimpleRadar extends Component implements RadarInterface{
     @Override
     public void draw(Graphics2D g2d) {
         Vector3f center = parent.getPosition();
-        g2d.setColor(radarColor);
+        g2d.setColor(detectorColor);
         g2d.fillOval((int)(center.x - range), (int)(center.y - range), (int)range * 2, (int)range * 2);
     }
 
     @Override
-    public SimpleRadar clone() {
-        SimpleRadar clone = (SimpleRadar) super.clone();
+    public SimpleDetector clone() {
+        SimpleDetector clone = (SimpleDetector) super.clone();
         clone.detectedObjects = new ArrayList<>();
+        clone.detectPredicate = detectPredicate.copy();
         return clone;
+    }
+
+    @Override
+    public void receiveEvent(Event e) {
+
+    }
+
+    @Override
+    public void addToRouter(LocalRouter router) {
+        router.addRouting(PortEnum.DETECTOR, this);
     }
 }

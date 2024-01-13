@@ -1,6 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.Radar.DetectPredicate;
 
 import aircraftsimulator.GameObject.GameObjectInterface;
+import aircraftsimulator.GameObject.PositionnInterface;
 
 import javax.vecmath.Vector3f;
 
@@ -14,7 +15,7 @@ public class RangeDetect extends BaseDetect{
     }
 
     @Override
-    public boolean test(GameObjectInterface testingObject) {
+    public boolean test(PositionnInterface testingObject) {
         float rangeSquared = range * range;
         if(targetVector != null)
         {
@@ -23,5 +24,10 @@ public class RangeDetect extends BaseDetect{
         Vector3f v = new Vector3f(parent.getPosition());
         v.sub(testingObject.getPosition());
         return v.lengthSquared() < rangeSquared;
+    }
+
+    @Override
+    public DetectPredicate copy() {
+        return clone();
     }
 }

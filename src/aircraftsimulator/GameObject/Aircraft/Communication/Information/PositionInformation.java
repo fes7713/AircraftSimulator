@@ -1,11 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.Information;
 
-import aircraftsimulator.GameObject.GameObject;
+import aircraftsimulator.GameObject.PositionnInterface;
 
-import javax.vecmath.Vector3f;
-
-public interface PositionInformation extends Information{
-    Vector3f getPosition();
-    @Override
-    GameObject getSource();
+public interface PositionInformation extends Information, PositionnInterface {
 }

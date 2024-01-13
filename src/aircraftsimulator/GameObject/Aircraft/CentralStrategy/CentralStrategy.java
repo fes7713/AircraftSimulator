@@ -1,11 +1,14 @@
 package aircraftsimulator.GameObject.Aircraft.CentralStrategy;
 
 import aircraftsimulator.Game;
+import aircraftsimulator.GameObject.Aircraft.Communication.Event.Event;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.FireInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.FirePositionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
-import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
+import aircraftsimulator.GameObject.Aircraft.Communication.LocalRouter;
+import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.NetworkAdaptor;
+import aircraftsimulator.GameObject.Aircraft.Communication.PortEnum;
 import aircraftsimulator.GameObject.Aircraft.Guided;
 import aircraftsimulator.GameObject.Aircraft.Spawner.CloseRangeWeaponSystem;
 import aircraftsimulator.GameObject.Aircraft.Spawner.LongRangeWeaponSystem;
@@ -22,7 +25,7 @@ import java.util.List;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class CentralStrategy extends Component implements CentralStrategyInterface, ReceiverInterface {
+public class CentralStrategy extends Component implements CentralStrategyInterface {
     private GameObject parent;
     private final List<PositionInformation> detectedTargets;
 
@@ -336,7 +339,6 @@ public class CentralStrategy extends Component implements CentralStrategyInterfa
         guideMap.remove(key);
     }
 
-    @Override
     public void receive(@Nullable Information information) {
         if(information instanceof PositionInformation p)
         {

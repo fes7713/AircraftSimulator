@@ -2,7 +2,6 @@ package aircraftsimulator.GameObject.Aircraft;
 
 import aircraftsimulator.GameObject.Aircraft.CentralStrategy.CentralStrategy;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.*;
-import aircraftsimulator.GameObject.Aircraft.Communication.InformationNetwork;
 import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
 import aircraftsimulator.GameObject.Aircraft.Communication.SenderInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.AdvancedFlightController;
@@ -20,7 +19,6 @@ import org.jetbrains.annotations.Nullable;
 import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
 
 public class Aircraft extends DestructibleMovingObject implements AircraftInterface, ReceiverInterface, SenderInterface, Cloneable, GuideNetwork {
@@ -32,8 +30,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     protected final CentralStrategy centralStrategy;
     protected final FlightControllerInterface flightControl;
     protected Thruster thruster;
-    protected final List<Component> components;
-    protected final InformationNetwork network;
 
     public static final float THRUSTER_MAGNITUDE = 1F;
     public static final float THRUSTER_FUEL = 3600F;
@@ -59,8 +55,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         angularAcceleration = a.angularAcceleration;
         angularAccelerationMagnitude = a.angularAccelerationMagnitude;
         maxG = a.maxG;
-        components = new ArrayList<>();
-        network = new InformationNetwork(this);
         addComponent(thruster);
         for(Component c: a.components)
             if(!(c instanceof Thruster))
@@ -92,14 +86,11 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         angularAcceleration = ANGULAR_ACCELERATION;
         angularAccelerationMagnitude = ANGULAR_ACCELERATION;
         maxG = MAX_G_FORCE;
-        components = new ArrayList<>();
-        network = new InformationNetwork(this);
         addComponent(thruster);
     }
 
     public void update(float delta)
     {
-        components.forEach(o -> o.update(delta));
         centralStrategy.update(delta);
         angularAcceleration = 0;
 
@@ -124,27 +115,24 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 
     @Override
     public void draw(Graphics2D g2d) {
-        components.forEach(o -> o.draw(g2d));
-        network.update();
         super.draw(g2d);
         flightControl.draw(g2d);
         Vector2f direction2D = new Vector2f(direction.x, direction.y);
         direction2D.normalize();
         direction2D.scale(size);
         g2d.drawLine((int)position.x, (int)position.y, (int)(position.x + direction2D.x), (int)(position.y + direction2D.y));
-//        String text = String.format("Height : %.5f\nThruster : %.5f\nFuel : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
-//                position.z,
-//                thruster.getMagnitude(),
-//                thruster.getFuel(),
-//                velocity.length(),
-//                angularSpeed,
-//                angularAcceleration,
-//                velocity.length() * angularSpeed,
-//                flightControl.getTargetAngle());
+        String text = String.format("Height : %.5f\nThruster : %.5f\nFuel : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
+                position.z,
+                thruster.getMagnitude(),
+                thruster.getFuel(),
+                velocity.length(),
+                angularSpeed,
+                angularAcceleration,
+                velocity.length() * angularSpeed,
+                flightControl.getTargetAngle());
         int y = (int)(position.y - 5);
 //        for (String line : text.split("\n"))
 //            g2d.drawString(line, (int)position.x + 5, y += g2d.getFontMetrics().getHeight());
-        network.draw(g2d);
     }
 
     @Override
@@ -224,8 +212,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     {
         component.setParent(this);
         components.add(component);
-//        if(component instanceof ReceiverInterface receiver)
-//            network.addReceiver(receiver);
+        component.addToRouter(router);
         if(component instanceof WeaponSystem weaponSystem)
             centralStrategy.addWeaponSystem(weaponSystem);
     }
@@ -234,8 +221,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     public void removeComponent(Component component)
     {
         components.remove(component);
-//        if(component instanceof ReceiverInterface receiver)
-//            network.removeReceiver(receiver);
+        router.removeRouting(component);
         if(component instanceof WeaponSystem w)
             centralStrategy.removeWeaponSystem(w);
     }
@@ -243,19 +229,18 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     @Override
     public void receive(@Nullable Information information) {
         flightControl.setTarget(information);
-//        network.receive(information);
         centralStrategy.receive(information);
     }
 
     @Override
-    public <T extends Information> Information send(Class<T> type) {
-        if(type == PositionInformation.class)
-        {
-            return new PositionInformationImp(this, position);
-        }
-        else if(type == MotionInformation.class)
+    public <T extends PositionInformation> PositionInformation send(Class<T> type) {
+        if(type == MotionInformation.class)
         {
             return new MotionInformationImp(this, position, velocity, getAcceleration(), direction);
+        }
+        else if(type == PositionInformation.class)
+        {
+            return new PositionInformationImp(this, position);
         }
         System.err.println("Type error in Aircraft.java send(Class<T>)");
         return super.send(type);

@@ -1,12 +1,12 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.Information;
 
-import aircraftsimulator.GameObject.GameObject;
+import aircraftsimulator.GameObject.GameObjectInterface;
 import org.jetbrains.annotations.NotNull;
 
 import javax.vecmath.Vector3f;
 
 public class FirePositionInformation  extends PositionInformationImp implements FireInformation{
-    public FirePositionInformation(GameObject source, Vector3f position) {
+    public FirePositionInformation(GameObjectInterface source, Vector3f position) {
         super(source, position);
     }
 

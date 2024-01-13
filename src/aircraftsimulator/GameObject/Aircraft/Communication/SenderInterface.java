@@ -1,7 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
 
 public interface SenderInterface {
-    <T extends Information> Information send(Class<T> type);
+    <T extends PositionInformation> PositionInformation send(Class<T> type);
 }
