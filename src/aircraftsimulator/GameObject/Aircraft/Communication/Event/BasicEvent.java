@@ -1,29 +1,39 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.Event;
 
-import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.Session;
-
-import static aircraftsimulator.GameObject.Aircraft.Communication.PortEnum.ATTACK;
-
-public abstract class BasicEvent<E> implements Event<E> {
-    private final int sessionId;
+public class BasicEvent<E> implements Event<E> {
     private final E data;
     private final EventPriority eventPriority;
+    private final int port;
+    private final String sourceMac;
+    private final String destinationMac;
 
-    public BasicEvent(Session session, E data)
+    public BasicEvent(int port, E data)
     {
-        this(session, data, EventPriority.MEDIUM);
+        this(port, data, EventPriority.MEDIUM);
     }
 
-    public BasicEvent(Session session, E data, EventPriority eventPriority)
+    public BasicEvent(int port, E data, EventPriority eventPriority)
     {
-        this.sessionId = session.getSessionId();
+        this(port, null, null, data, eventPriority);
+    }
+
+    // No need for reply
+    // Used for reply message
+    public BasicEvent(int port, String destinationMac, E data, EventPriority eventPriority){
+        this(port, null, destinationMac, data, eventPriority);
+    }
+
+    public BasicEvent(int port, String sourceMac, String destinationMac, E data, EventPriority eventPriority){
+        this.port = port;
+        this.sourceMac = sourceMac;
+        this.destinationMac = destinationMac;
         this.data = data;
         this.eventPriority = eventPriority;
     }
 
     @Override
     public int getPort() {
-        return ATTACK;
+        return port;
     }
 
     @Override
@@ -32,12 +42,19 @@ public abstract class BasicEvent<E> implements Event<E> {
     }
 
     @Override
-    public int getPriority() {
-        return 0;
+    public EventPriority getPriority() {
+        return eventPriority;
     }
 
     @Override
-    public int getSessionId() {
-        return sessionId;
+    public String getDestinationMAC() {
+        return destinationMac;
     }
+
+    @Override
+    public String getSourceMac() {
+        return sourceMac;
+    }
+
+
 }

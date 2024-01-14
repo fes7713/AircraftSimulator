@@ -212,7 +212,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     {
         component.setParent(this);
         components.add(component);
-        component.addToRouter(router);
         if(component instanceof WeaponSystem weaponSystem)
             centralStrategy.addWeaponSystem(weaponSystem);
     }

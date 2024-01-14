@@ -5,6 +5,7 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Information.LaserInfo
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformationImp;
 import aircraftsimulator.GameObject.Aircraft.Communication.LocalRouter;
+import aircraftsimulator.GameObject.Aircraft.Communication.Router;
 import aircraftsimulator.GameObject.Aircraft.Communication.SenderInterface;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.PaintDrawer;
@@ -21,7 +22,7 @@ public class GameObject implements GameObjectInterface, SenderInterface, Reflect
     protected final Color color;
     protected final float size;
     protected final List<Component> components;
-    protected final LocalRouter router;
+    protected final Router router;
 
     // 0 to 1
     protected float surfaceRoughness;
@@ -89,7 +90,7 @@ public class GameObject implements GameObjectInterface, SenderInterface, Reflect
     }
 
     @Override
-    public LocalRouter getRouter() {
+    public Router getRouter() {
         return router;
     }
 

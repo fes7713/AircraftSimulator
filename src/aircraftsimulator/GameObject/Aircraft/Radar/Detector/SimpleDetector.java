@@ -1,10 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.Radar.Detector;
 
 import aircraftsimulator.Environment;
-import aircraftsimulator.GameObject.Aircraft.Communication.Event.Event;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.LaserInformation;
-import aircraftsimulator.GameObject.Aircraft.Communication.LocalRouter;
-import aircraftsimulator.GameObject.Aircraft.Communication.PortEnum;
 import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
 import aircraftsimulator.GameObject.Aircraft.Radar.DetectPredicate.DetectPredicate;
 import aircraftsimulator.GameObject.Aircraft.Radar.DetectPredicate.RangeDetect;
@@ -97,15 +94,5 @@ public class SimpleDetector extends Component implements DetectorInterface {
         clone.detectedObjects = new ArrayList<>();
         clone.detectPredicate = detectPredicate.copy();
         return clone;
-    }
-
-    @Override
-    public void receiveEvent(Event e) {
-
-    }
-
-    @Override
-    public void addToRouter(LocalRouter router) {
-        router.addRouting(PortEnum.DETECTOR, this);
     }
 }

@@ -1,13 +1,10 @@
 package aircraftsimulator.GameObject.Aircraft.Radar.Radar;
 
 import aircraftsimulator.Environment;
-import aircraftsimulator.GameObject.Aircraft.Communication.Event.Event;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.LaserInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.MotionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformationImp;
-import aircraftsimulator.GameObject.Aircraft.Communication.LocalRouter;
-import aircraftsimulator.GameObject.Aircraft.Communication.PortEnum;
 import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
 import aircraftsimulator.GameObject.Aircraft.MovingObjectInterface;
 import aircraftsimulator.GameObject.Aircraft.Radar.DetectPredicate.DetectPredicate;
@@ -124,16 +121,5 @@ public class SimpleRadar extends Component implements RadarInterface{
         clone.detectedObjects = new ArrayList<>();
         clone.detectPredicate = detectPredicate.copy();
         return clone;
-    }
-
-
-    @Override
-    public void receiveEvent(Event e) {
-
-    }
-
-    @Override
-    public void addToRouter(LocalRouter router) {
-        router.addRouting(PortEnum.RADAR, this);
     }
 }

@@ -1,6 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
 public class PortEnum {
+    public static final int ITSELF = 0;
     public static final int RADAR = 1;
     public static final int THRUSTER = 2;
     public static final int CENTRAL_STRATEGY = 3;
@@ -11,4 +12,5 @@ public class PortEnum {
     public static final int DETECTOR = 8;
 
     public static final int ATTACK = 9;
+    public static final int DEFAULT_GATEWAY = Integer.MAX_VALUE;
 }

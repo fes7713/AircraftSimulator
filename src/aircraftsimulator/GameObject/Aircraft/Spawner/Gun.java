@@ -2,8 +2,6 @@ package aircraftsimulator.GameObject.Aircraft.Spawner;
 
 import aircraftsimulator.GameObject.Aircraft.Bullet;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
-import aircraftsimulator.GameObject.Aircraft.Communication.LocalRouter;
-import aircraftsimulator.GameObject.Aircraft.Communication.PortEnum;
 import aircraftsimulator.GameObject.Aircraft.MovingObjectInterface;
 import aircraftsimulator.GameObject.DestructibleObjectInterface;
 import aircraftsimulator.GameObject.GameObject;
@@ -72,8 +70,4 @@ public class Gun extends TargetTimerSpawner<Bullet> implements CloseRangeWeaponS
         return true;
     }
 
-    @Override
-    public void addToRouter(LocalRouter router) {
-        router.addRouting(PortEnum.CLOSE_RANGE_WEAPON_SYSTEM, this);
-    }
 }
