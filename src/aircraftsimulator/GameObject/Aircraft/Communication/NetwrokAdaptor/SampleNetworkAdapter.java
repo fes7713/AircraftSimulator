@@ -1,13 +1,11 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor;
 
-import aircraftsimulator.GameObject.Aircraft.Communication.Router;
-
 public class SampleNetworkAdapter implements NetworkAdaptor, DataProcessor{
     private final NetworkInterface networkInterface;
 
-    public SampleNetworkAdapter(Router router)
+    public SampleNetworkAdapter()
     {
-        this.networkInterface = new DefaultNetworkInterface(this, router);
+        this.networkInterface = new ResponsiveNetworkInterface(this);
     }
 
     @Override

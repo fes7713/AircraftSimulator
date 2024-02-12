@@ -2,14 +2,14 @@ package aircraftsimulator.GameObject.Component;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.DataProcessor;
 import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.NetworkInterface;
-import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.DefaultNetworkInterface;
+import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.ResponsiveNetworkInterface;
 
 public abstract class Component implements ComponentInterface, Cloneable, DataProcessor {
     private final NetworkInterface networkInterface;
 
     public Component()
     {
-        networkInterface = new DefaultNetworkInterface(this, null);
+        networkInterface = new ResponsiveNetworkInterface(this);
     }
 
     @Override

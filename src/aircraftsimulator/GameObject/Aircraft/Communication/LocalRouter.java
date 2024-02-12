@@ -8,7 +8,6 @@ import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.*;
 import java.util.*;
 
 public class LocalRouter implements Router{
-    private final Queue<Event<?>> eventQueue;
     private final Map<Integer, List<NetworkAdaptor>> routingTable;
     private final Map<String, Integer> arpTable;
     private final NetworkInterface networkInterface;
@@ -17,9 +16,8 @@ public class LocalRouter implements Router{
     public LocalRouter()
     {
         routingTable = new HashMap<>();
-        eventQueue = new ArrayDeque<>();
         arpTable = new HashMap<>();
-        networkInterface = new DefaultNetworkInterface(this, this);
+        networkInterface = new ResponsiveNetworkInterface(this);
         addRouting(PortEnum.ITSELF, this);
     }
 
@@ -43,23 +41,14 @@ public class LocalRouter implements Router{
         }
     }
 
-    public void addEvent(Event<?> event)
+    public boolean update(float delta)
     {
-        eventQueue.add(event);
-    }
-
-    public void update(float delta)
-    {
-        networkInterface.update(delta);
-        while(!eventQueue.isEmpty())
+        boolean result = networkInterface.update(delta);
+        if(result)
         {
-            Event e = eventQueue.remove();
-            int port = e.getPort();
-            if(routingTable.containsKey(port))
-            {
-                routingTable.get(port).forEach(c -> c.getNetworkInterface().receiveData(e));
-            }
+
         }
+        return result;
     }
 
     @Override
@@ -101,6 +90,11 @@ public class LocalRouter implements Router{
     }
 
     @Override
+    public Router getRouter() {
+        return router;
+    }
+
+    @Override
     public String getMac() {
         return networkInterface.getMac();
     }
@@ -111,26 +105,25 @@ public class LocalRouter implements Router{
     }
 
     @Override
-    public NetworkInterfaceMode getNetworkMode() {
-        return null;
-    }
-
-    @Override
     public void ping() {
         for(Integer port: routingTable.keySet())
             for(NetworkAdaptor adaptor: routingTable.get(port))
             {
-                adaptor.getNetworkInterface().receiveData(new PingEvent(port, networkInterface.getMac()));
+                adaptor.getNetworkInterface().receiveData(new PingEvent(port, networkInterface));
             }
     }
 
     public static void main(String[] args) throws InterruptedException {
         Router router = new LocalRouter();
-        NetworkAdaptor adaptor1 = new SampleNetworkAdapter(router);
-        NetworkAdaptor adaptor2 = new SampleNetworkAdapter(router);
+        Router router1 = new LocalRouter();
+        NetworkAdaptor adaptor1 = new SampleNetworkAdapter();
+        NetworkAdaptor adaptor2 = new SampleNetworkAdapter();
+        NetworkAdaptor adaptor3 = new SampleNetworkAdapter();
 
         router.addRouting(1, adaptor1);
         router.addRouting(2, adaptor2);
+        router.addRouting(3, router1);
+        router1.addRouting(1, adaptor3);
 
         router.ping();
 

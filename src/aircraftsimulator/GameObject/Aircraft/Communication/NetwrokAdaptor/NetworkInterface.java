@@ -7,16 +7,16 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Router;
 import java.util.UUID;
 
 public interface NetworkInterface {
-    void update(float delta);
+    boolean update(float delta);
     default <E> void  sendData(int port, E data){
         sendData(port, data, EventPriority.MEDIUM);
     }
     <E> void sendData(int port, E data, EventPriority priority);
     <E> void receiveData(Event<E> event);
     void setRouter(Router router);
+    Router getRouter();
     String getMac();
     float getProcessTime();
-    NetworkInterfaceMode getNetworkMode();
     static String generateMAC()
     {
         return UUID.randomUUID().toString();
