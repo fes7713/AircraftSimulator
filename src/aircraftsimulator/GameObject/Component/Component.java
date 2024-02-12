@@ -1,5 +1,6 @@
 package aircraftsimulator.GameObject.Component;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.Event.Event;
 import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.DataProcessor;
 import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.NetworkInterface;
 import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.ResponsiveNetworkInterface;
@@ -27,7 +28,7 @@ public abstract class Component implements ComponentInterface, Cloneable, DataPr
     }
 
     @Override
-    public <E> boolean process(E data) {
+    public boolean process(Event data) {
         return false;
     }
 }

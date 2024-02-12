@@ -1,11 +1,18 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.Event.Event;
+
 public class SampleNetworkAdapter implements NetworkAdaptor, DataProcessor{
     private final NetworkInterface networkInterface;
 
-    public SampleNetworkAdapter()
+    public SampleNetworkAdapter(String name, DataProcessor dataProcessor)
     {
-        this.networkInterface = new ResponsiveNetworkInterface(this);
+        this.networkInterface = new ResponsiveNetworkInterface(name, dataProcessor);
+    }
+
+    public SampleNetworkAdapter(DataProcessor dataProcessor)
+    {
+        this.networkInterface = new ResponsiveNetworkInterface(dataProcessor);
     }
 
     @Override
@@ -14,7 +21,7 @@ public class SampleNetworkAdapter implements NetworkAdaptor, DataProcessor{
     }
 
     @Override
-    public <E> boolean process(E data) {
+    public boolean process(Event data) {
         return false;
     }
 }

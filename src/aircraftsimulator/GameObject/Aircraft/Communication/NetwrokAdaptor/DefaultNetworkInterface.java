@@ -4,45 +4,50 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Event.BasicEvent;
 import aircraftsimulator.GameObject.Aircraft.Communication.Event.Event;
 import aircraftsimulator.GameObject.Aircraft.Communication.Event.EventPriority;
 import aircraftsimulator.GameObject.Aircraft.Communication.Router;
+import aircraftsimulator.GameObject.Aircraft.Communication.TimeScheduler.QuantumScheduler;
+import aircraftsimulator.GameObject.Aircraft.Communication.TimeScheduler.TimeScheduler;
 
 import java.util.Deque;
 import java.util.concurrent.LinkedBlockingDeque;
 
 public class DefaultNetworkInterface implements NetworkInterface{
     protected final String mac;
+    protected final String name;
     protected Router router;
 
     protected final Deque<Event> sendingQueue;
     protected final Deque<Event> receivingQueue;
-    protected final float processTime;
-    protected float time;
+
+    protected TimeScheduler timeScheduler;
 
     public final static float DEFAULT_PROCESS_TIME = 0.00F;
 
     public DefaultNetworkInterface(){
-        this(DEFAULT_PROCESS_TIME);
+        this("Default name", DEFAULT_PROCESS_TIME);
     }
 
-    public DefaultNetworkInterface(float processTime){
+    public DefaultNetworkInterface(String name)
+    {
+        this(name, DEFAULT_PROCESS_TIME);
+    }
+
+    public DefaultNetworkInterface(String name, float processTime){
+        this.name = name;
         this.mac = NetworkInterface.generateMAC();
-        this.processTime = processTime;
-        time = 0;
+        this.timeScheduler = new QuantumScheduler(processTime);
         sendingQueue = new LinkedBlockingDeque<>();
         receivingQueue = new LinkedBlockingDeque<>();
     }
 
 
     @Override
-    public boolean update(float delta) {
-        if(time - delta > 0)
-        {
-            time -= delta;
-            return false;
-        }
-        else
-            time = processTime;
+    public String getName() {
+        return name;
+    }
 
-        return true;
+    @Override
+    public boolean update(float delta) {
+        return timeScheduler.update(delta);
     }
 
     @Override
@@ -76,7 +81,7 @@ public class DefaultNetworkInterface implements NetworkInterface{
     }
 
     @Override
-    public float getProcessTime() {
-        return time;
+    public Event popData() {
+        return receivingQueue.poll();
     }
 }

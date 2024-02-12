@@ -15,4 +15,6 @@ public interface Router extends NetworkAdaptor, NetworkInterface, DataProcessor 
     int askForPort(String destinationMac);
 
     void ping();
+
+    void ping(String sourceMac);
 }

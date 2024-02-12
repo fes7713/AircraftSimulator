@@ -6,11 +6,18 @@ import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.Networ
 
 public class PingResponseEvent extends ResponseEvent<Long>{
 
-    public PingResponseEvent(PingEvent receivedPing, int port, NetworkInterface sourceNetworkInterface){
-        this(port, sourceNetworkInterface.getMac(), receivedPing.getSourceMac(), receivedPing.getData());
+    private final String message;
+
+    public PingResponseEvent(PingEvent receivedPing, int port, NetworkInterface sourceNetworkInterface, String message){
+        this(port, sourceNetworkInterface.getMac(), receivedPing.getSourceMac(), receivedPing.getData(), message);
     }
 
-    public PingResponseEvent(int port, String sourceMac, String destinationMac, Long data) {
+    public PingResponseEvent(int port, String sourceMac, String destinationMac, Long data, String message) {
         super(port, sourceMac, destinationMac, data, EventPriority.MEDIUM);
+        this.message = message;
+    }
+
+    public String getMessage(){
+        return message;
     }
 }
