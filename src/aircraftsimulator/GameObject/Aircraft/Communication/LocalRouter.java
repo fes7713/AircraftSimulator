@@ -1,8 +1,9 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Event.Event;
-import aircraftsimulator.GameObject.Aircraft.Communication.Event.EventPriority;
+import aircraftsimulator.GameObject.Aircraft.Communication.Event.Request.ConfigurationChangeEvent;
 import aircraftsimulator.GameObject.Aircraft.Communication.Event.Request.PingEvent;
+import aircraftsimulator.GameObject.Aircraft.Communication.Event.Response.PingResponseEvent;
 import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.NetworkAdaptor;
 import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.NetworkInterface;
 import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.ResponsiveNetworkInterface;
@@ -11,10 +12,10 @@ import aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor.Sample
 import java.util.*;
 
 public class LocalRouter implements Router{
-    private final String name;
-    private final Map<Integer, List<NetworkAdaptor>> routingTable;
+    private final Map<Integer, NetworkAdaptor> routingTable;
     private final Map<String, Integer> arpTable;
-    private final NetworkInterface networkInterface;
+    private final NetworkAdaptor networkAdaptor;
+    private Router parentRouter;
 
     public LocalRouter()
     {
@@ -23,48 +24,31 @@ public class LocalRouter implements Router{
 
     public LocalRouter(String name)
     {
-        this.name = name;
         routingTable = new HashMap<>();
         arpTable = new HashMap<>();
-        networkInterface = new ResponsiveNetworkInterface(name + " Interface",  this);
-        addRouting(PortEnum.ITSELF, this);
+        networkAdaptor = new SampleNetworkAdapter(new ResponsiveNetworkInterface(name + " Interface",  this));
+
+        addRouting(PortEnum.ITSELF, networkAdaptor);
     }
 
     public void addRouting(int port, NetworkAdaptor component){
         if(!routingTable.containsKey(port))
-            routingTable.put(port, new ArrayList<>());
-        routingTable.get(port).add(component);
-        arpTable.put(component.getNetworkInterface().getMac(), port);
-
-        if(getNetworkInterface().getRouter() != null)
-        {
-            int parentPort = getNetworkInterface().getRouter().askForPort(this.getMac());
-            if(port != parentPort)
-                getNetworkInterface().getRouter().addRouting(parentPort, component);
-        }
-        component.getNetworkInterface().setRouter(this);
+            routingTable.put(port, component);
+        else
+            System.out.printf("Port %d is occupied by %s\n", port, routingTable.get(port).getNetworkInterface().getMac());
     }
 
-    public void removeRouting(NetworkAdaptor component)
+    public void removeRouting(int port)
     {
-        arpTable.remove(component.getNetworkInterface().getMac());
-        Set<Integer> ports = new HashSet<>(routingTable.keySet());
-        for(Integer port: ports)
-        {
-            routingTable.get(port).remove(component);
-            if(routingTable.get(port).isEmpty())
-                routingTable.remove(port);
-        }
-    }
+        NetworkAdaptor adaptor = routingTable.remove(port);
+        System.out.printf("%s was disconnected from port %s\n", adaptor.getNetworkInterface().getMac(), port);
 
-    @Override
-    public String getName() {
-        return null;
+        ping(null);
     }
 
     public boolean update(float delta)
     {
-        boolean result = networkInterface.update(delta);
+        boolean result = getNetworkInterface().update(delta);
         if(result)
         {
 
@@ -79,48 +63,7 @@ public class LocalRouter implements Router{
 
     @Override
     public NetworkInterface getNetworkInterface() {
-        return networkInterface;
-    }
-
-
-    @Override
-    public void sendData(int port, Object data, EventPriority priority) {
-        if(routingTable.containsKey(port))
-        {
-            List<NetworkAdaptor> adaptors = routingTable.get(port);
-            for(int i = 0; i < adaptors.size(); i++)
-            {
-                NetworkInterface networkInterface = adaptors.get(i).getNetworkInterface();
-
-            }
-        }
-    }
-
-    @Override
-    public void receiveData(Event event) {
-        if(event.getDestinationMAC() != null &&
-                event.getDestinationMAC().equals(networkInterface.getMac()))
-            networkInterface.receiveData(event);
-    }
-
-    @Override
-    public void setRouter(Router router) {
-        getNetworkInterface().setRouter(router);
-    }
-
-    @Override
-    public Router getRouter() {
-        return getNetworkInterface().getRouter();
-    }
-
-    @Override
-    public String getMac() {
-        return networkInterface.getMac();
-    }
-
-    @Override
-    public Event popData() {
-        return networkInterface.popData();
+        return networkAdaptor.getNetworkInterface();
     }
 
     @Override
@@ -128,23 +71,55 @@ public class LocalRouter implements Router{
         if(event instanceof PingEvent pingEvent)
         {
             // Prevent looping and ping to lower gen
-            if(!pingEvent.getSourceMac().equals(getMac()))
-                ping(pingEvent.getSourceMac());
+            if(!pingEvent.getSourceMac().equals(getNetworkInterface().getMac()))
+                ping(pingEvent);
+            return true;
+        }
+        if(event instanceof ConfigurationChangeEvent confEvent)
+        {
+            if(parentRouter != null)
+            {
+                getNetworkInterface().sendData(
+                        new ConfigurationChangeEvent(
+                                askForPort(parentRouter.getNetworkInterface().getMac()),
+                                getNetworkInterface().getMac()
+                        )
+                );
+                ping();
+            }
+            else {
+                ping();
+            }
             return true;
         }
 
-        if(event.getDestinationMAC().equals(getMac()))
+        if( event instanceof PingResponseEvent pingResponseEvent)
+        {
+            if(event.getDestinationMAC().equals(getNetworkInterface().getMac()))
+            {
+                // process
+                //
+                System.out.printf("[%s] processing\n", getNetworkInterface().getMac());
+            }
+            else{
+
+            }
+        }
+
+        if(event.getDestinationMAC().equals(getNetworkInterface().getMac()))
         {
             // process
             //
+            System.out.printf("[%s] processing\n", getNetworkInterface().getMac());
         }
-        else if(arpTable.containsKey(event.getDestinationMAC()))
-        {
-            int transferringPort = arpTable.get(event.getDestinationMAC());
-            System.out.println("Event transferring to port[" + transferringPort + "]");
-            sendData(transferringPort, event);
-            return true;
-        }
+
+//        else if(arpTable.containsKey(event.getDestinationMAC()))
+//        {
+//            int transferringPort = arpTable.get(event.getDestinationMAC());
+//            System.out.println("Event transferring to port[" + transferringPort + "]");
+//            getNetworkInterface().sendData(event);
+//            return true;
+//        }
         else{
             throw new RuntimeException("ARP error");
         }
@@ -153,21 +128,35 @@ public class LocalRouter implements Router{
     }
 
     @Override
-    public void ping() {
+    public void ping(PingEvent parentPing) {
+        arpTable.clear();
         for(Integer port: routingTable.keySet())
-            for(NetworkAdaptor adaptor: routingTable.get(port))
+        {
+            // Port number that adapter will send reply to
+            NetworkAdaptor adaptor = routingTable.get(port);
             {
-                adaptor.getNetworkInterface().receiveData(new PingEvent(port, networkInterface.getMac()));
+                if(parentPing == null)
+                {
+                    System.out.printf("[%s] ping from myself", this.getNetworkInterface().getMac());
+                    adaptor.getNetworkInterface().sendData(new PingEvent(port, getNetworkInterface().getMac()));
+                }else{
+                    System.out.printf("[%s] ping from parent", this.getNetworkInterface().getMac());
+                    adaptor.getNetworkInterface().sendData(new PingEvent(port, parentPing));
+                }
             }
+        }
     }
 
     @Override
-    public void ping(String sourceMac) {
-        for(Integer port: routingTable.keySet())
-            for(NetworkAdaptor adaptor: routingTable.get(port))
-            {
-                adaptor.getNetworkInterface().receiveData(new PingEvent(port, sourceMac));
-            }
+    public void setParentRouter(Router router) {
+        this.parentRouter = router;
+    }
+
+    @Override
+    public void dispatchEvent(Event event) {
+        if(event.getDestinationMAC() != null &&
+                event.getDestinationMAC().equals(getNetworkInterface().getMac()))
+            getNetworkInterface().receiveData(event);
     }
 
     public static void main(String[] args) throws InterruptedException {
@@ -175,7 +164,7 @@ public class LocalRouter implements Router{
         Router router1 = new LocalRouter("Router 2");
         NetworkAdaptor adaptor1 = new SampleNetworkAdapter("Network Component 1", router);
         NetworkAdaptor adaptor2 = new SampleNetworkAdapter("Network Component 2", router);
-        NetworkAdaptor adaptor3 = new SampleNetworkAdapter(router1);
+        NetworkAdaptor adaptor3 = new SampleNetworkAdapter("Network Component 3", router1);
 
         router.addRouting(1, adaptor1);
         router.addRouting(2, adaptor2);

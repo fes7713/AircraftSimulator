@@ -1,8 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor;
 
-import aircraftsimulator.GameObject.Aircraft.Communication.Event.BasicEvent;
 import aircraftsimulator.GameObject.Aircraft.Communication.Event.Event;
-import aircraftsimulator.GameObject.Aircraft.Communication.Event.EventPriority;
 import aircraftsimulator.GameObject.Aircraft.Communication.Router;
 import aircraftsimulator.GameObject.Aircraft.Communication.TimeScheduler.QuantumScheduler;
 import aircraftsimulator.GameObject.Aircraft.Communication.TimeScheduler.TimeScheduler;
@@ -51,12 +49,10 @@ public class DefaultNetworkInterface implements NetworkInterface{
     }
 
     @Override
-    public <E> void sendData(int port, E data, EventPriority priority) {
+    public <E> void sendData(Event<E> data) {
         if(router == null)
             return;
-
-        Event<E> event = new BasicEvent<>(port, data, priority);
-        sendingQueue.offer(event);
+        sendingQueue.offer(data);
     }
 
     @Override

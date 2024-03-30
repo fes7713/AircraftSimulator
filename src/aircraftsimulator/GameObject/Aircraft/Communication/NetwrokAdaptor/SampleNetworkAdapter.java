@@ -1,9 +1,15 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Event.Event;
+import aircraftsimulator.GameObject.Aircraft.Communication.Event.Request.PingEvent;
 
 public class SampleNetworkAdapter implements NetworkAdaptor, DataProcessor{
     private final NetworkInterface networkInterface;
+
+    public SampleNetworkAdapter(NetworkInterface networkInterface)
+    {
+        this.networkInterface = networkInterface;
+    }
 
     public SampleNetworkAdapter(String name, DataProcessor dataProcessor)
     {
@@ -22,6 +28,12 @@ public class SampleNetworkAdapter implements NetworkAdaptor, DataProcessor{
 
     @Override
     public boolean process(Event data) {
-        return false;
+        if(data instanceof PingEvent pingEvent)
+        {
+            getNetworkInterface().sendData(pingEvent.createReply(getNetworkInterface().getMac()));
+        }
+
+
+        return true;
     }
 }

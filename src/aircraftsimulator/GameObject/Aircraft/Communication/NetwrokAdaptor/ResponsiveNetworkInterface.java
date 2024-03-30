@@ -1,11 +1,8 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.NetwrokAdaptor;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Event.Event;
-import aircraftsimulator.GameObject.Aircraft.Communication.Event.Request.PingEvent;
 import aircraftsimulator.GameObject.Aircraft.Communication.Event.Request.RequestEvent;
-import aircraftsimulator.GameObject.Aircraft.Communication.Event.Response.PingResponseEvent;
 import aircraftsimulator.GameObject.Aircraft.Communication.Event.Response.ResponseEvent;
-import aircraftsimulator.GameObject.Aircraft.Communication.Event.Response.TextResponseEvent;
 
 public class ResponsiveNetworkInterface extends DefaultNetworkInterface {
     private final DataProcessor processor;
@@ -46,28 +43,20 @@ public class ResponsiveNetworkInterface extends DefaultNetworkInterface {
                     modeSwitch(NetworkInterfaceMode.SENDING);
             }
             case SENDING -> {
-                router.receiveData(sendingQueue.pop());
+                router.dispatchEvent(sendingQueue.pop());
                 if(sendingQueue.isEmpty())
                     modeSwitch(NetworkInterfaceMode.IDLE);
             }
             case RECEIVING -> {
                 Event event = receivingQueue.pop();
-                if(event instanceof RequestEvent)
-                {
+                if(event instanceof RequestEvent) {
                     boolean result = processor.process(event);
-                    if(event instanceof PingEvent pingEvent)
-                        sendEvent(new PingResponseEvent(pingEvent, router.askForPort(pingEvent.getSourceMac()), this, getName()));
-                    if(!result)
-                        sendEvent(new TextResponseEvent(router.askForPort(event.getSourceMac()), event.getSourceMac(), "Failed to process data from " + getName() + " [" + event.getSourceMac() + "]") );
+                    System.out.printf("Event %b\n", result);
                 }
                 else if(event instanceof ResponseEvent)
                 {
-                    if(event instanceof PingResponseEvent p)
-                        System.out.println("Ping : " + (System.currentTimeMillis() - p.getData()) + "ms from " + p.getMessage() + " [" + p.getSourceMac() + "]");
-                    else if(event instanceof TextResponseEvent t)
-                        System.out.println("Reply : " + t.getData());
-                    else
-                        throw new RuntimeException("New response");
+                    boolean result = processor.process(event);
+                    System.out.printf("Event %b\n", result);
                 }
                 else{
                     throw new RuntimeException("Error response");
@@ -77,13 +66,6 @@ public class ResponsiveNetworkInterface extends DefaultNetworkInterface {
                     modeSwitch(NetworkInterfaceMode.IDLE);
             }
         }
-    }
-
-    private <E> void sendEvent(Event<E> event)
-    {
-        if(router == null)
-            return;
-        sendingQueue.offer(event);
     }
 
     private void modeSwitch(NetworkInterfaceMode mode)
