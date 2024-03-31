@@ -1,4 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
-public interface CommunicationInterface {
+public enum NetworkMode {
+    IDLE,
+    SENDING,
+    RECEIVING
 }

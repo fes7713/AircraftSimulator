@@ -70,7 +70,7 @@ public class GameObject implements GameObjectInterface, SenderInterface, Reflect
 
     @Override
     public void update(float delta) {
-        router.update(delta);
+//        router.update(delta);
     }
 
     public void componentUpdate(float delta){

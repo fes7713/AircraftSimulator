@@ -220,7 +220,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     public void removeComponent(Component component)
     {
         components.remove(component);
-        router.removeRouting(component);
+//        router.removeRouting(component);
         if(component instanceof WeaponSystem w)
             centralStrategy.removeWeaponSystem(w);
     }
