@@ -8,10 +8,10 @@ public class NetworkComponentImp implements NetworkComponent{
 
     private final Map<Integer, PortState> portStateMap;
     private final Map<String, Integer> arpTable;
-    private final Map<Integer, Packet> portLatestPacketMap;
+    private final Map<Integer, Packet<?>> portLastSentPacketMap;
 
-    private final Queue<Packet> sendingQueue;
-    private final Queue<Packet> receivingQueue;
+    private final Queue<Packet<?>> sendingQueue;
+    private final Queue<Packet<?>> receivingQueue;
     private NetworkMode networkMode;
 
     private final float updateInterval;
@@ -27,7 +27,7 @@ public class NetworkComponentImp implements NetworkComponent{
         portStateMap = new HashMap<>();
 
         arpTable = new HashMap<>();
-        portLatestPacketMap = new HashMap<>();
+        portLastSentPacketMap = new HashMap<>();
 
         sendingQueue = new ArrayDeque<>();
         receivingQueue = new ArrayDeque<>();
@@ -63,15 +63,15 @@ public class NetworkComponentImp implements NetworkComponent{
         {
 
             case OPEN -> {
-                System.out.printf("[%s] Port [%d] already open\n", getMac(), port);
+                System.out.printf("[%6s-%6s] Port [%d] already open\n", getMac().substring(0, 6), "", port);
                 return true;
             }
             case CONNECTED, CONNECTING -> {
-                System.out.printf("[%s] Port [%d] in use\n", getMac(), port);
+                System.out.printf("[%6s-%6s] Port [%d] in use\n", getMac().substring(0, 6), "", port);
                 return false;
             }
             case CLOSED ->{
-                System.out.printf("[%s] Port [%d] opened\n", getMac(), port);
+                System.out.printf("[%6s-%6s] Port [%d] opened\n", getMac().substring(0, 6), "", port);
                 portStateMap.put(port, PortState.OPEN);
                 return true;
             }
@@ -86,23 +86,26 @@ public class NetworkComponentImp implements NetworkComponent{
         switch (portState)
         {
             case OPEN -> {
-                System.out.printf("[%s] Open Port [%d] closed\n", getMac(), port);
+                System.out.printf("[%6s-%6s] Open Port [%d] closed\n", getMac(), "", port);
                 portStateMap.remove(port);
-                portLatestPacketMap.remove(port);
+                portLastSentPacketMap.remove(port);
             }
             case CONNECTED, CONNECTING -> {
-                System.out.printf("[%s] Port [%d] disconnecting\n", getMac(), port);
+                System.out.printf("[%6s-%6s] Port [%d] disconnecting\n", getMac(), "", port);
                 send(
                         new Packet<>(
-                                portLatestPacketMap.get(port),
-                                new HandshakeData(false, false, true, null, getMac()),
-                                portLatestPacketMap.get(port).getSourcePort(),
-                                portLatestPacketMap.get(port).getDestinationPort()
+                                portLastSentPacketMap.get(port),
+                                new HandshakeData(false, false, false, true),
+                                portLastSentPacketMap.get(port).getSourcePort(),
+                                portLastSentPacketMap.get(port).getDestinationPort(),
+                                portLastSentPacketMap.get(port).getSourceMac(),
+                                portLastSentPacketMap.get(port).getDestinationMac()
+
                         )
                 );
             }
             default -> {
-                System.out.printf("[%s] Port [%d] not open\n", getMac(), port);
+                System.out.printf("[%6s-%6s] Port [%d] not open\n", getMac().substring(0, 6), "", port);
             }
         }
     }
@@ -122,171 +125,152 @@ public class NetworkComponentImp implements NetworkComponent{
                 Packet sendingPacket = sendingQueue.poll();
                 boolean newSessionFlag = false;
 
-                if(!portLatestPacketMap.containsKey(sendingPacket.getSourcePort()))
+                if(!portLastSentPacketMap.containsKey(sendingPacket.getSourcePort()))
                 {
                     if(!(sendingPacket.getData() instanceof HandshakeData hd && hd.isAck()))
                     {
-                        portLatestPacketMap.put(sendingPacket.getSourcePort(), sendingPacket);
+                        portLastSentPacketMap.put(sendingPacket.getSourcePort(), sendingPacket);
                         newSessionFlag = true;
                     }
                 }
 
-                String destinationMac = null;
-                for(Map.Entry<String, Integer> arpPortPair: arpTable.entrySet())
-                {
-                    if(arpPortPair.getValue() == sendingPacket.getSourcePort())
-                        destinationMac = arpPortPair.getKey();
-                }
+                String destinationMac = sendingPacket.getDestinationMac();
                 if(destinationMac != null && newSessionFlag)
                     throw new RuntimeException("Invalid state of program");
 
                 if(destinationMac != null)
                     network.sendTo(destinationMac, sendingPacket);
                 else
+                {
+
                     network.broadcast(sendingPacket, getMac());
+                }
 
                 if(sendingQueue.isEmpty())
                     networkMode = NetworkMode.IDLE;
             }
             case RECEIVING -> {
                 Packet receivingPacket = receivingQueue.poll();
+                if(receivingQueue.isEmpty())
+                    networkMode = NetworkMode.IDLE;
                 Object data = receivingPacket.getData();
+                if(receivingPacket.getSourceMac() == null)
+                {
+                    System.out.printf("[%6s-%6s] Port [%d] connection rejected SYN\n", getMac().substring(0, 6), "", receivingPacket.getDestinationPort());
+                    return;
+                }
 
                 if(data instanceof HandshakeData d)
                 {
                     Packet<HandshakeData> responsePacket = null;
-                    int code = (d.isSyn() ? 100:0) + (d.isAck() ? 10:0) + (d.isFin() ? 1:0);
+                    int code = (d.isSyn() ? 1000:0) + (d.isAck() ? 100:0) + (d.isRst() ? 10:0) + (d.isFin() ? 1:0);
+                    if(!portStateMap.containsKey(receivingPacket.getDestinationPort()))
+                    {
+                        System.out.printf("[%6s-%6s] Port [%d] is closed \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                        responsePacket = new Packet<>(
+                                receivingPacket,
+                                new HandshakeData(false, true, true, false),
+                                receivingPacket.getDestinationPort(),
+                                receivingPacket.getSourcePort(),
+                                null,
+                                receivingPacket.getSourceMac()
+                        );
+                        send(responsePacket);
+                        return;
+                    }
                     switch (code)
                     {
                         // SYN
-                        case 100 -> {
-                            if(d.getRequestingPort() != null &&
-                                    portStateMap.containsKey(d.getRequestingPort()))
+                        case 1000 -> {
+                            if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.OPEN)
                             {
-                                if(portStateMap.get(d.getRequestingPort()) == PortState.OPEN)
-                                {
-                                    System.out.printf("[%s] Port [%d] connecting SYN\n", getMac(), d.getRequestingPort());
-                                    portStateMap.put(d.getRequestingPort(), PortState.CONNECTING);
-                                    responsePacket = new Packet<>(
-                                            receivingPacket,
-                                            new HandshakeData(true, true, false, receivingPacket.getSourcePort(), getMac()),
-                                            d.getRequestingPort(),
-                                            receivingPacket.getSourcePort()
-                                    );
-                                }else{
-                                    System.out.printf("[%s] Port [%d] in use\n", getMac(), d.getRequestingPort());
-                                    responsePacket = new Packet<>(
-                                            receivingPacket,
-                                            new HandshakeData(false, true, true, null, null),
-                                            Integer.MAX_VALUE,
-                                            receivingPacket.getSourcePort()
-                                    );
-                                }
-                            }
-                            else
-                            {
-                                System.out.printf("[%s] Port [%d] not open\n", getMac(), d.getRequestingPort());
-//                                responsePacket = new Packet<>(
-//                                        receivingPacket,
-//                                        new HandshakeData(false, true, true, null, null),
-//                                        Integer.MAX_VALUE,
-//                                        receivingPacket.getSourcePort()
-//                                );
+                                System.out.printf("[%6s-%6s] Port [%d] connecting SYN\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                                portStateMap.put(receivingPacket.getDestinationPort(), PortState.CONNECTING);
+                                responsePacket = new Packet<>(
+                                        receivingPacket,
+                                        new HandshakeData(true, true, false, false),
+                                        getMac()
+                                );
+                            }else{
+                                System.out.printf("[%6s-%6s] Port [%d] in use\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             }
                         }
-                        case 110 -> {
-                            if(portStateMap.containsKey(d.getRequestingPort()))
+                        case 1100 -> {
+                            if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING)
                             {
-                                if(d.getRequestingPort() == receivingPacket.getDestinationPort() &&
-                                        receivingPacket.getDestinationPort() != null &&
-                                        d.getMac() != null &&
-                                        portStateMap.get(d.getRequestingPort()) == PortState.CONNECTING)
-                                {
-                                    System.out.printf("[%s] Port [%d] connected to [%s] Port [%d]\n", getMac(), d.getRequestingPort(), d.getMac(), receivingPacket.getSourcePort());
-                                    portStateMap.put(d.getRequestingPort(), PortState.CONNECTED);
-                                    arpTable.put(d.getMac(), d.getRequestingPort());
-                                    responsePacket = new Packet<>(
-                                            receivingPacket,
-                                            new HandshakeData(false, true, false, receivingPacket.getSourcePort(), getMac()),
-                                            receivingPacket.getDestinationPort(),
-                                            receivingPacket.getSourcePort()
-                                    );
-                                }else{
-                                    System.out.printf("[%s] Port [%d] invalid packet SYN ACK\n", getMac(), d.getRequestingPort());
-                                    responsePacket = new Packet<>(
-                                            receivingPacket,
-                                            new HandshakeData(false, true, true, null, null),
-                                            Integer.MAX_VALUE,
-                                            receivingPacket.getSourcePort()
-                                    );
-                                }
+                                System.out.printf("[%6s-%6s] Port [%d] connected to [%s] Port [%d]\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac(), receivingPacket.getSourcePort());
+                                portStateMap.put(receivingPacket.getDestinationPort(), PortState.CONNECTED);
+                                arpTable.put(receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
+                                responsePacket = new Packet<>(
+                                        receivingPacket,
+                                        new HandshakeData(false, true, false, false),
+                                        getMac()
+                                );
                             }else{
-                                System.out.printf("[%s] Port [%d] not open SYN ACK\n", getMac(), d.getRequestingPort());
+                                System.out.printf("[%6s-%6s] Port [%d] invalid packet SYN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                                responsePacket = new Packet<>(
+                                        receivingPacket,
+                                        new HandshakeData(false, true, true, true),
+                                        receivingPacket.getDestinationPort(),
+                                        receivingPacket.getSourcePort(),
+                                        null,
+                                        receivingPacket.getSourceMac()
+                                );
                             }
 
                         }
-                        case 10 -> {
-                            if(d.getRequestingPort() == receivingPacket.getDestinationPort() &&
-                                    receivingPacket.getDestinationPort() != null &&
-                                    portStateMap.containsKey(d.getRequestingPort()) &&
-                                    d.getMac() != null &&
-                                    portStateMap.get(d.getRequestingPort()) == PortState.CONNECTING){
-                                System.out.printf("[%s] Port [%d] connected to [%s] Port [%d] ACK\n", getMac(), d.getRequestingPort(), d.getMac(), receivingPacket.getSourcePort());
-                                arpTable.put(d.getMac(), d.getRequestingPort());
-                                portStateMap.put(d.getRequestingPort(), PortState.CONNECTED);
+                        case 100 -> {
+                            if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING){
+                                System.out.printf("[%6s-%6s] Port [%d] connected to [%s] Port [%d] ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac(), receivingPacket.getSourcePort());
+                                registerArp(receivingPacket);
+                                portStateMap.put(receivingPacket.getDestinationPort(), PortState.CONNECTED);
                             }else{
-                                System.out.printf("[%s] Port [%d] connection failed ACK\n", getMac(), receivingPacket.getDestinationPort());
+                                System.out.printf("[%6s-%6s] Port [%d] connection failed ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             }
                         }
                         case 1 -> {
-                            if(receivingPacket.getDestinationPort() != null &&
-                                    portStateMap.containsKey(receivingPacket.getDestinationPort()) &&
-                                    d.getMac() != null &&
-                                    portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTED
+                            if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTED
                             )
                             {
-                                if(arpTable.containsKey(d.getMac()))
+                                if(arpTable.containsKey(receivingPacket.getSourceMac()))
                                 {
-                                    System.out.printf("[%s] Port [%d] disconnected \n", getMac(), receivingPacket.getDestinationPort());
-                                    arpTable.remove(d.getMac());
+                                    System.out.printf("[%6s-%6s] Port [%d] disconnected \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                                    arpTable.remove(receivingPacket.getSourceMac());
                                 }else{
-                                    System.out.printf("[%s] Port [%d] connection cancelled \n", getMac(), receivingPacket.getDestinationPort());
+                                    System.out.printf("[%6s-%6s] Port [%d] connection cancelled \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                                 }
 
                                 portStateMap.put(receivingPacket.getDestinationPort(), PortState.OPEN);
-                                portLatestPacketMap.remove(receivingPacket.getDestinationPort());
+                                portLastSentPacketMap.remove(receivingPacket.getDestinationPort());
                                 responsePacket = new Packet<>(
                                         receivingPacket,
-                                        new HandshakeData(false, true, true, null, getMac()),
-                                        receivingPacket.getDestinationPort(),
-                                        receivingPacket.getSourcePort()
+                                        new HandshakeData(false, true, false, true),
+                                        getMac()
                                 );
                             }else{
-                                System.out.printf("[%s] Port [%d] invalid packet FIN \n", getMac(), receivingPacket.getDestinationPort());
+                                System.out.printf("[%6s-%6s] Port [%d] invalid packet FIN \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             }
                         }
-                        case 11 -> {
-                            if(receivingPacket.getDestinationPort() != null &&
-                                    portStateMap.containsKey(receivingPacket.getDestinationPort()) &&
-                                    d.getMac() != null &&
-                                    arpTable.containsKey(d.getMac()) &&
+                        case 101 -> {
+                            if(arpTable.containsKey(receivingPacket.getSourceMac()) &&
                                     portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTED
                             )
                             {
-                                System.out.printf("[%s] Port [%d] disconnected FIN ACK\n", getMac(), receivingPacket.getDestinationPort());
-                                arpTable.remove(d.getMac());
+                                System.out.printf("[%6s-%6s] Port [%d] disconnected FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                                arpTable.remove(receivingPacket.getSourceMac());
                                 portStateMap.put(receivingPacket.getDestinationPort(), PortState.OPEN);
-                                portLatestPacketMap.remove(receivingPacket.getDestinationPort());
-                            }else if (receivingPacket.getDestinationPort() != null &&
-                                    portStateMap.containsKey(receivingPacket.getDestinationPort()) &&
-                                    portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING
+                                portLastSentPacketMap.remove(receivingPacket.getDestinationPort());
+                            }else if (portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING
                             ){
-                                System.out.printf("[%s] Port [%d] connection failed FIN ACK\n", getMac(), receivingPacket.getDestinationPort());
-                                portStateMap.put(d.getRequestingPort(), PortState.OPEN);
+                                System.out.printf("[%6s-%6s] Port [%d] connection failed FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                                portStateMap.put(receivingPacket.getDestinationPort(), PortState.OPEN);
                             }
                             else{
-                                System.out.printf("[%s] Port [%d] invalid packet FIN ACK\n", getMac(), receivingPacket.getDestinationPort());
+                                System.out.printf("[%6s-%6s] Port [%d] invalid packet FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             }
+                        }
+                        default -> {
+                            System.out.printf("[%6s-%6s] Port [%d] code [%d] received\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), code);
                         }
 
                     }
@@ -294,11 +278,13 @@ public class NetworkComponentImp implements NetworkComponent{
                         send(responsePacket);
                     }
                 }
-
-                if(receivingQueue.isEmpty())
-                    networkMode = NetworkMode.IDLE;
             }
         }
+    }
+
+    private void registerArp(Packet<?> packet)
+    {
+        arpTable.put(packet.getSourceMac(), packet.getDestinationPort());
     }
 
     @Override
@@ -310,13 +296,16 @@ public class NetworkComponentImp implements NetworkComponent{
     public void connect(int sourcePort) {
         if(!openPort(sourcePort))
             return;
-        System.out.printf("[%s] Port [%d] connecting\n", getMac(), sourcePort);
+
         portStateMap.put(sourcePort, PortState.CONNECTING);
         Packet<HandshakeData> packet = new Packet<>(
                 UUID.randomUUID().toString(),
-                new HandshakeData(true, false, false, sourcePort, getMac()),
+                new HandshakeData(true, false, false, false),
                 sourcePort,
-                sourcePort);
+                sourcePort,
+                getMac(),
+                null);
+        System.out.printf("[%6s-%6s] Port [%d] connecting\n", getMac().substring(0, 6), "", sourcePort);
         send(packet);
     }
 
@@ -327,29 +316,29 @@ public class NetworkComponentImp implements NetworkComponent{
 //    }
 
     @Override
-    public void send(Packet packet) {
+    public void send(Packet<?> packet) {
         sendingQueue.offer(packet);
     }
 
     @Override
-    public void receive(Packet packet) {
+    public void receive(Packet<?> packet) {
         receivingQueue.offer(packet);
     }
 
     public void checkSessions()
     {
-        List<Integer> ports = new ArrayList<>(portLatestPacketMap.keySet());
+        List<Integer> ports = new ArrayList<>(portLastSentPacketMap.keySet());
         for(int i = 0; i < ports.size(); i++)
         {
             Integer port = ports.get(i);
             if(portStateMap.getOrDefault(port, null) == PortState.CONNECTING)
             {
-                Long time = System.currentTimeMillis() - portLatestPacketMap.get(port).getCreated();
+                Long time = System.currentTimeMillis() - portLastSentPacketMap.get(port).getCreated();
                 if(time > timeout)
                 {
                     portStateMap.put(port, PortState.OPEN);
-                    portLatestPacketMap.remove(port);
-                    System.out.printf("[%s] Port [%d] timeout\n", getMac(), port);
+                    portLastSentPacketMap.remove(port);
+                    System.out.printf("[%6s-%6s] Port [%d] timeout\n", getMac().substring(0, 6), port);
                 }
             }
 

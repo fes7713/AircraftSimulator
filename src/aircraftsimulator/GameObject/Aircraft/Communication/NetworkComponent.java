@@ -12,6 +12,6 @@ public interface NetworkComponent {
 //    default void disconnect(int port, NetworkComponent connectingComponent){
 //        handshake(false, false, true, connectingComponent);
 //    }
-    void send(Packet packet);
-    void receive(Packet packet);
+    void send(Packet<?> packet);
+    void receive(Packet<?> packet);
 }

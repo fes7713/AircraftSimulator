@@ -7,28 +7,29 @@ public class Packet<T> {
     protected final Integer sourcePort;
     protected final Integer destinationPort;
 
+    protected final String sourceMac;
+    protected final String destinationMac;
+
     protected Long created;
     protected String sessionID;
 
-    public Packet(Packet packet, T data, Integer sourcePort) {
-        this(packet.getSessionID(), data, sourcePort, null);
+    public Packet(@NotNull Packet receivedPacket, T data, @NotNull String sourceMac)
+    {
+        this(receivedPacket.sessionID, data, receivedPacket.destinationPort, receivedPacket.sourcePort, sourceMac, receivedPacket.sourceMac);
     }
 
-    public Packet(Packet packet, T data, Integer sourcePort, Integer destinationPort) {
-        this(packet.getSessionID(), data, sourcePort, destinationPort);
+    public Packet(@NotNull Packet receivedPacket, T data, @NotNull Integer sourcePort, @NotNull Integer destinationPort, String sourceMac, String  destinationMac)
+    {
+        this(receivedPacket.sessionID, data, sourcePort, destinationPort, sourceMac, destinationMac);
     }
 
-    public Packet(String sessionID, T data, Integer sourcePort) {
-        this(sessionID, data, sourcePort, null);
-    }
-
-    public Packet(@NotNull String sessionID, T data, Integer sourcePort, Integer destinationPort) {
-        if(sourcePort == null)
-            throw new IllegalArgumentException("sourcePort cannot be null");
+    public Packet(@NotNull String sessionID, T data, @NotNull Integer sourcePort, @NotNull Integer destinationPort, String sourceMac, String  destinationMac) {
         this.sessionID = sessionID;
         this.data = data;
         this.sourcePort = sourcePort;
         this.destinationPort = destinationPort;
+        this.sourceMac = sourceMac;
+        this.destinationMac = destinationMac;
 
         created = System.currentTimeMillis();
     }
@@ -44,12 +45,21 @@ public class Packet<T> {
         return sourcePort;
     }
 
+    @NotNull
     public Integer getDestinationPort(){
         return destinationPort;
     }
 
     public String getSessionID() {
         return sessionID;
+    }
+
+    public String getSourceMac() {
+        return sourceMac;
+    }
+
+    public String getDestinationMac() {
+        return destinationMac;
     }
 
     public Long getCreated()
