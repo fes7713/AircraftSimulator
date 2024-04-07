@@ -13,6 +13,11 @@ public class Packet<T> {
     protected Long created;
     protected String sessionID;
 
+    public Packet(Packet<T> packet, String sessionID)
+    {
+        this(sessionID, packet.data, packet.sourcePort, packet.destinationPort, packet.sourceMac, packet.destinationMac);
+    }
+
     public Packet(@NotNull Packet receivedPacket, T data, @NotNull String sourceMac)
     {
         this(receivedPacket.sessionID, data, receivedPacket.destinationPort, receivedPacket.sourcePort, sourceMac, receivedPacket.sourceMac);
@@ -23,8 +28,8 @@ public class Packet<T> {
         this(receivedPacket.sessionID, data, sourcePort, destinationPort, sourceMac, destinationMac);
     }
 
-    public Packet(@NotNull String sessionID, T data, @NotNull Integer sourcePort, @NotNull Integer destinationPort, String sourceMac, String  destinationMac) {
-        this.sessionID = sessionID;
+    public Packet(T data, @NotNull Integer sourcePort, @NotNull Integer destinationPort, String sourceMac, String  destinationMac)
+    {
         this.data = data;
         this.sourcePort = sourcePort;
         this.destinationPort = destinationPort;
@@ -32,6 +37,11 @@ public class Packet<T> {
         this.destinationMac = destinationMac;
 
         created = System.currentTimeMillis();
+    }
+
+    public Packet(String sessionID, T data, @NotNull Integer sourcePort, @NotNull Integer destinationPort, String sourceMac, String  destinationMac) {
+        this(data, sourcePort, destinationPort, sourceMac, destinationMac);
+        this.sessionID = sessionID;
     }
 
     public T getData()
@@ -52,6 +62,11 @@ public class Packet<T> {
 
     public String getSessionID() {
         return sessionID;
+    }
+
+    public void setSessionID(String sessionID)
+    {
+        this.sessionID = sessionID;
     }
 
     public String getSourceMac() {

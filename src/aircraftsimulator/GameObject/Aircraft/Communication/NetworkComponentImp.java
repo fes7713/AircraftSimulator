@@ -3,13 +3,15 @@ package aircraftsimulator.GameObject.Aircraft.Communication;
 import java.io.IOException;
 import java.util.*;
 
-public class NetworkComponentImp implements NetworkComponent{
+// TODO -> Unreleased session in code.
+
+public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     private final Network network;
     private final String mac;
 
     private final Map<Integer, PortState> portStateMap;
     private final Map<String, Integer> arpTable;
-    private final Map<Integer, Packet<?>> portLastSentPacketMap;
+    private final SessionManager sessionManager;
 
     private final Queue<Packet<?>> sendingQueue;
     private final Queue<Packet<?>> receivingQueue;
@@ -19,7 +21,7 @@ public class NetworkComponentImp implements NetworkComponent{
     private float timeClock;
 
     private long timeout;
-    private static final long DEFAULT_TIMEOUT = 5000;
+    private static final long DEFAULT_TIMEOUT = 5000000;
 
     public NetworkComponentImp(Network network, float updateInterval)
     {
@@ -28,7 +30,7 @@ public class NetworkComponentImp implements NetworkComponent{
         portStateMap = new HashMap<>();
 
         arpTable = new HashMap<>();
-        portLastSentPacketMap = new HashMap<>();
+        sessionManager = new SessionManager(this);
 
         sendingQueue = new ArrayDeque<>();
         receivingQueue = new ArrayDeque<>();
@@ -49,7 +51,7 @@ public class NetworkComponentImp implements NetworkComponent{
     public void update(float delta) {
         if(timeClock < 0)
         {
-            checkSessions();
+            sessionManager.checkTimeout(timeout);
             process();
             timeClock = updateInterval;
         }
@@ -73,7 +75,7 @@ public class NetworkComponentImp implements NetworkComponent{
             }
             case CLOSED ->{
                 System.out.printf("[%6s-%6s] Port [%d] opened\n", getMac().substring(0, 6), "", port);
-                portStateMap.put(port, PortState.OPEN);
+                changePortState(port, PortState.OPEN);
                 return true;
             }
         }
@@ -89,19 +91,20 @@ public class NetworkComponentImp implements NetworkComponent{
             case OPEN -> {
                 System.out.printf("[%6s-%6s] Open Port [%d] closed\n", getMac(), "", port);
                 portStateMap.remove(port);
-                portLastSentPacketMap.remove(port);
+                sessionManager.deleteSession(port);
             }
             case CONNECTED, CONNECTING -> {
                 System.out.printf("[%6s-%6s] Port [%d] disconnecting\n", getMac(), "", port);
+                SessionInformation sessionInformation = sessionManager.getSessionInformation(port);
+
                 send(
                         new Packet<>(
-                                portLastSentPacketMap.get(port),
+                                sessionManager.getSessionId(port),
                                 new HandshakeData(false, false, false, true),
-                                portLastSentPacketMap.get(port).getSourcePort(),
-                                portLastSentPacketMap.get(port).getDestinationPort(),
-                                portLastSentPacketMap.get(port).getSourceMac(),
-                                portLastSentPacketMap.get(port).getDestinationMac()
-
+                                sessionInformation.sourcePort(),
+                                sessionInformation.destinationPort(),
+                                this.getMac(),
+                                sessionInformation.destinationMac()
                         )
                 );
             }
@@ -124,28 +127,15 @@ public class NetworkComponentImp implements NetworkComponent{
             }
             case SENDING -> {
                 Packet sendingPacket = sendingQueue.poll();
-                boolean newSessionFlag = false;
-
-                if(!portLastSentPacketMap.containsKey(sendingPacket.getSourcePort()))
-                {
-                    if(!(sendingPacket.getData() instanceof HandshakeData hd && hd.isAck()))
-                    {
-                        portLastSentPacketMap.put(sendingPacket.getSourcePort(), sendingPacket);
-                        newSessionFlag = true;
-                    }
-                }
-
+                Integer sendingPort = sendingPacket.getSourcePort();
                 String destinationMac = sendingPacket.getDestinationMac();
-                if(destinationMac != null && newSessionFlag)
-                    throw new RuntimeException("Invalid state of program");
+//                if(destinationMac != null && newSessionFlag)
+//                    throw new RuntimeException("Invalid state of program");
 
                 if(destinationMac != null)
                     network.sendTo(destinationMac, sendingPacket);
                 else
-                {
-
-                    network.broadcast(sendingPacket, getMac());
-                }
+                    network.broadcast(sendingPacket, getMac(), sessionManager);
 
                 if(sendingQueue.isEmpty())
                     networkMode = NetworkMode.IDLE;
@@ -186,7 +176,7 @@ public class NetworkComponentImp implements NetworkComponent{
                             if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.OPEN)
                             {
                                 System.out.printf("[%6s-%6s] Port [%d] connecting SYN\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
-                                portStateMap.put(receivingPacket.getDestinationPort(), PortState.CONNECTING);
+                                changePortState(receivingPacket.getDestinationPort(), PortState.CONNECTING);
                                 responsePacket = new Packet<>(
                                         receivingPacket,
                                         new HandshakeData(true, true, false, false),
@@ -200,7 +190,7 @@ public class NetworkComponentImp implements NetworkComponent{
                             if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING)
                             {
                                 System.out.printf("[%6s-%6s] Port [%d] connected to [%s] Port [%d]\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac(), receivingPacket.getSourcePort());
-                                portStateMap.put(receivingPacket.getDestinationPort(), PortState.CONNECTED);
+                                changePortState(receivingPacket.getDestinationPort(), PortState.CONNECTED);
                                 arpTable.put(receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                                 responsePacket = new Packet<>(
                                         receivingPacket,
@@ -224,7 +214,7 @@ public class NetworkComponentImp implements NetworkComponent{
                             if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING){
                                 System.out.printf("[%6s-%6s] Port [%d] connected to [%s] Port [%d] ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac(), receivingPacket.getSourcePort());
                                 registerArp(receivingPacket);
-                                portStateMap.put(receivingPacket.getDestinationPort(), PortState.CONNECTED);
+                                changePortState(receivingPacket.getDestinationPort(), PortState.CONNECTED);
                             }else{
                                 System.out.printf("[%6s-%6s] Port [%d] connection failed ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             }
@@ -241,8 +231,7 @@ public class NetworkComponentImp implements NetworkComponent{
                                     System.out.printf("[%6s-%6s] Port [%d] connection cancelled \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                                 }
 
-                                portStateMap.put(receivingPacket.getDestinationPort(), PortState.OPEN);
-                                portLastSentPacketMap.remove(receivingPacket.getDestinationPort());
+                                changePortState(receivingPacket.getDestinationPort(), PortState.OPEN);
                                 responsePacket = new Packet<>(
                                         receivingPacket,
                                         new HandshakeData(false, true, false, true),
@@ -259,12 +248,11 @@ public class NetworkComponentImp implements NetworkComponent{
                             {
                                 System.out.printf("[%6s-%6s] Port [%d] disconnected FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                                 arpTable.remove(receivingPacket.getSourceMac());
-                                portStateMap.put(receivingPacket.getDestinationPort(), PortState.OPEN);
-                                portLastSentPacketMap.remove(receivingPacket.getDestinationPort());
+                                changePortState(receivingPacket.getDestinationPort(), PortState.OPEN);
                             }else if (portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING
                             ){
                                 System.out.printf("[%6s-%6s] Port [%d] connection failed FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
-                                portStateMap.put(receivingPacket.getDestinationPort(), PortState.OPEN);
+                                changePortState(receivingPacket.getDestinationPort(), PortState.OPEN);
                             }
                             else{
                                 System.out.printf("[%6s-%6s] Port [%d] invalid packet FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
@@ -288,6 +276,15 @@ public class NetworkComponentImp implements NetworkComponent{
         arpTable.put(packet.getSourceMac(), packet.getDestinationPort());
     }
 
+    // TODO -> Port to session is not one to one
+    private void changePortState(Integer port, PortState state)
+    {
+        portStateMap.put(port, state);
+        if(state == PortState.OPEN)
+            sessionManager.deleteSession(port);
+
+    }
+
     @Override
     public boolean isConnected(int port) {
         return false;
@@ -298,9 +295,8 @@ public class NetworkComponentImp implements NetworkComponent{
         if(!openPort(sourcePort))
             return;
 
-        portStateMap.put(sourcePort, PortState.CONNECTING);
+        changePortState(sourcePort, PortState.CONNECTING);
         Packet<HandshakeData> packet = new Packet<>(
-                UUID.randomUUID().toString(),
                 new HandshakeData(true, false, false, false),
                 sourcePort,
                 sourcePort,
@@ -309,12 +305,6 @@ public class NetworkComponentImp implements NetworkComponent{
         System.out.printf("[%6s-%6s] Port [%d] connecting\n", getMac().substring(0, 6), "", sourcePort);
         send(packet);
     }
-
-//    @Override
-//    public void handshake(boolean syn, boolean ack, boolean fin, NetworkComponent connectingComponent) {
-////        send(new HandshakePacket(connectingComponent.getFreePortPair(connectingComponent)));
-//
-//    }
 
     @Override
     public void send(Packet<?> packet) {
@@ -326,23 +316,10 @@ public class NetworkComponentImp implements NetworkComponent{
         receivingQueue.offer(packet);
     }
 
-    public void checkSessions()
-    {
-        List<Integer> ports = new ArrayList<>(portLastSentPacketMap.keySet());
-        for(int i = 0; i < ports.size(); i++)
-        {
-            Integer port = ports.get(i);
-            if(portStateMap.getOrDefault(port, null) == PortState.CONNECTING)
-            {
-                Long time = System.currentTimeMillis() - portLastSentPacketMap.get(port).getCreated();
-                if(time > timeout)
-                {
-                    portStateMap.put(port, PortState.OPEN);
-                    portLastSentPacketMap.remove(port);
-                    System.out.printf("[%6s-] Port [%d] timeout\n", getMac().substring(0, 6), port);
-                }
-            }
-        }
+    @Override
+    public void triggerTimeout(Integer port, SessionInformation sessionInformation) {
+        changePortState(port, PortState.OPEN);
+        System.out.printf("[%6s-] Port [%d] timeout\n", getMac().substring(0, 6), port);
     }
 
     public static void main(String[] args )
