@@ -1,5 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
+import java.io.IOException;
 import java.util.*;
 
 public class NetworkComponentImp implements NetworkComponent{
@@ -18,7 +19,7 @@ public class NetworkComponentImp implements NetworkComponent{
     private float timeClock;
 
     private long timeout;
-    private static final long DEFAULT_TIMEOUT = 5000000;
+    private static final long DEFAULT_TIMEOUT = 5000;
 
     public NetworkComponentImp(Network network, float updateInterval)
     {
@@ -338,10 +339,9 @@ public class NetworkComponentImp implements NetworkComponent{
                 {
                     portStateMap.put(port, PortState.OPEN);
                     portLastSentPacketMap.remove(port);
-                    System.out.printf("[%6s-%6s] Port [%d] timeout\n", getMac().substring(0, 6), port);
+                    System.out.printf("[%6s-] Port [%d] timeout\n", getMac().substring(0, 6), port);
                 }
             }
-
         }
     }
 
@@ -362,6 +362,24 @@ public class NetworkComponentImp implements NetworkComponent{
         component1.connect(20);
 
         int cnt = 0;
+
+        PositionCommand command = new PositionCommand(1, "");
+        try {
+            byte[] array = ByteConvertor.serialize(command);
+            String string = ByteConvertor.convert(array);
+            System.out.println(string);
+
+            byte[][] arrays = ByteConvertor.serialize(command, 32);
+            System.out.println(ByteConvertor.convert(arrays));
+
+            PositionCommand convComand = ByteConvertor.deSerialize(array);
+            System.out.println(convComand.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
 
         while(true)
         {
