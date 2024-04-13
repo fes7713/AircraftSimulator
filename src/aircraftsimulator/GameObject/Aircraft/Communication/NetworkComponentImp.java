@@ -95,18 +95,23 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
             }
             case CONNECTED, CONNECTING -> {
                 System.out.printf("[%6s-%6s] Port [%d] disconnecting\n", getMac(), "", port);
-                SessionInformation sessionInformation = sessionManager.getSessionInformation(port);
-
-                send(
-                        new Packet<>(
-                                sessionManager.getSessionId(port),
-                                new HandshakeData(false, false, false, true),
-                                sessionInformation.sourcePort(),
-                                sessionInformation.destinationPort(),
-                                this.getMac(),
-                                sessionInformation.destinationMac()
-                        )
-                );
+                Map<String, SessionInformation> sessionInformationMap = sessionManager.getSessionInformationMap(port);
+                List<String> sessionIds = new ArrayList<>(sessionManager.getSessionId(port));
+                for(String sessionId: sessionIds)
+                {
+                    SessionInformation sessionInformation = sessionInformationMap.get(sessionId);
+                    send(
+                            new Packet<>(
+                                    sessionId,
+                                    new HandshakeData(false, false, false, true),
+                                    sessionInformation.sourcePort(),
+                                    sessionInformation.destinationPort(),
+                                    this.getMac(),
+                                    sessionInformation.destinationMac()
+                            )
+                    );
+                    sessionManager.deleteSession(sessionId);
+                }
             }
             default -> {
                 System.out.printf("[%6s-%6s] Port [%d] not open\n", getMac().substring(0, 6), "", port);
@@ -148,6 +153,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 if(receivingPacket.getSourceMac() == null)
                 {
                     System.out.printf("[%6s-%6s] Port [%d] connection rejected SYN\n", getMac().substring(0, 6), "", receivingPacket.getDestinationPort());
+                    sessionManager.deleteSession(receivingPacket.getSessionID());
                     return;
                 }
 
@@ -167,6 +173,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                                 receivingPacket.getSourceMac()
                         );
                         send(responsePacket);
+                        sessionManager.deleteSession(receivingPacket.getSessionID());
                         return;
                     }
                     switch (code)
@@ -184,6 +191,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                                 );
                             }else{
                                 System.out.printf("[%6s-%6s] Port [%d] in use\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                                sessionManager.deleteSession(receivingPacket.getSessionID());
                             }
                         }
                         case 1100 -> {
@@ -207,6 +215,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                                         null,
                                         receivingPacket.getSourceMac()
                                 );
+                                sessionManager.deleteSession(receivingPacket.getSessionID());
                             }
 
                         }
@@ -217,6 +226,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                                 changePortState(receivingPacket.getDestinationPort(), PortState.CONNECTED);
                             }else{
                                 System.out.printf("[%6s-%6s] Port [%d] connection failed ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                                sessionManager.deleteSession(receivingPacket.getSessionID());
                             }
                         }
                         case 1 -> {
@@ -240,6 +250,8 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                             }else{
                                 System.out.printf("[%6s-%6s] Port [%d] invalid packet FIN \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             }
+
+                            sessionManager.deleteSession(receivingPacket.getSessionID());
                         }
                         case 101 -> {
                             if(arpTable.containsKey(receivingPacket.getSourceMac()) &&

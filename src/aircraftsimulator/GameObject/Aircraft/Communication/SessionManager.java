@@ -1,11 +1,9 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class SessionManager {
-    private final Map<Integer, String> portSessionMap;
+    private final Map<Integer, List<String>> portSessionMap;
     private final Map<String, SessionInformation> sessionInformationMap;
     private final Map<String, Long> sessionLastUpdatedMap;
 
@@ -21,7 +19,9 @@ public class SessionManager {
     public String generateSession(Integer sourcePort, Integer destinationPort, String destinationArp)
     {
         String sessionId = UUID.randomUUID().toString();
-        portSessionMap.put(sourcePort, sessionId);
+        if(!portSessionMap.containsKey(sourcePort))
+            portSessionMap.put(sourcePort, new ArrayList<>());
+        portSessionMap.get(sourcePort).add(sessionId);
         sessionInformationMap.put(sessionId, new SessionInformation(sourcePort, destinationPort, destinationArp));
         sessionLastUpdatedMap.put(sessionId, System.currentTimeMillis());
         return sessionId;
@@ -29,26 +29,33 @@ public class SessionManager {
 
     public boolean deleteSession(String sessionId)
     {
-        if(sessionInformationMap.containsKey(sessionId))
+        if(!sessionInformationMap.containsKey(sessionId))
         {
-            portSessionMap.remove(sessionInformationMap.get(sessionId).sourcePort());
-            sessionInformationMap.remove(sessionId);
-            sessionLastUpdatedMap.remove(sessionId);
-            return true;
+            return false;
         }
-        return false;
+        Integer port = sessionInformationMap.get(sessionId).sourcePort();
+
+        portSessionMap.get(port).remove(sessionId);
+        sessionInformationMap.remove(sessionId);
+        sessionLastUpdatedMap.remove(sessionId);
+
+        return true;
     }
 
     public boolean deleteSession(Integer port)
     {
-        if(portSessionMap.containsKey(port))
+        if(!portSessionMap.containsKey(port))
+            return false;
+        for(String sessionId: new ArrayList<>(getSessionId(port)))
         {
-            sessionInformationMap.remove(portSessionMap.get(port));
-            sessionLastUpdatedMap.remove(portSessionMap.get(port));
-            portSessionMap.remove(port);
-            return true;
+            if(portSessionMap.containsKey(port))
+            {
+                sessionInformationMap.remove(sessionId);
+                sessionLastUpdatedMap.remove(sessionId);
+            }
         }
-        return false;
+        portSessionMap.remove(port);
+        return true;
     }
 
     public SessionInformation getSessionInformation(String sessionId)
@@ -56,14 +63,19 @@ public class SessionManager {
         return sessionInformationMap.getOrDefault(sessionId, null);
     }
 
-    public String getSessionId(Integer port)
+    public List<String> getSessionId(Integer port)
     {
-        return portSessionMap.getOrDefault(port, null);
+        return portSessionMap.getOrDefault(port, new ArrayList<>());
     }
 
-    public SessionInformation getSessionInformation(Integer port)
+    public Map<String, SessionInformation> getSessionInformationMap(Integer port)
     {
-        return sessionInformationMap.getOrDefault(portSessionMap.getOrDefault(port, null), null);
+        Map<String, SessionInformation> sessionInformationList = new HashMap<>();
+        for(String sessionId: getSessionId(port))
+        {
+            sessionInformationList.put(sessionId, sessionInformationMap.get(sessionId));
+        }
+        return sessionInformationList;
     }
 
     public boolean isRegistred(Integer port)
@@ -88,10 +100,14 @@ public class SessionManager {
 
     public void checkTimeout(Long timeout)
     {
-        for(Integer port: portSessionMap.keySet()){
-            if(isTimeout(portSessionMap.get(port), timeout))
+        for(Integer port: portSessionMap.keySet())
+        {
+            for(String sessionId: getSessionId(port))
             {
-                timeoutHandler.triggerTimeout(port, sessionInformationMap.get(portSessionMap.get(port)));
+                if(isTimeout(sessionId, timeout))
+                {
+                    timeoutHandler.triggerTimeout(port, sessionInformationMap.get(sessionId));
+                }
             }
         }
     }
