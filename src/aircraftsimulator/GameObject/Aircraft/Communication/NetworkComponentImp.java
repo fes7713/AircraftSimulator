@@ -104,6 +104,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                             new Packet<>(
                                     sessionId,
                                     new HandshakeData(false, false, false, true),
+                                    null,
                                     sessionInformation.sourcePort(),
                                     sessionInformation.destinationPort(),
                                     this.getMac(),
@@ -149,7 +150,8 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 Packet receivingPacket = receivingQueue.poll();
                 if(receivingQueue.isEmpty())
                     networkMode = NetworkMode.IDLE;
-                Object data = receivingPacket.getData();
+//                Object data = receivingPacket.getData();
+                HandshakeData handshakeData = receivingPacket.getHandshake();
                 if(receivingPacket.getSourceMac() == null)
                 {
                     System.out.printf("[%6s-%6s] Port [%d] connection rejected SYN\n", getMac().substring(0, 6), "", receivingPacket.getDestinationPort());
@@ -157,127 +159,129 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                     return;
                 }
 
-                if(data instanceof HandshakeData d)
+
+                Packet<HandshakeData> responsePacket = null;
+                int code = (handshakeData.isSyn() ? 1000:0) + (handshakeData.isAck() ? 100:0) + (handshakeData.isRst() ? 10:0) + (handshakeData.isFin() ? 1:0);
+                if(!portStateMap.containsKey(receivingPacket.getDestinationPort()))
                 {
-                    Packet<HandshakeData> responsePacket = null;
-                    int code = (d.isSyn() ? 1000:0) + (d.isAck() ? 100:0) + (d.isRst() ? 10:0) + (d.isFin() ? 1:0);
-                    if(!portStateMap.containsKey(receivingPacket.getDestinationPort()))
-                    {
-                        System.out.printf("[%6s-%6s] Port [%d] is closed \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
-                        responsePacket = new Packet<>(
-                                receivingPacket,
-                                new HandshakeData(false, true, true, false),
-                                receivingPacket.getDestinationPort(),
-                                receivingPacket.getSourcePort(),
-                                null,
-                                receivingPacket.getSourceMac()
-                        );
-                        send(responsePacket);
-                        sessionManager.deleteSession(receivingPacket.getSessionID());
-                        return;
-                    }
-                    switch (code)
-                    {
-                        // SYN
-                        case 1000 -> {
-                            if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.OPEN)
-                            {
-                                System.out.printf("[%6s-%6s] Port [%d] connecting SYN\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
-                                changePortState(receivingPacket.getDestinationPort(), PortState.CONNECTING);
-                                responsePacket = new Packet<>(
-                                        receivingPacket,
-                                        new HandshakeData(true, true, false, false),
-                                        getMac()
-                                );
-                            }else{
-                                System.out.printf("[%6s-%6s] Port [%d] in use\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
-                                sessionManager.deleteSession(receivingPacket.getSessionID());
-                            }
-                        }
-                        case 1100 -> {
-                            if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING)
-                            {
-                                System.out.printf("[%6s-%6s] Port [%d] connected to [%s] Port [%d]\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac(), receivingPacket.getSourcePort());
-                                changePortState(receivingPacket.getDestinationPort(), PortState.CONNECTED);
-                                arpTable.put(receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
-                                responsePacket = new Packet<>(
-                                        receivingPacket,
-                                        new HandshakeData(false, true, false, false),
-                                        getMac()
-                                );
-                            }else{
-                                System.out.printf("[%6s-%6s] Port [%d] invalid packet SYN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
-                                responsePacket = new Packet<>(
-                                        receivingPacket,
-                                        new HandshakeData(false, true, true, true),
-                                        receivingPacket.getDestinationPort(),
-                                        receivingPacket.getSourcePort(),
-                                        null,
-                                        receivingPacket.getSourceMac()
-                                );
-                                sessionManager.deleteSession(receivingPacket.getSessionID());
-                            }
-
-                        }
-                        case 100 -> {
-                            if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING){
-                                System.out.printf("[%6s-%6s] Port [%d] connected to [%s] Port [%d] ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac(), receivingPacket.getSourcePort());
-                                registerArp(receivingPacket);
-                                changePortState(receivingPacket.getDestinationPort(), PortState.CONNECTED);
-                            }else{
-                                System.out.printf("[%6s-%6s] Port [%d] connection failed ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
-                                sessionManager.deleteSession(receivingPacket.getSessionID());
-                            }
-                        }
-                        case 1 -> {
-                            if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTED
-                            )
-                            {
-                                if(arpTable.containsKey(receivingPacket.getSourceMac()))
-                                {
-                                    System.out.printf("[%6s-%6s] Port [%d] disconnected \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
-                                    arpTable.remove(receivingPacket.getSourceMac());
-                                }else{
-                                    System.out.printf("[%6s-%6s] Port [%d] connection cancelled \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
-                                }
-
-                                changePortState(receivingPacket.getDestinationPort(), PortState.OPEN);
-                                responsePacket = new Packet<>(
-                                        receivingPacket,
-                                        new HandshakeData(false, true, false, true),
-                                        getMac()
-                                );
-                            }else{
-                                System.out.printf("[%6s-%6s] Port [%d] invalid packet FIN \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
-                            }
-
+                    System.out.printf("[%6s-%6s] Port [%d] is closed \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                    responsePacket = new Packet<>(
+                            receivingPacket,
+                            new HandshakeData(false, true, true, false),
+                            null,
+                            receivingPacket.getDestinationPort(),
+                            receivingPacket.getSourcePort(),
+                            null,
+                            receivingPacket.getSourceMac()
+                    );
+                    send(responsePacket);
+                    sessionManager.deleteSession(receivingPacket.getSessionID());
+                    return;
+                }
+                switch (code)
+                {
+                    // SYN
+                    case 1000 -> {
+                        if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.OPEN)
+                        {
+                            System.out.printf("[%6s-%6s] Port [%d] connecting SYN\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            changePortState(receivingPacket.getDestinationPort(), PortState.CONNECTING);
+                            responsePacket = new Packet<>(
+                                    receivingPacket,
+                                    new HandshakeData(true, true, false, false),
+                                    null,
+                                    getMac()
+                            );
+                        }else{
+                            System.out.printf("[%6s-%6s] Port [%d] in use\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             sessionManager.deleteSession(receivingPacket.getSessionID());
                         }
-                        case 101 -> {
-                            if(arpTable.containsKey(receivingPacket.getSourceMac()) &&
-                                    portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTED
-                            )
-                            {
-                                System.out.printf("[%6s-%6s] Port [%d] disconnected FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
-                                arpTable.remove(receivingPacket.getSourceMac());
-                                changePortState(receivingPacket.getDestinationPort(), PortState.OPEN);
-                            }else if (portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING
-                            ){
-                                System.out.printf("[%6s-%6s] Port [%d] connection failed FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
-                                changePortState(receivingPacket.getDestinationPort(), PortState.OPEN);
-                            }
-                            else{
-                                System.out.printf("[%6s-%6s] Port [%d] invalid packet FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
-                            }
+                    }
+                    case 1100 -> {
+                        if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING)
+                        {
+                            System.out.printf("[%6s-%6s] Port [%d] connected to [%s] Port [%d]\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac(), receivingPacket.getSourcePort());
+                            changePortState(receivingPacket.getDestinationPort(), PortState.CONNECTED);
+                            arpTable.put(receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
+                            responsePacket = new Packet<>(
+                                    receivingPacket,
+                                    new HandshakeData(false, true, false, false),
+                                    null,
+                                    getMac()
+                            );
+                        }else{
+                            System.out.printf("[%6s-%6s] Port [%d] invalid packet SYN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            responsePacket = new Packet<>(
+                                    receivingPacket,
+                                    new HandshakeData(false, true, true, true),
+                                    null,
+                                    receivingPacket.getDestinationPort(),
+                                    receivingPacket.getSourcePort(),
+                                    null,
+                                    receivingPacket.getSourceMac()
+                            );
+                            sessionManager.deleteSession(receivingPacket.getSessionID());
                         }
-                        default -> {
-                            System.out.printf("[%6s-%6s] Port [%d] code [%d] received\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), code);
+                    }
+                    case 100 -> {
+                        if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING){
+                            System.out.printf("[%6s-%6s] Port [%d] connected to [%s] Port [%d] ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac(), receivingPacket.getSourcePort());
+                            registerArp(receivingPacket);
+                            changePortState(receivingPacket.getDestinationPort(), PortState.CONNECTED);
+                        }else{
+                            System.out.printf("[%6s-%6s] Port [%d] connection failed ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            sessionManager.deleteSession(receivingPacket.getSessionID());
+                        }
+                    }
+                    case 1 -> {
+                        if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTED
+                        )
+                        {
+                            if(arpTable.containsKey(receivingPacket.getSourceMac()))
+                            {
+                                System.out.printf("[%6s-%6s] Port [%d] disconnected \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                                arpTable.remove(receivingPacket.getSourceMac());
+                            }else{
+                                System.out.printf("[%6s-%6s] Port [%d] connection cancelled \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            }
+
+                            changePortState(receivingPacket.getDestinationPort(), PortState.OPEN);
+                            responsePacket = new Packet<>(
+                                    receivingPacket,
+                                    new HandshakeData(false, true, false, true),
+                                    null,
+                                    getMac()
+                            );
+                        }else{
+                            System.out.printf("[%6s-%6s] Port [%d] invalid packet FIN \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                         }
 
+                        sessionManager.deleteSession(receivingPacket.getSessionID());
                     }
-                    if(responsePacket != null) {
-                        send(responsePacket);
+                    case 101 -> {
+                        if(arpTable.containsKey(receivingPacket.getSourceMac()) &&
+                                portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTED
+                        )
+                        {
+                            System.out.printf("[%6s-%6s] Port [%d] disconnected FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            arpTable.remove(receivingPacket.getSourceMac());
+                            changePortState(receivingPacket.getDestinationPort(), PortState.OPEN);
+                        }else if (portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING
+                        ){
+                            System.out.printf("[%6s-%6s] Port [%d] connection failed FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            changePortState(receivingPacket.getDestinationPort(), PortState.OPEN);
+                        }
+                        else{
+                            System.out.printf("[%6s-%6s] Port [%d] invalid packet FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                        }
                     }
+                    default -> {
+                        System.out.printf("[%6s-%6s] Port [%d] code [%d] received\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), code);
+                    }
+
+                }
+                if(responsePacket != null) {
+                    send(responsePacket);
                 }
             }
         }
@@ -310,6 +314,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         changePortState(sourcePort, PortState.CONNECTING);
         Packet<HandshakeData> packet = new Packet<>(
                 new HandshakeData(true, false, false, false),
+                null,
                 sourcePort,
                 sourcePort,
                 getMac(),
