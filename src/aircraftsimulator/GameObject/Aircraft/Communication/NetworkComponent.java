@@ -14,4 +14,5 @@ public interface NetworkComponent {
 //    }
     void send(Packet<?> packet);
     void receive(Packet<?> packet);
+    void sendData(String sessionId, Object data);
 }

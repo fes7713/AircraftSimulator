@@ -19,11 +19,7 @@ public class SessionManager {
     public String generateSession(Integer sourcePort, Integer destinationPort, String destinationArp)
     {
         String sessionId = UUID.randomUUID().toString();
-        if(!portSessionMap.containsKey(sourcePort))
-            portSessionMap.put(sourcePort, new ArrayList<>());
-        portSessionMap.get(sourcePort).add(sessionId);
-        sessionInformationMap.put(sessionId, new SessionInformation(sourcePort, destinationPort, destinationArp));
-        sessionLastUpdatedMap.put(sessionId, System.currentTimeMillis());
+        register(sessionId, sourcePort, destinationPort, destinationArp);
         return sessionId;
     }
 
@@ -78,15 +74,34 @@ public class SessionManager {
         return sessionInformationList;
     }
 
-    public boolean isRegistred(Integer port)
+    public boolean isRegistered(Integer port)
     {
         return portSessionMap.containsKey(port);
     }
 
-    public void updateSession(String sessionId)
+    public boolean isRegistered(String sessionId)
+    {
+        return sessionInformationMap.containsKey(sessionId);
+    }
+
+    public void register(String sessionId, Integer sourcePort, Integer destinationPort, String destinationArp)
+    {
+        if(!portSessionMap.containsKey(sourcePort))
+            portSessionMap.put(sourcePort, new ArrayList<>());
+        portSessionMap.get(sourcePort).add(sessionId);
+        sessionInformationMap.put(sessionId, new SessionInformation(sourcePort, destinationPort, destinationArp));
+        sessionLastUpdatedMap.put(sessionId, System.currentTimeMillis());
+    }
+
+    public void updateSession(String sessionId, Integer sourcePort, Integer destinationPort, String destinationArp)
     {
         if(sessionLastUpdatedMap.containsKey(sessionId))
+        {
+            sessionInformationMap.put(sessionId, new SessionInformation(sourcePort, destinationPort, destinationArp));
             sessionLastUpdatedMap.put(sessionId, System.currentTimeMillis());
+        }else{
+            System.out.printf("");
+        }
     }
 
     public boolean isTimeout(String sessionId, Long timeout)
