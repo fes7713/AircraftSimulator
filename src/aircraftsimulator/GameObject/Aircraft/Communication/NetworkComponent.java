@@ -8,10 +8,7 @@ public interface NetworkComponent {
 
     boolean isConnected(int port);
     void connect(int port);
-//    void handshake(boolean syn, boolean ack, boolean fin, NetworkComponent connectingComponent);
-//    default void disconnect(int port, NetworkComponent connectingComponent){
-//        handshake(false, false, true, connectingComponent);
-//    }
+    void disconnect(Integer port);
     void send(Packet<?> packet);
     void receive(Packet<?> packet);
     void sendData(String sessionId, Object data);
