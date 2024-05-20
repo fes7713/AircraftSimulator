@@ -3,7 +3,7 @@ package aircraftsimulator.GameObject.Aircraft.Communication;
 import java.util.*;
 
 public class SessionManager {
-    private final Map<Integer, List<String>> portSessionMap;
+    private final Map<Integer, String> portSessionMap;
     private final Map<String, SessionInformation> sessionInformationMap;
     private final Map<String, Long> sessionLastUpdatedMap;
 
@@ -19,19 +19,19 @@ public class SessionManager {
     public String generateSession(Integer sourcePort, Integer destinationPort, String destinationArp)
     {
         String sessionId = UUID.randomUUID().toString();
-        register(sessionId, sourcePort, destinationPort, destinationArp);
-        return sessionId;
+        boolean result = register(sessionId, sourcePort, destinationPort, destinationArp);
+        if(result)
+            return sessionId;
+        else
+            return null;
     }
 
     public boolean deleteSession(String sessionId)
     {
         if(!sessionInformationMap.containsKey(sessionId))
-        {
             return false;
-        }
         Integer port = sessionInformationMap.get(sessionId).sourcePort();
-
-        portSessionMap.get(port).remove(sessionId);
+        portSessionMap.remove(port);
         sessionInformationMap.remove(sessionId);
         sessionLastUpdatedMap.remove(sessionId);
 
@@ -42,14 +42,10 @@ public class SessionManager {
     {
         if(!portSessionMap.containsKey(port))
             return false;
-        for(String sessionId: new ArrayList<>(getSessionId(port)))
-        {
-            if(portSessionMap.containsKey(port))
-            {
-                sessionInformationMap.remove(sessionId);
-                sessionLastUpdatedMap.remove(sessionId);
-            }
-        }
+        String sessionId = getSessionId(port);
+        sessionInformationMap.remove(sessionId);
+        sessionLastUpdatedMap.remove(sessionId);
+
         portSessionMap.remove(port);
         return true;
     }
@@ -59,38 +55,44 @@ public class SessionManager {
         return sessionInformationMap.getOrDefault(sessionId, null);
     }
 
-    public List<String> getSessionId(Integer port)
+    public String getSessionId(Integer port)
     {
-        return portSessionMap.getOrDefault(port, new ArrayList<>());
+        return portSessionMap.getOrDefault(port, null);
     }
 
     public Map<String, SessionInformation> getSessionInformationMap(Integer port)
     {
         Map<String, SessionInformation> sessionInformationList = new HashMap<>();
-        for(String sessionId: getSessionId(port))
+        String sessionId = getSessionId(port);
+        if(sessionId != null)
         {
             sessionInformationList.put(sessionId, sessionInformationMap.get(sessionId));
         }
         return sessionInformationList;
     }
 
-    public boolean isRegistered(Integer port)
-    {
-        return portSessionMap.containsKey(port);
-    }
-
-    public boolean isRegistered(String sessionId)
+    public boolean validateSessionId(String sessionId)
     {
         return sessionInformationMap.containsKey(sessionId);
     }
 
-    public void register(String sessionId, Integer sourcePort, Integer destinationPort, String destinationArp)
+    public boolean isRegistered(String sessionId, String destinationMac)
     {
-        if(!portSessionMap.containsKey(sourcePort))
-            portSessionMap.put(sourcePort, new ArrayList<>());
-        portSessionMap.get(sourcePort).add(sessionId);
+        if(!sessionInformationMap.containsKey(sessionId))
+            return false;
+        if(sessionInformationMap.get(sessionId).destinationMac() == null)
+            return true;
+        return sessionInformationMap.get(sessionId).destinationMac().equals(destinationMac);
+    }
+
+    public boolean register(String sessionId, Integer sourcePort, Integer destinationPort, String destinationArp)
+    {
+        if(portSessionMap.containsKey(sourcePort))
+            return false;
+        portSessionMap.put(sourcePort, sessionId);
         sessionInformationMap.put(sessionId, new SessionInformation(sourcePort, destinationPort, destinationArp));
         sessionLastUpdatedMap.put(sessionId, System.currentTimeMillis());
+        return true;
     }
 
     public void updateSession(String sessionId, Integer sourcePort, Integer destinationPort, String destinationArp)
@@ -117,12 +119,10 @@ public class SessionManager {
     {
         for(Integer port: portSessionMap.keySet())
         {
-            for(String sessionId: getSessionId(port))
+            String sessionId = getSessionId(port);
+            if(isTimeout(sessionId, timeout))
             {
-                if(isTimeout(sessionId, timeout))
-                {
-                    timeoutHandler.triggerTimeout(port, sessionInformationMap.get(sessionId));
-                }
+                timeoutHandler.triggerTimeout(port, sessionInformationMap.get(sessionId));
             }
         }
     }

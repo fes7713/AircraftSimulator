@@ -137,10 +137,9 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 if(receivingPacket.getSourceMac() == null)
                 {
                     System.out.printf("[%6s-%6s] Port [%d] connection rejected SYN\n", getMac().substring(0, 6), "", receivingPacket.getDestinationPort());
-                    sessionManager.deleteSession(receivingPacket.getSessionID());
+//                    sessionManager.deleteSession(receivingPacket.getSessionID());
                     return;
                 }
-
 
                 Packet<HandshakeData> responsePacket = null;
                 int code = (handshakeData.isSyn() ? 1000:0) + (handshakeData.isAck() ? 100:0) + (handshakeData.isRst() ? 10:0) + (handshakeData.isFin() ? 1:0);
@@ -162,7 +161,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 }
 
                 Integer port = receivingPacket.getDestinationPort();
-                if(portStateMap.get(port) != PortState.OPEN && !sessionManager.isRegistered(receivingPacket.getSessionID()))
+                if(portStateMap.get(port) != PortState.OPEN && !sessionManager.isRegistered(receivingPacket.getSessionID(), receivingPacket.getSourceMac()))
                 {
                     System.out.printf("[%6s-%6s] Port [%d] Session id [%6s] is not registered\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSessionID());
                     changePortState(port, PortState.OPEN, null);
@@ -221,7 +220,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                             System.out.printf("[%6s-%6s] Port [%d] connected to [%s] Port [%d] ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac(), receivingPacket.getSourcePort());
                             registerArp(receivingPacket);
                             changePortState(receivingPacket.getDestinationPort(), PortState.CONNECTED,
-                                    receivingPacket.getSessionID(), receivingPacket.getSourcePort(), receivingPacket.destinationMac);
+                                    receivingPacket.getSessionID(), receivingPacket.getSourcePort(), receivingPacket.getSourceMac());
                         }
                         else if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTED){
                             System.out.printf("[%6s-%6s] Port Data Received ACK [%s]\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac(), receivingPacket.getSourcePort(), receivingPacket.getData().toString());
@@ -300,6 +299,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         else if(packet != null)
             changePortState(port, state, packet.getSessionID(), packet.getDestinationPort(), packet.getDestinationMac());
         else
+            // open
             changePortState(port, state, null, null, null);
     }
 
@@ -307,11 +307,21 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     private void changePortState(Integer port, PortState state, String sessionId, Integer destinationPort, String destinationMac)
     {
         if(state == PortState.OPEN)
-            sessionManager.deleteSession(port);
+        {
+            if(sessionId != null)
+                sessionManager.deleteSession(sessionId);
+            else if(!(destinationPort == null && destinationMac == null))
+                throw new RuntimeException("Error !!!");
+        }
         else if(state == null)
         {
-            sessionManager.deleteSession(port);
-            portStateMap.remove(port);
+            if(sessionId != null)
+            {
+                sessionManager.deleteSession(sessionId);
+                portStateMap.remove(port);
+            }else{
+                throw new RuntimeException("Error !!");
+            }
         }
         else if(portStateMap.get(port) == PortState.OPEN && state == PortState.CONNECTING)
         {
@@ -356,23 +366,19 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     @Override
     public void disconnect(Integer port) {
         System.out.printf("[%6s-%6s] Port [%d] disconnecting\n", getMac().substring(0, 6), "", port);
-        Map<String, SessionInformation> sessionInformationMap = sessionManager.getSessionInformationMap(port);
-        List<String> sessionIds = new ArrayList<>(sessionManager.getSessionId(port));
-        for(String sessionId: sessionIds)
-        {
-            SessionInformation sessionInformation = sessionInformationMap.get(sessionId);
-            send(
-                    new Packet<>(
-                            sessionId,
-                            new HandshakeData(false, false, false, true),
-                            null,
-                            sessionInformation.sourcePort(),
-                            sessionInformation.destinationPort(),
-                            this.getMac(),
-                            sessionInformation.destinationMac()
-                    )
-            );
-        }
+        String sessionId = sessionManager.getSessionId(port);
+        SessionInformation sessionInformation = sessionManager.getSessionInformation(sessionId);
+        send(
+                new Packet<>(
+                        sessionId,
+                        new HandshakeData(false, false, false, true),
+                        null,
+                        sessionInformation.sourcePort(),
+                        sessionInformation.destinationPort(),
+                        this.getMac(),
+                        sessionInformation.destinationMac()
+                )
+        );
     }
 
     @Override
@@ -387,7 +393,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
 
     @Override
     public void sendData(String sessionId, Object data) {
-        if(!sessionManager.isRegistered(10))
+        if(!sessionManager.validateSessionId(sessionId))
             return;
         SessionInformation sessionInformation = sessionManager.getSessionInformation(sessionId);
 
@@ -407,7 +413,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     @Override
     public void triggerTimeout(Integer port, SessionInformation sessionInformation) {
         if(portStateMap.get(port) == PortState.CONNECTING) {
-            changePortState(port, PortState.OPEN, null);
+            changePortState(port, PortState.OPEN, sessionManager.getSessionId(port), sessionInformation.destinationPort(), sessionInformation.destinationMac());
             System.out.printf("[%6s-] Port [%d] timeout\n", getMac().substring(0, 6), port);
         }
     }
@@ -425,6 +431,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         network.addToNetwork(component1);
         network.addToNetwork(component2);
         network.addToNetwork(component3);
+        network.addToNetwork(component4);
 
         component1.connect(10);
         component1.connect(20);
@@ -471,25 +478,36 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            component4.update(0.03F);
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
             if(cnt == 100)
             {
+                System.out.println("Disconnect");
                 component1.disconnect(10);
             }
             if(cnt == 140)
             {
+                System.out.println("Connect 10");
                 component1.connect(10);
             }
             if(cnt == 200)
             {
+                System.out.println("Connect 30");
                 component1.connect(30);
             }
-            if(cnt == 240)
+            if(cnt == 300)
             {
+                System.out.println("Open port 30");
                 component4.openPort(30);
             }
-            if(cnt == 280)
+            if(cnt == 320)
             {
+                System.out.println("Connect 30");
                 component1.connect(30);
             }
 

@@ -22,21 +22,16 @@ public class NetworkImp implements Network{
 
     @Override
     public void broadcast(Packet packet, String sourceMac, SessionManager sessionManager) {
+        String sessionId = sessionManager.generateSession(
+                packet.getSourcePort(),
+                packet.getDestinationPort(),
+                packet.getDestinationMac()
+        );
+        if(sessionId == null)
+            return;
         for(NetworkComponent networkComponent: arpNetworkComponentMap.values())
-        {
             if(!networkComponent.getMac().equals(sourceMac))
-            {
-                networkComponent.receive(
-                        new Packet(packet,
-                                sessionManager.generateSession(
-                                        packet.getSourcePort(),
-                                        packet.getDestinationPort(),
-                                        packet.getDestinationMac()
-                                )
-                        )
-                );
-            }
-        }
+                networkComponent.receive(new Packet(packet, sessionId));
     }
 
     @Override
