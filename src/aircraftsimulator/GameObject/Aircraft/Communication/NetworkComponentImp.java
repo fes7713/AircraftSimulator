@@ -241,7 +241,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                                 System.out.printf("[%6s-%6s] Port [%d] connection cancelled \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             }
 
-                            changePortState(receivingPacket.getDestinationPort(), PortState.OPEN, null);
+                            releasePort(receivingPacket);
                             responsePacket = new Packet<>(
                                     receivingPacket,
                                     new HandshakeData(false, true, false, true),
@@ -265,7 +265,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                             System.out.printf("[%6s-%6s] Port [%d] invalid packet FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             return;
                         }
-                        changePortState(receivingPacket.getDestinationPort(), PortState.OPEN, null);
+                        releasePort(receivingPacket);
                     }
                     default -> {
                         System.out.printf("[%6s-%6s] Port [%d] code [%d] received\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), code);
@@ -301,6 +301,12 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         else
             // open
             changePortState(port, state, null, null, null);
+    }
+
+    private void releasePort(Packet<?> receivingPacket)
+    {
+        changePortState(receivingPacket.getDestinationPort(), PortState.OPEN,
+                receivingPacket.getSessionID(), receivingPacket.getSourcePort(), receivingPacket.getSourceMac());
     }
 
     // TODO -> Port to session is not one to one
@@ -455,7 +461,6 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
             e.printStackTrace();
         }
 
-
         while(true)
         {
             cnt++;
@@ -490,7 +495,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 System.out.println("Disconnect");
                 component1.disconnect(10);
             }
-            if(cnt == 140)
+            if(cnt == 160)
             {
                 System.out.println("Connect 10");
                 component1.connect(10);
