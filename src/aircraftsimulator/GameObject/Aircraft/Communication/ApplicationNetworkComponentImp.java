@@ -44,6 +44,8 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
 
     private void resendData(String sessionId)
     {
+        if(!lastSentPacketMap.containsKey(sessionId))
+            return;
         if(!sessionManager.isTimeout(sessionId, timeout))
             resentNumberMap.remove(sessionId);
 
@@ -52,6 +54,13 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         else
             resentNumberMap.put(sessionId, resentNumberMap.getOrDefault(sessionId, 0) + 1);
 
+//        if(!lastSentPacketMap.containsKey(sessionId) && lastSentPacketMap.containsKey(null)
+//                && sessionManager.getSessionInformation(sessionId).sourcePort().equals(lastSentPacketMap.get(null).getSourcePort()))
+//        {
+//            lastSentPacketMap.put(sessionId, lastSentPacketMap.get(null));
+//            lastSentPacketMap.remove(null);
+//            return;
+//        }
         SessionInformation info = sessionManager.getSessionInformation(sessionId);
 
         if(resentNumberMap.get(sessionId) > resendRetry)
@@ -68,7 +77,7 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
             System.out.printf("[%6s-%6s] Port [%d] Resent last packet [%d]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), resentNumberMap.get(sessionId));
         }
         else{
-            System.out.printf("[%6s-%6s] Port [%d] Failed to resent last packet\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort());
+            System.out.printf("[%6s-] Port [%d] Failed to resent last packet\n", getMac().substring(0, 6), info.sourcePort());
         }
     }
 
@@ -108,7 +117,8 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
     @Override
     public void send(Packet packet) {
         super.send(packet);
-        lastSentPacketMap.put(packet.getSessionID(), packet);
+        if(packet.getDestinationMac() != null)
+            lastSentPacketMap.put(packet.getSessionID(), packet);
     }
 
     public void setResendLimit(Integer limit) {

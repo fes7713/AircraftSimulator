@@ -534,17 +534,17 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
             component1.update(0.03F);
             component2.update(0.03F);
             component3.update(0.03F);
-            component4.update(0.03F);
+//            component4.update(0.03F);
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
-            if(cnt == 100)
-            {
-                component3.closePort(20);
-            }
+//            if(cnt == 100)
+//            {
+//                component3.closePort(20);
+//            }
 
 //            if(cnt==100)
 //            {
