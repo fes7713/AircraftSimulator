@@ -7,49 +7,44 @@ import java.util.Map;
 public class ApplicationNetworkComponentImp extends NetworkComponentImp implements ApplicationNetworkComponent {
 
     private Map<String, ResendPacket> sentPacketMap;
-    private final Map<String, Integer> timeoutNumberMap;
     private final Map<String, Integer> resentNumberMap;
 
     private final int resentThreshold;
-    private final int timeoutThreshold;
+    private final long timeout;
 
-    private static final int DEFAULT_TIMEOUT_THRESHOLD = 3;
+    private static final long DEFAULT_TIMEOUT = 3000;
     private static final int DEFAULT_RESENT_THRESHOLD = 3;
 
     public ApplicationNetworkComponentImp(Network network, float updateInterval) {
-        this(network, updateInterval, DEFAULT_TIMEOUT_THRESHOLD, DEFAULT_RESENT_THRESHOLD);
+        this(network, updateInterval, DEFAULT_TIMEOUT, DEFAULT_RESENT_THRESHOLD);
     }
 
-    public ApplicationNetworkComponentImp(Network network, float updateInterval, int timeoutThreshold, int resentThreshold)
+    public ApplicationNetworkComponentImp(Network network, float updateInterval, long timeout, int resentThreshold)
     {
         super(network, updateInterval);
-        timeoutNumberMap = new HashMap<>();
         resentNumberMap = new HashMap<>();
 
-        this.timeoutThreshold = timeoutThreshold;
+        this.timeout = timeout;
         this.resentThreshold = resentThreshold;
     }
 
     private void resendData(String sessionId)
     {
-        if(!timeoutNumberMap.containsKey(sessionId))
-        {
-            resentNumberMap.put(sessionId, 0);
-            timeoutNumberMap.put(sessionId, 0);
-        }
-        timeoutNumberMap.put(sessionId, timeoutNumberMap.getOrDefault(sessionId, 0) + 1);
-        if(timeoutNumberMap.get(sessionId) < timeoutThreshold)
-            return;
+        if(!sessionManager.isTimeout(sessionId, timeout))
+            resentNumberMap.remove(sessionId);
 
-        timeoutNumberMap.put(sessionId, 0);
+        if(!sessionManager.isTimeout(sessionId, timeout * resentNumberMap.getOrDefault(sessionId, 1)))
+            return;
+        else
+            resentNumberMap.put(sessionId, resentNumberMap.getOrDefault(sessionId, 1) + 1);
+
         System.out.println("Resending");
-        resentNumberMap.put(sessionId, resentNumberMap.getOrDefault(sessionId, 0) + 1);
-        if(resentNumberMap.get(sessionId) >= resentThreshold)
+
+        if(resentNumberMap.get(sessionId) > resentThreshold)
         {
             int port = sessionManager.getSessionInformation(sessionId).sourcePort();
             releasePort(port);
             resentNumberMap.remove(sessionId);
-            timeoutNumberMap.remove(sessionId);
         }
     }
 
@@ -70,7 +65,7 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         if(portStateMap.get(port) == PortState.CONNECTING) {
 //            changePortState(port, PortState.OPEN, sessionManager.getSessionId(port), sessionInformation.destinationPort(), sessionInformation.destinationMac());
             System.out.printf("[%6s-] Port [%d] timeout\n", getMac().substring(0, 6), port);
-            sessionManager.updateSession(sessionManager.getSessionId(port));
+//            sessionManager.updateSession(sessionManager.getSessionId(port));
             resendData(sessionManager.getSessionId(port));
         }
     }
