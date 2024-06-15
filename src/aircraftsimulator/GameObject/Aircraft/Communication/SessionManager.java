@@ -71,11 +71,6 @@ public class SessionManager {
         return sessionInformationList;
     }
 
-    public boolean validateSessionId(String sessionId)
-    {
-        return sessionInformationMap.containsKey(sessionId);
-    }
-
     public boolean isRegistered(String sessionId, String destinationMac)
     {
         if(!sessionInformationMap.containsKey(sessionId))

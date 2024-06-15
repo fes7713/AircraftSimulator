@@ -6,30 +6,48 @@ public class ByteConvertor {
     /**
      * シリアライズする
      */
-    public static byte[] serialize(Serializable serializable) throws IOException {
+    public static byte[] serialize(Serializable serializable) {
 
         // Byte配列への出力を行うストリーム
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         // オブジェクトをストリーム（バイト配列）に変換する為のクラス
-        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        ObjectOutputStream oos = null;
+        try {
+            oos = new ObjectOutputStream(baos);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         // オブジェクトをストリームに変換（シリアライズ）
-        oos.writeObject(serializable);
+        try {
+            oos.writeObject(serializable);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         return baos.toByteArray();
     }
 
-    public static byte[][] serialize(Serializable serializable, int frameSize) throws IOException {
+    public static byte[][] serialize(Serializable serializable, int frameSize) {
 
         // Byte配列への出力を行うストリーム
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         // オブジェクトをストリーム（バイト配列）に変換する為のクラス
-        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        ObjectOutputStream oos = null;
+        try {
+            oos = new ObjectOutputStream(baos);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         // オブジェクトをストリームに変換（シリアライズ）
-        oos.writeObject(serializable);
+        try {
+            oos.writeObject(serializable);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         int nFrames = baos.size() / frameSize + (baos.size() % frameSize == 0 ? 0 : 1);
         byte[][] arrays = new byte[nFrames][];
 
@@ -46,26 +64,6 @@ public class ByteConvertor {
             arrays[arrays.length - 1] = new byte[baos.size() - frameSize * (arrays.length - 1)];
             baio.read(arrays[arrays.length - 1], 0, baos.size() - frameSize * (arrays.length - 1));
         }
-//        if(baos.size() / frameSize == 0)
-//        {
-//            arrays[0] = new byte[baos.size()];
-//            baio.read(arrays[0], 0, baos.size());
-//        }
-//        else if(baos.size() % frameSize != 0)
-//        {
-//            arrays[arrays.length - 1] = new byte[baos.size() - frameSize * (arrays.length - 1)];
-//            baio.read(arrays[arrays.length - 1], (arrays.length - 2) * frameSize, baos.size() - frameSize * (arrays.length - 1));
-//        }
-//        else if(frameSize == baos.size())
-//        {
-//            arrays[arrays.length - 1] = new byte[frameSize];
-//            baio.read(arrays[arrays.length - 1], (arrays.length - 1) * frameSize, frameSize);
-//        }
-//        else
-//        {
-//            arrays[arrays.length - 1] = new byte[frameSize];
-//            baio.read(arrays[arrays.length - 1], (arrays.length - 2) * frameSize, frameSize);
-//        }
         return arrays;
     }
 
