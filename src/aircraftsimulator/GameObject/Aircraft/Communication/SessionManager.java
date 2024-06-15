@@ -131,7 +131,8 @@ public class SessionManager {
 
     public void checkTimeout(Long timeout)
     {
-        for(Integer port: portSessionMap.keySet())
+        Set<Integer> keySet = new HashSet(portSessionMap.keySet());
+        for(Integer port: keySet)
         {
             String sessionId = getSessionId(port);
             if(isTimeout(sessionId, timeout))

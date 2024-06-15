@@ -72,8 +72,7 @@ public class ByteConvertor {
     /**
      * デシリアライズする
      */
-    public static <E> E deSerialize(byte[] stream)
-            throws ClassNotFoundException, IOException {
+    public static <E> E deSerialize(byte[] stream) throws IOException, ClassNotFoundException {
 
         // ストリームを入力する
         ByteArrayInputStream bais = new ByteArrayInputStream(stream);
@@ -86,8 +85,7 @@ public class ByteConvertor {
         return (E)os.readObject();
     }
 
-    public static <E> E deSerialize(byte[][] streams)
-            throws ClassNotFoundException, IOException {
+    public static <E> E deSerialize(byte[][] streams) throws IOException, ClassNotFoundException {
 
         ByteArrayOutputStream oStream = new ByteArrayOutputStream();
         for (byte[] stream : streams) {

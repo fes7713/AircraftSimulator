@@ -32,7 +32,7 @@ public class Packet {
     public Packet(HandshakeData handshakeData, byte[] data, @NotNull Integer sourcePort, @NotNull Integer destinationPort, String sourceMac, String  destinationMac)
     {
         this.handshakeData = handshakeData;
-        this.data = data;
+        this.data = data == null ? "".getBytes() : data;
         this.sourcePort = sourcePort;
         this.destinationPort = destinationPort;
         this.sourceMac = sourceMac;

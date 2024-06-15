@@ -23,7 +23,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
 
     private DataReceiver dataReceiver;
 
-    private long timeout;
+    private final long timeout;
     private static final long DEFAULT_TIMEOUT = 4000;
 
     public NetworkComponentImp(Network network, float updateInterval)
@@ -101,7 +101,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
             }
             case CONNECTED, CONNECTING -> {
                 System.out.printf("[%6s-%6s] Port [%d] closing\n", getMac().substring(0, 6), "", port);
-                disconnect(port);
+//                disconnect(port);
             }
             default -> {
                 System.out.printf("[%6s-%6s] Port [%d] not open\n", getMac().substring(0, 6), "", port);
@@ -174,6 +174,10 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                     return;
                 }
 
+                String sessionId = sessionManager.getSessionId(port);
+                if(sessionId != null)
+                    sessionManager.updateSession(sessionId);
+
                 switch (code)
                 {
                     // SYN
@@ -229,7 +233,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                                     receivingPacket.getSessionID(), receivingPacket.getSourcePort(), receivingPacket.getSourceMac());
                         }
                         else if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTED){
-                            System.out.printf("[%6s-%6s] Port [%d] Data Received ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac(), receivingPacket.getSourcePort());
+                            processData(receivingPacket.getData(), receivingPacket.getSessionID(), true);
                         }
                         else {
                             System.out.printf("[%6s-%6s] Port [%d] connection failed ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
@@ -274,37 +278,50 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                         releasePort(receivingPacket);
                     }
                     case 0 -> {
-                        String object;
-                        try {
-                            object = ByteConvertor.deSerialize(receivingPacket.getData()).toString();
-                        } catch (ClassNotFoundException e) {
-                            e.printStackTrace();
-                            return;
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            return;
+                        if(!processData(receivingPacket.getData(), receivingPacket.getSessionID(), false))
+                        {
+                            responsePacket = new Packet(
+                                    receivingPacket,
+                                    new HandshakeData(false, true, false, false),
+                                    null,
+                                    getMac()
+                            );
                         }
-                        System.out.printf("[%6s-%6s] Port [%d] Date Received [%s] received\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), object.toString());
-                        if(dataReceiver != null) {
-                            try {
-                                dataReceiver.dataReceived(ByteConvertor.deSerialize(receivingPacket.getData()));
-                            } catch (ClassNotFoundException e) {
-                                e.printStackTrace();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
+
                     }
                     default -> {
                         System.out.printf("[%6s-%6s] Port [%d] code [%d] received\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), code);
                     }
-
                 }
                 if(responsePacket != null) {
                     send(responsePacket);
                 }
             }
         }
+    }
+
+    private boolean processData(byte[] data, String sessionId, boolean ack)
+    {
+        SessionInformation info = sessionManager.getSessionInformation(sessionId);
+        String object;
+        if(data.length == 0)
+        {
+            System.out.printf("[%6s-%6s] Port [%d] Empty Data received [%s]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), ack ? "ACK" : "");
+            return false;
+        }
+        try {
+            object = ByteConvertor.deSerialize(data).toString();
+        } catch (ClassNotFoundException | IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        int len = sendingQueue.size();
+        System.out.printf("[%6s-%6s] Port [%d] Date Received [%s] received [%s]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), object, ack ? "ACK" : "");
+        if(dataReceiver != null && !object.isEmpty()) {
+            dataReceiver.dataReceived(object);
+        }
+        return len != sendingQueue.size();
     }
 
     private void registerArp(Packet packet)
@@ -475,7 +492,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     public static void main(String[] args )
     {
         Network network = new NetworkImp();
-        NetworkComponent component1 = new NetworkComponentImp(network, 0.08F);
+        NetworkComponent component1 = new ApplicationNetworkComponentImp(network, 0.08F);
         NetworkComponent component2 = new NetworkComponentImp(network, 0.08F);
         component2.openPort(10);
         NetworkComponent component3 = new NetworkComponentImp(network, 0.08F);
@@ -522,6 +539,11 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            }
+
+            if(cnt == 100)
+            {
+                component3.closePort(20);
             }
 
 //            if(cnt==100)
