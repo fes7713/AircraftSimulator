@@ -11,6 +11,7 @@ public interface NetworkComponent {
     boolean isConnected(int port);
     void connect(int port);
     void disconnect(Integer port);
+    void disconnect(String sessionId);
     void send(Packet packet);
     void receive(Packet packet);
     void sendData(Integer port, Serializable data);

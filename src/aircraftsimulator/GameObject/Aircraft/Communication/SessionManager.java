@@ -7,13 +7,20 @@ public class SessionManager {
     private final Map<String, SessionInformation> sessionInformationMap;
     private final Map<String, Long> sessionLastUpdatedMap;
 
-    private final TimeoutHandler timeoutHandler;
+    private TimeoutHandler timeoutHandler;
 
     public SessionManager(TimeoutHandler timeoutHandler) {
         portSessionMap = new HashMap<>();
         sessionInformationMap = new HashMap<>();
         sessionLastUpdatedMap = new HashMap<>();
         this.timeoutHandler = timeoutHandler;
+    }
+
+    public SessionManager()
+    {
+        this((port, sessionInformation) -> {
+            System.out.println("Timeout handler is not set");
+        });
     }
 
     public String generateSession(Integer sourcePort, Integer destinationPort, String destinationArp)
@@ -90,6 +97,15 @@ public class SessionManager {
         return true;
     }
 
+    public void updateSession(String sessionId)
+    {
+        if(sessionLastUpdatedMap.containsKey(sessionId)) {
+            sessionLastUpdatedMap.put(sessionId, System.currentTimeMillis());
+        }else{
+            System.out.printf("[%s] Session does not exist".formatted(sessionId));
+        }
+    }
+
     public void updateSession(String sessionId, Integer sourcePort, Integer destinationPort, String destinationArp)
     {
         if(sessionLastUpdatedMap.containsKey(sessionId))
@@ -97,17 +113,20 @@ public class SessionManager {
             sessionInformationMap.put(sessionId, new SessionInformation(sourcePort, destinationPort, destinationArp));
             sessionLastUpdatedMap.put(sessionId, System.currentTimeMillis());
         }else{
-            System.out.printf("");
+            System.out.printf("[%s] Session does not exist".formatted(sessionId));
         }
+    }
+
+    public void setTimeoutHandler(TimeoutHandler timeoutHandler)
+    {
+        if(timeoutHandler == null)
+            throw new IllegalArgumentException("Invalid timeout handler");
+        this.timeoutHandler = timeoutHandler;
     }
 
     public boolean isTimeout(String sessionId, Long timeout)
     {
-        if(sessionLastUpdatedMap.containsKey(sessionId))
-        {
-            return System.currentTimeMillis() - sessionLastUpdatedMap.get(sessionId) > timeout;
-        }
-        return false;
+        return System.currentTimeMillis() - sessionLastUpdatedMap.get(sessionId) > timeout;
     }
 
     public void checkTimeout(Long timeout)
