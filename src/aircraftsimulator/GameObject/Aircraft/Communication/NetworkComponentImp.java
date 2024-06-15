@@ -171,7 +171,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 if(portStateMap.get(port) != PortState.OPEN && !sessionManager.isRegistered(receivingPacket.getSessionID(), receivingPacket.getSourceMac()))
                 {
                     System.out.printf("[%6s-%6s] Port [%d] Session id [%6s] is not registered\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSessionID());
-                    changePortState(port, PortState.OPEN, null);
+//                    changePortState(port, PortState.OPEN, null);
                     return;
                 }
 
@@ -546,19 +546,19 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 e.printStackTrace();
             }
 
-//            if(cnt==100)
-//            {
-//                component2.setDataReceiver(s ->{
-//                    System.out.println(((String)s));
-//                    component2.sendData(10, Integer.parseInt((String)s) + 1 + "");
-//                });
-//                component1.setDataReceiver(s ->{
-//                    System.out.println(((String)s));
-//                    component1.sendData(10, Integer.parseInt((String)s) + 1 + "");
-//                });
-//                component1.sendData(10, "1");
-//
-//            }
+            if(cnt==100)
+            {
+                component3.setDataReceiver(s ->{
+                    System.out.println(((String)s));
+                    component3.sendData(20, Integer.parseInt((String)s) + 1 + "");
+                });
+                component1.setDataReceiver(s ->{
+                    System.out.println(((String)s));
+                    component1.sendData(20, Integer.parseInt((String)s) + 1 + "");
+                });
+                component1.sendData(20, "1");
+
+            }
 //            if(cnt == 100)
 //            {
 //                System.out.println("Disconnect");
