@@ -524,19 +524,19 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 e.printStackTrace();
             }
 
-            if(cnt==100)
-            {
-                component3.setDataReceiver(s ->{
-                    System.out.println(((String)s));
-                    component3.sendData(20, Integer.parseInt((String)s) + 1 + "");
-                });
-                component1.setDataReceiver(s ->{
-                    System.out.println(((String)s));
-                    component1.sendData(20, Integer.parseInt((String)s) + 1 + "");
-                });
-                component1.sendData(20, "1");
-
-            }
+//            if(cnt==100)
+//            {
+//                component3.setDataReceiver(s ->{
+//                    System.out.println(((String)s));
+//                    component3.sendData(20, Integer.parseInt((String)s) + 1 + "");
+//                });
+//                component1.setDataReceiver(s ->{
+//                    System.out.println(((String)s));
+//                    component1.sendData(20, Integer.parseInt((String)s) + 1 + "");
+//                });
+//                component1.sendData(20, "1");
+//
+//            }
         }
     }
 }
