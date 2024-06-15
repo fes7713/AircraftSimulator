@@ -171,7 +171,6 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 if(portStateMap.get(port) != PortState.OPEN && !sessionManager.isRegistered(receivingPacket.getSessionID(), receivingPacket.getSourceMac()))
                 {
                     System.out.printf("[%6s-%6s] Port [%d] Session id [%6s] is not registered\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSessionID());
-//                    changePortState(port, PortState.OPEN, null);
                     return;
                 }
 
@@ -295,12 +294,6 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                                 e.printStackTrace();
                             }
                         }
-//                        responsePacket = new Packet(
-//                                receivingPacket,
-//                                new HandshakeData(false, true, false, false),
-//                                null,
-//                                getMac()
-//                        );
                     }
                     default -> {
                         System.out.printf("[%6s-%6s] Port [%d] code [%d] received\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), code);
@@ -522,23 +515,8 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
             cnt++;
 
             component1.update(0.03F);
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             component2.update(0.03F);
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             component3.update(0.03F);
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             component4.update(0.03F);
             try {
                 Thread.sleep(10);
@@ -559,31 +537,6 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 component1.sendData(20, "1");
 
             }
-//            if(cnt == 100)
-//            {
-//                System.out.println("Disconnect");
-//                component1.disconnect(10);
-//            }
-//            if(cnt == 160)
-//            {
-//                System.out.println("Connect 10");
-//                component1.connect(10);
-//            }
-//            if(cnt == 200)
-//            {
-//                System.out.println("Connect 30");
-//                component1.connect(30);
-//            }
-//            if(cnt == 300)
-//            {
-//                System.out.println("Open port 30");
-//                component4.openPort(30);
-//            }
-//            if(cnt == 320)
-//            {
-//                System.out.println("Connect 30");
-//                component1.connect(30);
-//            }
         }
     }
 }
