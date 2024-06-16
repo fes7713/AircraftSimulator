@@ -313,6 +313,14 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
 
     }
 
+    @Override
+    public void releasePort(int port)
+    {
+        System.out.printf("[%6s-] Port [%d] released\n", getMac().substring(0, 6), port);
+        String sessionId = sessionManager.getSessionId(port);
+        changePortState(sessionId, sessionManager.getSessionInformation(sessionId), PortState.OPEN);
+    }
+
     private void registerArp(Packet packet)
     {
         arpTable.put(packet.getSourceMac(), packet.getDestinationPort());
@@ -328,13 +336,6 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         else
             // open
             changePortState(port, state, null, null, null);
-    }
-
-    protected void releasePort(int port)
-    {
-        System.out.printf("[%6s-] Port [%d] released\n", getMac().substring(0, 6), port);
-        String sessionId = sessionManager.getSessionId(port);
-        changePortState(sessionId, sessionManager.getSessionInformation(sessionId), PortState.OPEN);
     }
 
     private void changePortState(String sessionId, SessionInformation info, PortState state)

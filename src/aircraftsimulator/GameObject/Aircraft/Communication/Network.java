@@ -5,4 +5,5 @@ public interface Network {
     void removeFromNetwork(NetworkComponent networkComponent);
     void broadcast(Packet packet, String sourceMac, SessionManager sessionManager);
     void sendTo(String mac, Packet packet);
+    int getFrameSize();
 }

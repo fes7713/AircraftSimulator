@@ -5,9 +5,13 @@ import java.util.Map;
 
 public class NetworkImp implements Network{
     private final Map<String, NetworkComponent> arpNetworkComponentMap;
+    private final int frameSize;
+
+    private final static int DEFAULT_FRAME_SIZE = 128;
 
     public NetworkImp() {
         this.arpNetworkComponentMap = new HashMap<>();
+        frameSize = DEFAULT_FRAME_SIZE;
     }
 
     @Override
@@ -37,5 +41,10 @@ public class NetworkImp implements Network{
     @Override
     public void sendTo(String mac, Packet packet) {
         arpNetworkComponentMap.get(mac).receive(packet);
+    }
+
+    @Override
+    public int getFrameSize() {
+        return frameSize;
     }
 }
