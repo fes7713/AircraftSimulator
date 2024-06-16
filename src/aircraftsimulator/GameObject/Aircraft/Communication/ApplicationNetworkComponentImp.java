@@ -2,6 +2,7 @@ package aircraftsimulator.GameObject.Aircraft.Communication;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.KeepAliveData;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -113,6 +114,11 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
                 )
         );
         System.out.printf("[%6s-%6s] Port [%d] keep alive [%d]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), resentNumberMap.get(sessionId));
+    }
+
+    @Override
+    public void sendData(Integer port, Serializable data) {
+        super.sendData(port, data);
     }
 
     @Override

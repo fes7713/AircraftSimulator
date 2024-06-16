@@ -1,4 +1,7 @@
-package aircraftsimulator.GameObject.Aircraft.Communication;
+package aircraftsimulator.GameObject.Aircraft.Communication.Data;
+
+import aircraftsimulator.GameObject.Aircraft.Communication.ByteConvertor;
+import aircraftsimulator.GameObject.Aircraft.Communication.PositionCommand;
 
 import java.io.IOException;
 import java.io.Serializable;

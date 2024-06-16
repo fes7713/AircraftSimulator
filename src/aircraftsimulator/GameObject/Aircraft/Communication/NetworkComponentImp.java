@@ -277,10 +277,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                         releasePort(port);
                     }
                     case 0 -> {
-                        if(!processData(receivingPacket.getData(), receivingPacket.getSessionID(), false))
-                        {
-
-                        }
+                        processData(receivingPacket.getData(), receivingPacket.getSessionID(), false);
                     }
                     default -> {
                         System.out.printf("[%6s-%6s] Port [%d] code [%d] received\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), code);
@@ -293,28 +290,27 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         }
     }
 
-    private boolean processData(byte[] data, String sessionId, boolean ack)
+    private void processData(byte[] data, String sessionId, boolean ack)
     {
         SessionInformation info = sessionManager.getSessionInformation(sessionId);
         Object object;
         if(data.length == 0)
         {
             System.out.printf("[%6s-%6s] Port [%d] Empty Data received [%s]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), ack ? "ACK" : "");
-            return false;
+            return;
         }
+
         try {
             object = ByteConvertor.deSerialize(data);
         } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
-            return false;
+            return;
         }
 
-        int len = sendingQueue.size();
         System.out.printf("[%6s-%6s] Port [%d] Date Received [%s] received [%s]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), object, ack ? "ACK" : "");
-        if(dataReceiverMapper.containsKey(object.getClass())) {
+        if(dataReceiverMapper.containsKey(object.getClass()))
             dataReceiverMapper.get(object.getClass()).dataReceived(object, sessionId);
-        }
-        return len != sendingQueue.size();
+
     }
 
     private void registerArp(Packet packet)
