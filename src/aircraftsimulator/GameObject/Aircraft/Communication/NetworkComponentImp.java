@@ -202,7 +202,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                         {
                             System.out.printf("[%6s-%6s] Port [%d] connected to [%6s] Port [%d]\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getSourcePort());
                             arpTable.put(receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
-                            changePortState(port, PortState.CONNECTED, receivingPacket.getSessionID(), receivingPacket.getSourcePort(), receivingPacket.getSourceMac());
+                            changePortState(receivingPacket.getSessionID(), receivingPacket.getSessionInformation().reverse(receivingPacket.getSourceMac()), PortState.CONNECTED);
                             responsePacket = new Packet(
                                     receivingPacket.getSessionID(),
                                     sessionManager.getSessionInformation(receivingPacket.getSessionID()),
@@ -210,7 +210,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                                     null,
                                     getMac()
                             );
-                            }else{
+                        }else{
                             System.out.printf("[%6s-%6s] Port [%d] invalid packet SYN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             responsePacket = new Packet(
                                     receivingPacket.getSessionID(),
@@ -226,8 +226,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                         if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING){
                             System.out.printf("[%6s-%6s] Port [%d] connected to [%s] Port [%d] ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac(), receivingPacket.getSourcePort());
                             registerArp(receivingPacket);
-                            changePortState(receivingPacket.getDestinationPort(), PortState.CONNECTED,
-                                    receivingPacket.getSessionID(), receivingPacket.getSourcePort(), receivingPacket.getSourceMac());
+                            changePortState(receivingPacket.getSessionID(), sessionManager.getSessionInformation(receivingPacket.getSessionID()), PortState.CONNECTED);
                         }
                         else if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTED){
                             processData(receivingPacket.getData(), receivingPacket.getSessionID(), true);
@@ -255,7 +254,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                                     null,
                                     getMac()
                             );
-                            releasePort(receivingPacket);
+                            releasePort(port);
                         }else{
                             System.out.printf("[%6s-%6s] Port [%d] invalid packet FIN \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                         }
@@ -273,7 +272,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                             System.out.printf("[%6s-%6s] Port [%d] invalid packet FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             return;
                         }
-                        releasePort(receivingPacket);
+                        releasePort(port);
                     }
                     case 0 -> {
                         if(!processData(receivingPacket.getData(), receivingPacket.getSessionID(), false))
@@ -340,19 +339,11 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
             changePortState(port, state, null, null, null);
     }
 
-    protected void releasePort(Packet receivingPacket)
-    {
-        System.out.printf("[%6s-] Port [%d] released\n", getMac().substring(0, 6), receivingPacket.getDestinationPort());
-        changePortState(receivingPacket.getDestinationPort(), PortState.OPEN,
-                receivingPacket.getSessionID(), receivingPacket.getSourcePort(), receivingPacket.getSourceMac());
-    }
-
     protected void releasePort(int port)
     {
         System.out.printf("[%6s-] Port [%d] released\n", getMac().substring(0, 6), port);
         String sessionId = sessionManager.getSessionId(port);
-        SessionInformation sessionInformation = sessionManager.getSessionInformation(sessionId);
-        changePortState(sessionId, sessionInformation, PortState.OPEN);
+        changePortState(sessionId, sessionManager.getSessionInformation(sessionId), PortState.OPEN);
     }
 
     private void changePortState(String sessionId, SessionInformation info, PortState state)
@@ -483,8 +474,8 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     @Override
     public void triggerTimeout(Integer port, SessionInformation sessionInformation) {
         if(portStateMap.get(port) == PortState.CONNECTING) {
-            changePortState(sessionManager.getSessionId(port), sessionInformation, PortState.OPEN);
             System.out.printf("[%6s-] Port [%d] timeout\n", getMac().substring(0, 6), port);
+            releasePort(port);
         }
     }
 
