@@ -92,13 +92,12 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         }
 
         send(
-                new Packet(sessionId,
-                new HandshakeData(false, false, false, false),
+                new Packet(
+                        sessionId,
+                        info,
+                        new HandshakeData(false, false, false, false),
                     null,
-                        info.sourcePort(),
-                        info.destinationPort(),
-                        getMac(),
-                        info.destinationMac()
+                        getMac()
                 )
         );
         System.out.printf("[%6s-%6s] Port [%d] keep alive [%d]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), resentNumberMap.get(sessionId));

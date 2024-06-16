@@ -425,12 +425,10 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         send(
                 new Packet(
                         sessionId,
+                        sessionInformation,
                         new HandshakeData(false, false, false, true),
                         null,
-                        sessionInformation.sourcePort(),
-                        sessionInformation.destinationPort(),
-                        this.getMac(),
-                        sessionInformation.destinationMac()
+                        this.getMac()
                 )
         );
     }
@@ -462,12 +460,11 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
 
         Packet packet = new Packet(
                 sessionId,
+                sessionInformation,
                 new HandshakeData(false, false, false, false),
                 ByteConvertor.serialize(data),
-                sessionInformation.sourcePort(),
-                sessionInformation.destinationPort(),
-                this.getMac(),
-                sessionInformation.destinationMac()
+                this.getMac()
+
         );
         System.out.printf("[%6s-%6s] Port [%d] Data Sent[%s]\n", getMac().substring(0, 6), "", sessionInformation.sourcePort(), data.toString());
         send(packet);

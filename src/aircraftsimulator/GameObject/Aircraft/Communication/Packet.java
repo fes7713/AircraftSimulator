@@ -18,7 +18,8 @@ public class Packet {
 
     public Packet(String sessionID, SessionInformation info, HandshakeData handshakeData, byte[] data, String sourceMac)
     {
-        this(sessionID, handshakeData, data, info.sourcePort(), info.destinationPort(), sourceMac, info.destinationMac());
+        this(handshakeData, data, info.sourcePort(), info.destinationPort(), sourceMac, info.destinationMac());
+        this.sessionID = sessionID;
     }
 
     public Packet(HandshakeData handshakeData, byte[] data, @NotNull Integer sourcePort, @NotNull Integer destinationPort, String sourceMac, String  destinationMac)
@@ -33,7 +34,7 @@ public class Packet {
         created = System.currentTimeMillis();
     }
 
-    public Packet(String sessionID, HandshakeData handshakeData, byte[] data, @NotNull Integer sourcePort, @NotNull Integer destinationPort, String sourceMac, String  destinationMac) {
+    private Packet(String sessionID, HandshakeData handshakeData, byte[] data, @NotNull Integer sourcePort, @NotNull Integer destinationPort, String sourceMac, String  destinationMac) {
         this(handshakeData, data, sourcePort, destinationPort, sourceMac, destinationMac);
         this.sessionID = sessionID;
     }
