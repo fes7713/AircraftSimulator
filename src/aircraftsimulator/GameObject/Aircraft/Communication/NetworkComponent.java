@@ -1,5 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
+
 import java.io.Serializable;
 
 public interface NetworkComponent {
@@ -17,5 +19,5 @@ public interface NetworkComponent {
     void receive(Packet packet);
     void sendData(Integer port, Serializable data);
 
-    void setDataReceiver(DataReceiver dataReceiver);
+    void addDataReceiver(Class<? extends Data>cls, DataReceiver dataReceiver);
 }

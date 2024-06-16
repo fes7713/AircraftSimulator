@@ -16,12 +16,6 @@ public class Packet {
     protected Long created;
     protected String sessionID;
 
-    protected Packet(Packet packet, byte[] data)
-    {
-        this(packet.handshakeData, data, packet.sourcePort, packet.destinationPort, packet.sourceMac, packet.destinationMac);
-        this.sessionID = packet.sessionID;
-    }
-
     public Packet(String sessionID, SessionInformation info, HandshakeData handshakeData, byte[] data, String sourceMac)
     {
         this(handshakeData, data, info.sourcePort(), info.destinationPort(), sourceMac, info.destinationMac());

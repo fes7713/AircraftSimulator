@@ -1,5 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
@@ -21,7 +23,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     private final float updateInterval;
     private float timeClock;
 
-    private DataReceiver dataReceiver;
+    private Map<Class<? extends Data>, DataReceiver> dataReceiverMapper;
 
     private final long timeout;
     private static final long DEFAULT_TIMEOUT = 4000;
@@ -31,7 +33,6 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         this.network = network;
         mac = UUID.randomUUID().toString();
         portStateMap = new HashMap<>();
-
         arpTable = new HashMap<>();
         sessionManager = new SessionManager(this);
 
@@ -41,8 +42,9 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
 
         this.updateInterval = updateInterval;
         timeClock = updateInterval;
-
         timeout = DEFAULT_TIMEOUT;
+
+        dataReceiverMapper = new HashMap<>();
     }
 
     @Override
@@ -51,8 +53,8 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     }
 
     @Override
-    public void setDataReceiver(DataReceiver dataReceiver) {
-        this.dataReceiver = dataReceiver;
+    public void addDataReceiver(Class<? extends Data> cls, DataReceiver dataReceiver) {
+        dataReceiverMapper.put(cls, dataReceiver);
     }
 
     @Override
@@ -277,15 +279,8 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                     case 0 -> {
                         if(!processData(receivingPacket.getData(), receivingPacket.getSessionID(), false))
                         {
-                            responsePacket = new Packet(
-                                    receivingPacket.getSessionID(),
-                                    sessionManager.getSessionInformation(receivingPacket.getSessionID()),
-                                    HandshakeData.ACK,
-                                    null,
-                                    getMac()
-                            );
-                        }
 
+                        }
                     }
                     default -> {
                         System.out.printf("[%6s-%6s] Port [%d] code [%d] received\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), code);
@@ -301,14 +296,14 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     private boolean processData(byte[] data, String sessionId, boolean ack)
     {
         SessionInformation info = sessionManager.getSessionInformation(sessionId);
-        String object;
+        Object object;
         if(data.length == 0)
         {
             System.out.printf("[%6s-%6s] Port [%d] Empty Data received [%s]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), ack ? "ACK" : "");
             return false;
         }
         try {
-            object = ByteConvertor.deSerialize(data).toString();
+            object = ByteConvertor.deSerialize(data);
         } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
             return false;
@@ -316,8 +311,8 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
 
         int len = sendingQueue.size();
         System.out.printf("[%6s-%6s] Port [%d] Date Received [%s] received [%s]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), object, ack ? "ACK" : "");
-        if(dataReceiver != null && !object.isEmpty()) {
-            dataReceiver.dataReceived(object);
+        if(dataReceiverMapper.containsKey(object.getClass())) {
+            dataReceiverMapper.get(object.getClass()).dataReceived(object, sessionId);
         }
         return len != sendingQueue.size();
     }
@@ -485,9 +480,9 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         NetworkComponent component1 = new ApplicationNetworkComponentImp(network, 0.08F);
         component1.openPort(10);
         component1.openPort(20);
-        NetworkComponent component2 = new NetworkComponentImp(network, 0.08F);
+        NetworkComponent component2 = new ApplicationNetworkComponentImp(network, 0.08F);
 //        component2.openPort(10);
-        NetworkComponent component3 = new NetworkComponentImp(network, 0.08F);
+        NetworkComponent component3 = new ApplicationNetworkComponentImp(network, 0.08F);
 //        component3.openPort(20);
         NetworkComponent component4 = new ApplicationNetworkComponentImp(network, 0.08F);
         component4.openPort(20);
@@ -503,23 +498,6 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         component3.connect(20);
 
         int cnt = 0;
-
-        PositionCommand command = new PositionCommand(1, "");
-        try {
-            byte[] array = ByteConvertor.serialize(command);
-            String string = ByteConvertor.convert(array);
-            System.out.println(string);
-
-            byte[][] arrays = ByteConvertor.serialize(command, 32);
-            System.out.println(ByteConvertor.convert(arrays));
-
-            PositionCommand convComand = ByteConvertor.deSerialize(array);
-            System.out.println(convComand.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
 
         while(true)
         {

@@ -1,5 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.KeepAliveData;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,6 +39,16 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         this.keepaliveTime = keepaliveTime;
         this.keepAliveInterval = keepAliveInterval;
         this.keepAliveRetry = keepAliveRetry;
+
+        addDataReceiver(KeepAliveData.class, (object, sessionId) -> {
+            send(new Packet(
+                    sessionId,
+                    sessionManager.getSessionInformation(sessionId),
+                    HandshakeData.ACK,
+                    null,
+                    getMac()
+            ));
+        });
     }
 
     private void resendData(String sessionId)
@@ -96,7 +108,7 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
                         sessionId,
                         info,
                         new HandshakeData(false, false, false, false),
-                    null,
+                        ByteConvertor.serialize(new KeepAliveData()),
                         getMac()
                 )
         );
