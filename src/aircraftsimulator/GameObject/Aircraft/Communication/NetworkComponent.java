@@ -10,6 +10,7 @@ public interface NetworkComponent {
 
     boolean isConnected(int port);
     void connect(int port);
+    void connect(int sourcePort, int destinationPort);
     void disconnect(Integer port);
     void disconnect(String sessionId);
     void send(Packet packet);

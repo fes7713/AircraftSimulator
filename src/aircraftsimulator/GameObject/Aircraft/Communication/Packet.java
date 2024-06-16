@@ -77,11 +77,9 @@ public class Packet {
         return created;
     }
 
-    public SessionInformation getSessionInformation(boolean reverse)
+    public SessionInformation getSessionInformation()
     {
-        if(reverse)
-            return new SessionInformation(destinationPort, sourcePort, destinationMac);
-        return new SessionInformation(sourcePort, destinationPort, sourceMac);
+        return new SessionInformation(sourcePort, destinationPort, destinationMac);
     }
 
     public Packet copy(String sessionID)

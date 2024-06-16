@@ -155,7 +155,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                     System.out.printf("[%6s-%6s] Port [%d] is closed \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                     responsePacket = new Packet(
                             receivingPacket.getSessionID(),
-                            receivingPacket.getSessionInformation(true),
+                            receivingPacket.getSessionInformation().reverse(receivingPacket.getSourceMac()),
                             new HandshakeData(false, true, true, false),
                             null,
                             null
@@ -183,7 +183,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                         if(portStateMap.get(port) == PortState.OPEN)
                         {
                             System.out.printf("[%6s-%6s] Port [%d] connecting SYN\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
-                            changePortState(port, PortState.CONNECTING, receivingPacket.getSessionID(), receivingPacket.getSourcePort(), receivingPacket.getSourceMac());
+                            changePortState(receivingPacket.getSessionID(), receivingPacket.getSessionInformation().reverse(receivingPacket.getSourceMac()), PortState.CONNECTING);
                             responsePacket = new Packet(
                                     receivingPacket.getSessionID(),
                                     sessionManager.getSessionInformation(receivingPacket.getSessionID()),
@@ -214,7 +214,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                             System.out.printf("[%6s-%6s] Port [%d] invalid packet SYN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             responsePacket = new Packet(
                                     receivingPacket.getSessionID(),
-                                    receivingPacket.getSessionInformation(true),
+                                    receivingPacket.getSessionInformation().reverse(receivingPacket.getSourceMac()),
                                     new HandshakeData(false, true, true, true),
                                     null,
                                     null
@@ -352,7 +352,12 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         System.out.printf("[%6s-] Port [%d] released\n", getMac().substring(0, 6), port);
         String sessionId = sessionManager.getSessionId(port);
         SessionInformation sessionInformation = sessionManager.getSessionInformation(sessionId);
-        changePortState(sessionInformation.sourcePort(), PortState.OPEN, sessionId, sessionInformation.destinationPort(), sessionInformation.destinationMac());
+        changePortState(sessionId, sessionInformation, PortState.OPEN);
+    }
+
+    private void changePortState(String sessionId, SessionInformation info, PortState state)
+    {
+        changePortState(info.sourcePort(), state, sessionId, info.destinationPort(), info.destinationMac());
     }
 
     private void changePortState(Integer port, PortState state, String sessionId, Integer destinationPort, String destinationMac)
@@ -403,6 +408,11 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
 
     @Override
     public void connect(int sourcePort) {
+        connect(sourcePort, sourcePort);
+    }
+
+    @Override
+    public void connect(int sourcePort, int destinationPort) {
         if(!openPort(sourcePort))
             return;
 
@@ -411,7 +421,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 new HandshakeData(true, false, false, false),
                 null,
                 sourcePort,
-                sourcePort,
+                destinationPort,
                 getMac(),
                 null);
         System.out.printf("[%6s-%6s] Port [%d] connecting\n", getMac().substring(0, 6), "", sourcePort);
@@ -473,7 +483,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     @Override
     public void triggerTimeout(Integer port, SessionInformation sessionInformation) {
         if(portStateMap.get(port) == PortState.CONNECTING) {
-            changePortState(port, PortState.OPEN, sessionManager.getSessionId(port), sessionInformation.destinationPort(), sessionInformation.destinationMac());
+            changePortState(sessionManager.getSessionId(port), sessionInformation, PortState.OPEN);
             System.out.printf("[%6s-] Port [%d] timeout\n", getMac().substring(0, 6), port);
         }
     }
@@ -482,10 +492,12 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     {
         Network network = new NetworkImp();
         NetworkComponent component1 = new ApplicationNetworkComponentImp(network, 0.08F);
+        component1.openPort(10);
+        component1.openPort(20);
         NetworkComponent component2 = new NetworkComponentImp(network, 0.08F);
-        component2.openPort(10);
+//        component2.openPort(10);
         NetworkComponent component3 = new NetworkComponentImp(network, 0.08F);
-        component3.openPort(20);
+//        component3.openPort(20);
         NetworkComponent component4 = new ApplicationNetworkComponentImp(network, 0.08F);
         component4.openPort(20);
 
@@ -494,8 +506,10 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         network.addToNetwork(component3);
         network.addToNetwork(component4);
 
-        component1.connect(10);
-        component1.connect(20);
+//        component1.connect(10);
+//        component1.connect(20);
+        component2.connect(10);
+        component3.connect(20);
 
         int cnt = 0;
 
@@ -530,10 +544,10 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 e.printStackTrace();
             }
 
-            if(cnt == 100)
-            {
-                component3.disconnect(20);
-            }
+//            if(cnt == 100)
+//            {
+//                component3.disconnect(20);
+//            }
 
 //            if(cnt==100)
 //            {
