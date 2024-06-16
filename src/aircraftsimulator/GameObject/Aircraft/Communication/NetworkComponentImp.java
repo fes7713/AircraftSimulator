@@ -1,7 +1,5 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
-import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
@@ -9,7 +7,7 @@ import java.util.*;
 // TODO -> Unreleased session in code.
 
 public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
-    private final Network network;
+    protected final Network network;
     private final String mac;
 
     protected final Map<Integer, PortState> portStateMap;
@@ -23,7 +21,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     private final float updateInterval;
     private float timeClock;
 
-    private Map<Class<? extends Data>, DataReceiver> dataReceiverMapper;
+    private Map<Class<? extends Serializable>, DataReceiver> dataReceiverMapper;
 
     private final long timeout;
     private static final long DEFAULT_TIMEOUT = 4000;
@@ -52,8 +50,9 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         return mac;
     }
 
+
     @Override
-    public void addDataReceiver(Class<? extends Data> cls, DataReceiver dataReceiver) {
+    public <E extends Serializable> void addDataReceiver(Class<E> cls, DataReceiver<E> dataReceiver) {
         dataReceiverMapper.put(cls, dataReceiver);
     }
 
@@ -309,7 +308,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
 
         System.out.printf("[%6s-%6s] Port [%d] Date Received [%s] received [%s]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), object, ack ? "ACK" : "");
         if(dataReceiverMapper.containsKey(object.getClass()))
-            dataReceiverMapper.get(object.getClass()).dataReceived(object, sessionId);
+            triggerReceiver(sessionId, object);
 
     }
 
@@ -471,17 +470,33 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         }
     }
 
+    @Override
+    public void triggerReceiver(String sessionId, Object object) {
+        dataReceiverMapper.get(object.getClass()).dataReceived(object, sessionId);
+    }
+
     public static void main(String[] args )
     {
+
+        ArrayList<PositionCommand> positionData = new ArrayList<>()
+        {
+            {
+                String message = "";
+                for(int i = 0; i < 1000; i++)
+                    message += "AAAAAAAAAAAAAAA";
+                add(new PositionCommand(100, message));
+            }
+        };
+
         Network network = new NetworkImp();
-        NetworkComponent component1 = new ApplicationNetworkComponentImp(network, 0.08F);
+        NetworkComponent component1 = new ApplicationNetworkComponentImp(network, 0.1F);
         component1.openPort(10);
         component1.openPort(20);
-        NetworkComponent component2 = new ApplicationNetworkComponentImp(network, 0.08F);
+        NetworkComponent component2 = new ApplicationNetworkComponentImp(network, 0.1F);
 //        component2.openPort(10);
-        NetworkComponent component3 = new ApplicationNetworkComponentImp(network, 0.08F);
+        NetworkComponent component3 = new ApplicationNetworkComponentImp(network, 0.1F);
 //        component3.openPort(20);
-        NetworkComponent component4 = new ApplicationNetworkComponentImp(network, 0.08F);
+        NetworkComponent component4 = new ApplicationNetworkComponentImp(network, 0.1F);
         component4.openPort(20);
 
         network.addToNetwork(component1);
@@ -494,6 +509,12 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         component2.connect(10);
         component3.connect(20);
 
+        component1.addDataReceiver(positionData.getClass(), ((data, sessionId) -> {
+            ArrayList<PositionCommand> array = data;
+            for(PositionCommand p: array)
+                System.out.println(p);
+        }));
+
         int cnt = 0;
 
         while(true)
@@ -501,7 +522,17 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
             cnt++;
 
             component1.update(0.03F);
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             component2.update(0.03F);
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             component3.update(0.03F);
 //            component4.update(0.03F);
             try {
@@ -510,10 +541,10 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 e.printStackTrace();
             }
 
-//            if(cnt == 100)
-//            {
-//                component3.disconnect(20);
-//            }
+            if(cnt == 150)
+            {
+                component3.sendData(20, positionData);
+            }
 
 //            if(cnt==100)
 //            {

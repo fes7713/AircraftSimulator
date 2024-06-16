@@ -7,7 +7,7 @@ public class NetworkImp implements Network{
     private final Map<String, NetworkComponent> arpNetworkComponentMap;
     private final int frameSize;
 
-    private final static int DEFAULT_FRAME_SIZE = 128;
+    private final static int DEFAULT_FRAME_SIZE = 512;
 
     public NetworkImp() {
         this.arpNetworkComponentMap = new HashMap<>();

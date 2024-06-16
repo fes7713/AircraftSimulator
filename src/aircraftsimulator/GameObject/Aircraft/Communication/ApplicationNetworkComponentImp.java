@@ -1,14 +1,19 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.FragmentedData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.KeepAliveData;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
 
-public class ApplicationNetworkComponentImp extends NetworkComponentImp implements ApplicationNetworkComponent {
+public class ApplicationNetworkComponentImp extends NetworkComponentImp implements ApplicationNetworkComponent, FragmentHandler {
+
     private final Map<String, Integer> resentNumberMap;
     private final Map<String, Packet> lastSentPacketMap;
+    private final Map<String, byte[][]> fragmentStoreMap;
 
     private final int resendRetry;
     private final long resendTimeout;
@@ -33,6 +38,7 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         super(network, updateInterval);
         resentNumberMap = new HashMap<>();
         lastSentPacketMap = new HashMap<>();
+        fragmentStoreMap = new HashMap<>();
 
         this.resendTimeout = resendTimeout;
         this.resendRetry = resentRetry;
@@ -50,6 +56,8 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
                     getMac()
             ));
         });
+
+        addDataReceiver(FragmentedData.class, this);
     }
 
     private void resendData(String sessionId)
@@ -118,7 +126,28 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
 
     @Override
     public void sendData(Integer port, Serializable data) {
-        super.sendData(port, data);
+        if(portStateMap.getOrDefault(port, PortState.CLOSED) != PortState.CONNECTED)
+        {
+            System.out.printf("[%6s-%6s] Port [%d] Failed to send data [%s]\n", getMac().substring(0, 6), "", port, data.toString());
+            return;
+        }
+        String sessionId = sessionManager.getSessionId(port);
+        SessionInformation sessionInformation = sessionManager.getSessionInformation(sessionId);
+
+        Packet packet = new Packet(sessionId, sessionInformation, HandshakeData.EMPTY, null, this.getMac());
+        Queue<FragmentedData> fragmentedData = FragmentedData.fragmentPacket(data, network.getFrameSize() - FragmentedData.FIXED_PRE_SIZE);
+        if(fragmentedData.size() > 1)
+        {
+            while(!fragmentedData.isEmpty())
+            {
+                System.out.printf("[%6s-%6s] Port [%d] Data Sent[%s]\n", getMac().substring(0, 6), "", sessionInformation.sourcePort(), data.toString());
+                byte[] arr = ByteConvertor.serialize(fragmentedData.poll());
+                System.out.println(arr.length);
+                send(packet.copy(arr));
+            }
+        }else{
+            send(packet.copy(ByteConvertor.serialize(data)));
+        }
     }
 
     @Override
@@ -138,5 +167,20 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         else if(portStateMap.get(port) == PortState.CONNECTED) {
             keepAlive(sessionManager.getSessionId(port));
         }
+    }
+
+    @Override
+    public void startStoringFragments(FragmentedData data, String sessionId) {
+        fragmentStoreMap.put(sessionId, new byte[data.totalFrames()][]);
+    }
+
+    @Override
+    public byte @Nullable [][] getFragmentArr(String sessionId) {
+        return fragmentStoreMap.getOrDefault(sessionId, null);
+    }
+
+    @Override
+    public void fragmentCompletionHandler(Object object, String sessionId) {
+        triggerReceiver(sessionId, object);
     }
 }
