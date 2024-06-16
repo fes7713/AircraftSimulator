@@ -83,7 +83,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
             }
             case CLOSED ->{
                 System.out.printf("[%6s-%6s] Port [%d] opened\n", getMac().substring(0, 6), "", port);
-                changePortState(port, PortState.OPEN, null);
+                changePortState(port, PortState.OPEN);
                 return true;
             }
         }
@@ -107,7 +107,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 System.out.printf("[%6s-%6s] Port [%d] not open\n", getMac().substring(0, 6), "", port);
             }
         }
-        changePortState(port, null, null);
+        changePortState(port, null);
     }
 
     private void process()
@@ -154,13 +154,11 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 {
                     System.out.printf("[%6s-%6s] Port [%d] is closed \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                     responsePacket = new Packet(
-                            receivingPacket,
+                            receivingPacket.getSessionID(),
+                            receivingPacket.getSessionInformation(true),
                             new HandshakeData(false, true, true, false),
                             null,
-                            receivingPacket.getDestinationPort(),
-                            receivingPacket.getSourcePort(),
-                            null,
-                            receivingPacket.getSourceMac()
+                            null
                     );
                     send(responsePacket);
                     sessionManager.deleteSession(receivingPacket.getSessionID());
@@ -185,14 +183,14 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                         if(portStateMap.get(port) == PortState.OPEN)
                         {
                             System.out.printf("[%6s-%6s] Port [%d] connecting SYN\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            changePortState(port, PortState.CONNECTING, receivingPacket.getSessionID(), receivingPacket.getSourcePort(), receivingPacket.getSourceMac());
                             responsePacket = new Packet(
-                                    receivingPacket,
+                                    receivingPacket.getSessionID(),
+                                    sessionManager.getSessionInformation(receivingPacket.getSessionID()),
                                     new HandshakeData(true, true, false, false),
                                     null,
                                     getMac()
                             );
-                            changePortState(responsePacket, PortState.CONNECTING);
-
                         }else{
                             System.out.printf("[%6s-%6s] Port [%d] in use\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             sessionManager.deleteSession(receivingPacket.getSessionID());
@@ -204,23 +202,22 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                         {
                             System.out.printf("[%6s-%6s] Port [%d] connected to [%6s] Port [%d]\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getSourcePort());
                             arpTable.put(receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
+                            changePortState(port, PortState.CONNECTED, receivingPacket.getSessionID(), receivingPacket.getSourcePort(), receivingPacket.getSourceMac());
                             responsePacket = new Packet(
-                                    receivingPacket,
+                                    receivingPacket.getSessionID(),
+                                    sessionManager.getSessionInformation(receivingPacket.getSessionID()),
                                     new HandshakeData(false, true, false, false),
                                     null,
                                     getMac()
                             );
-                            changePortState(responsePacket, PortState.CONNECTED);
-                        }else{
+                            }else{
                             System.out.printf("[%6s-%6s] Port [%d] invalid packet SYN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             responsePacket = new Packet(
-                                    receivingPacket,
+                                    receivingPacket.getSessionID(),
+                                    receivingPacket.getSessionInformation(true),
                                     new HandshakeData(false, true, true, true),
                                     null,
-                                    receivingPacket.getDestinationPort(),
-                                    receivingPacket.getSourcePort(),
-                                    null,
-                                    receivingPacket.getSourceMac()
+                                    null
                             );
                             sessionManager.deleteSession(receivingPacket.getSessionID());
                         }
@@ -251,13 +248,14 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                                 System.out.printf("[%6s-%6s] Port [%d] connection cancelled \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             }
 
-                            releasePort(receivingPacket);
                             responsePacket = new Packet(
-                                    receivingPacket,
+                                    receivingPacket.getSessionID(),
+                                    sessionManager.getSessionInformation(receivingPacket.getSessionID()),
                                     new HandshakeData(false, true, false, true),
                                     null,
                                     getMac()
                             );
+                            releasePort(receivingPacket);
                         }else{
                             System.out.printf("[%6s-%6s] Port [%d] invalid packet FIN \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                         }
@@ -281,7 +279,8 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                         if(!processData(receivingPacket.getData(), receivingPacket.getSessionID(), false))
                         {
                             responsePacket = new Packet(
-                                    receivingPacket,
+                                    receivingPacket.getSessionID(),
+                                    sessionManager.getSessionInformation(receivingPacket.getSessionID()),
                                     new HandshakeData(false, true, false, false),
                                     null,
                                     getMac()
@@ -329,20 +328,13 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         arpTable.put(packet.getSourceMac(), packet.getDestinationPort());
     }
 
-    private void changePortState(Packet responsePacket, PortState state)
-    {
-        changePortState(responsePacket.getSourcePort(), state, responsePacket);
-    }
-
-    private void changePortState(Integer port, PortState state, Packet packet)
+    private void changePortState(Integer port, PortState state)
     {
         if(state == null)
         {
             sessionManager.deleteSession(port);
             portStateMap.remove(port);
         }
-        else if(packet != null)
-            changePortState(port, state, packet.getSessionID(), packet.getDestinationPort(), packet.getDestinationMac());
         else
             // open
             changePortState(port, state, null, null, null);
@@ -414,7 +406,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         if(!openPort(sourcePort))
             return;
 
-        changePortState(sourcePort, PortState.CONNECTING, null);
+        changePortState(sourcePort, PortState.CONNECTING);
         Packet packet = new Packet(
                 new HandshakeData(true, false, false, false),
                 null,
@@ -541,10 +533,10 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 e.printStackTrace();
             }
 
-//            if(cnt == 100)
-//            {
-//                component3.closePort(20);
-//            }
+            if(cnt == 100)
+            {
+                component3.disconnect(20);
+            }
 
 //            if(cnt==100)
 //            {

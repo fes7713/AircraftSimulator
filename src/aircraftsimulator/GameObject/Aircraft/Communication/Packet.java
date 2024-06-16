@@ -2,6 +2,8 @@ package aircraftsimulator.GameObject.Aircraft.Communication;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
+
 public class Packet {
     protected final byte[] data;
     protected final HandshakeData handshakeData;
@@ -14,19 +16,9 @@ public class Packet {
     protected Long created;
     protected String sessionID;
 
-    public Packet(Packet packet, String sessionID)
+    public Packet(String sessionID, SessionInformation info, HandshakeData handshakeData, byte[] data, String sourceMac)
     {
-        this(sessionID, packet.handshakeData, packet.data, packet.sourcePort, packet.destinationPort, packet.sourceMac, packet.destinationMac);
-    }
-
-    public Packet(@NotNull Packet receivedPacket, HandshakeData handshakeData, byte[] data, @NotNull String sourceMac)
-    {
-        this(receivedPacket.sessionID, handshakeData, data, receivedPacket.destinationPort, receivedPacket.sourcePort, sourceMac, receivedPacket.sourceMac);
-    }
-
-    public Packet(@NotNull Packet receivedPacket, HandshakeData handshakeData, byte[] data, @NotNull Integer sourcePort, @NotNull Integer destinationPort, String sourceMac, String  destinationMac)
-    {
-        this(receivedPacket.sessionID, handshakeData, data, sourcePort, destinationPort, sourceMac, destinationMac);
+        this(sessionID, handshakeData, data, info.sourcePort(), info.destinationPort(), sourceMac, info.destinationMac());
     }
 
     public Packet(HandshakeData handshakeData, byte[] data, @NotNull Integer sourcePort, @NotNull Integer destinationPort, String sourceMac, String  destinationMac)
@@ -82,5 +74,17 @@ public class Packet {
     public Long getCreated()
     {
         return created;
+    }
+
+    public SessionInformation getSessionInformation(boolean reverse)
+    {
+        if(reverse)
+            return new SessionInformation(destinationPort, sourcePort, destinationMac);
+        return new SessionInformation(sourcePort, destinationPort, sourceMac);
+    }
+
+    public Packet copy(String sessionID)
+    {
+        return new Packet(sessionID, handshakeData, Arrays.copyOf(data, data.length), sourcePort, destinationPort, sourceMac, destinationMac);
     }
 }

@@ -31,7 +31,7 @@ public class NetworkImp implements Network{
             return;
         for(NetworkComponent networkComponent: arpNetworkComponentMap.values())
             if(!networkComponent.getMac().equals(sourceMac))
-                networkComponent.receive(new Packet(packet, sessionId));
+                networkComponent.receive(packet.copy(sessionId));
     }
 
     @Override
