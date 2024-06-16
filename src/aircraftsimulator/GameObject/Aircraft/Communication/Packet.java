@@ -16,6 +16,12 @@ public class Packet {
     protected Long created;
     protected String sessionID;
 
+    protected Packet(Packet packet, byte[] data)
+    {
+        this(packet.handshakeData, data, packet.sourcePort, packet.destinationPort, packet.sourceMac, packet.destinationMac);
+        this.sessionID = packet.sessionID;
+    }
+
     public Packet(String sessionID, SessionInformation info, HandshakeData handshakeData, byte[] data, String sourceMac)
     {
         this(handshakeData, data, info.sourcePort(), info.destinationPort(), sourceMac, info.destinationMac());
@@ -85,5 +91,10 @@ public class Packet {
     public Packet copy(String sessionID)
     {
         return new Packet(sessionID, handshakeData, Arrays.copyOf(data, data.length), sourcePort, destinationPort, sourceMac, destinationMac);
+    }
+
+    public Packet copy(byte[] data)
+    {
+        return new Packet(sessionID, handshakeData, data, sourcePort, destinationPort, sourceMac, destinationMac);
     }
 }
