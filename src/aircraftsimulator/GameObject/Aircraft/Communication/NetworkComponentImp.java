@@ -156,7 +156,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                     responsePacket = new Packet(
                             receivingPacket.getSessionID(),
                             receivingPacket.getSessionInformation().reverse(receivingPacket.getSourceMac()),
-                            new HandshakeData(false, true, true, false),
+                            HandshakeData.RST_ACK,
                             null,
                             null
                     );
@@ -187,7 +187,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                             responsePacket = new Packet(
                                     receivingPacket.getSessionID(),
                                     sessionManager.getSessionInformation(receivingPacket.getSessionID()),
-                                    new HandshakeData(true, true, false, false),
+                                    HandshakeData.SYN_ACK,
                                     null,
                                     getMac()
                             );
@@ -206,7 +206,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                             responsePacket = new Packet(
                                     receivingPacket.getSessionID(),
                                     sessionManager.getSessionInformation(receivingPacket.getSessionID()),
-                                    new HandshakeData(false, true, false, false),
+                                    HandshakeData.ACK,
                                     null,
                                     getMac()
                             );
@@ -250,7 +250,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                             responsePacket = new Packet(
                                     receivingPacket.getSessionID(),
                                     sessionManager.getSessionInformation(receivingPacket.getSessionID()),
-                                    new HandshakeData(false, true, false, true),
+                                    HandshakeData.FIN_ACK,
                                     null,
                                     getMac()
                             );
@@ -280,7 +280,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                             responsePacket = new Packet(
                                     receivingPacket.getSessionID(),
                                     sessionManager.getSessionInformation(receivingPacket.getSessionID()),
-                                    new HandshakeData(false, true, false, false),
+                                    HandshakeData.ACK,
                                     null,
                                     getMac()
                             );
@@ -409,7 +409,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
 
         changePortState(sourcePort, PortState.CONNECTING);
         Packet packet = new Packet(
-                new HandshakeData(true, false, false, false),
+                HandshakeData.SYN,
                 null,
                 sourcePort,
                 destinationPort,
@@ -427,7 +427,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 new Packet(
                         sessionId,
                         sessionInformation,
-                        new HandshakeData(false, false, false, true),
+                        HandshakeData.FIN,
                         null,
                         this.getMac()
                 )
@@ -462,7 +462,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         Packet packet = new Packet(
                 sessionId,
                 sessionInformation,
-                new HandshakeData(false, false, false, false),
+                HandshakeData.EMPTY,
                 ByteConvertor.serialize(data),
                 this.getMac()
 
