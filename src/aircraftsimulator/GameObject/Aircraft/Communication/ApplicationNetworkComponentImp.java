@@ -1,17 +1,14 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ApplicationNetworkComponentImp extends NetworkComponentImp implements ApplicationNetworkComponent {
-
-    private Map<String, ResendPacket> sentPacketMap;
     private final Map<String, Integer> resentNumberMap;
     private final Map<String, Packet> lastSentPacketMap;
 
     private final int resendRetry;
-    private final long timeout;
+    private final long resendTimeout;
 
     private final long keepaliveTime;
     private final long keepAliveInterval;
@@ -25,42 +22,35 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
     private static final int DEFAULT_KEEP_ALIVE_RETRY = 3;
 
     public ApplicationNetworkComponentImp(Network network, float updateInterval) {
-        this(network, updateInterval, DEFAULT_TIMEOUT, DEFAULT_RESENT_RETRY);
+        this(network, updateInterval, DEFAULT_TIMEOUT, DEFAULT_RESENT_RETRY, DEFAULT_KEEP_ALIVE_TIME, DEFAULT_KEEP_ALIVE_INTERVAL, DEFAULT_KEEP_ALIVE_RETRY);
     }
 
-    public ApplicationNetworkComponentImp(Network network, float updateInterval, long timeout, int resentRetry)
+    public ApplicationNetworkComponentImp(Network network, float updateInterval, long resendTimeout, int resentRetry, long keepaliveTime, long keepAliveInterval, int keepAliveRetry)
     {
         super(network, updateInterval);
         resentNumberMap = new HashMap<>();
         lastSentPacketMap = new HashMap<>();
 
-        this.timeout = timeout;
+        this.resendTimeout = resendTimeout;
         this.resendRetry = resentRetry;
 
-        this.keepaliveTime = DEFAULT_KEEP_ALIVE_TIME;
-        this.keepAliveInterval = DEFAULT_KEEP_ALIVE_INTERVAL;
-        this.keepAliveRetry = DEFAULT_KEEP_ALIVE_RETRY;
+        this.keepaliveTime = keepaliveTime;
+        this.keepAliveInterval = keepAliveInterval;
+        this.keepAliveRetry = keepAliveRetry;
     }
 
     private void resendData(String sessionId)
     {
         if(!lastSentPacketMap.containsKey(sessionId))
             return;
-        if(!sessionManager.isTimeout(sessionId, timeout))
+        if(!sessionManager.isTimeout(sessionId, resendTimeout))
             resentNumberMap.remove(sessionId);
 
-        if(!sessionManager.isTimeout(sessionId, timeout * (resentNumberMap.getOrDefault(sessionId, 0) + 1)))
+        if(!sessionManager.isTimeout(sessionId, resendTimeout * (resentNumberMap.getOrDefault(sessionId, 0) + 1)))
             return;
         else
             resentNumberMap.put(sessionId, resentNumberMap.getOrDefault(sessionId, 0) + 1);
 
-//        if(!lastSentPacketMap.containsKey(sessionId) && lastSentPacketMap.containsKey(null)
-//                && sessionManager.getSessionInformation(sessionId).sourcePort().equals(lastSentPacketMap.get(null).getSourcePort()))
-//        {
-//            lastSentPacketMap.put(sessionId, lastSentPacketMap.get(null));
-//            lastSentPacketMap.remove(null);
-//            return;
-//        }
         SessionInformation info = sessionManager.getSessionInformation(sessionId);
 
         if(resentNumberMap.get(sessionId) > resendRetry)
@@ -121,18 +111,6 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
             lastSentPacketMap.put(packet.getSessionID(), packet);
     }
 
-    public void setResendLimit(Integer limit) {
-
-    }
-
-    public void send(){
-
-    }
-
-    public void received(){
-
-    }
-
     @Override
     public void triggerTimeout(Integer port, SessionInformation sessionInformation) {
         if(portStateMap.get(port) == PortState.CONNECTING) {
@@ -142,25 +120,6 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         }
         else if(portStateMap.get(port) == PortState.CONNECTED) {
             keepAlive(sessionManager.getSessionId(port));
-        }
-    }
-
-    private class ResendPacket
-    {
-        private int remainingResendLimit;
-        private int port;
-        private int sequenceNumber;
-        private int ackNumber;
-        private int windowSize;
-        private Serializable data;
-
-        public void decrementResendLimit()
-        {
-
-        }
-
-        public boolean isActive(){
-            return remainingResendLimit > 0;
         }
     }
 }
