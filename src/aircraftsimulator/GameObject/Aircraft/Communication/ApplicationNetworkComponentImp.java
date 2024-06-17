@@ -1,7 +1,9 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.AckWindowSizeData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.FragmentedData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.KeepAliveData;
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.RequestWindowSize;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
@@ -22,12 +24,16 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
     private final long keepAliveInterval;
     private final int keepAliveRetry;
 
+    private final int windowSize;
+
     private static final long DEFAULT_TIMEOUT = 3000;
     private static final int DEFAULT_RESENT_RETRY= 3;
 
     private static final long DEFAULT_KEEP_ALIVE_TIME = 10000;
     private static final long DEFAULT_KEEP_ALIVE_INTERVAL = 3000;
     private static final int DEFAULT_KEEP_ALIVE_RETRY = 3;
+
+    private static final int DEFAULT_WINDOW_SIZE = 5;
 
     public ApplicationNetworkComponentImp(Network network, float updateInterval) {
         this(network, updateInterval, DEFAULT_TIMEOUT, DEFAULT_RESENT_RETRY, DEFAULT_KEEP_ALIVE_TIME, DEFAULT_KEEP_ALIVE_INTERVAL, DEFAULT_KEEP_ALIVE_RETRY);
@@ -47,6 +53,8 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         this.keepAliveInterval = keepAliveInterval;
         this.keepAliveRetry = keepAliveRetry;
 
+        this.windowSize = DEFAULT_WINDOW_SIZE;
+
         addDataReceiver(KeepAliveData.class, (object, sessionId) -> {
             send(new Packet(
                     sessionId,
@@ -57,7 +65,11 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
             ));
         });
 
-        addDataReceiver(FragmentedData.class, this);
+        addDataReceiver(FragmentedData.class, this::fragmentDataReceiver);
+
+        addDataReceiver(RequestWindowSize.class, this::requestWindowSizeDataReceiver);
+
+        addDataReceiver(AckWindowSizeData.class, this::ackWindowDataReceived);
     }
 
     private void resendData(String sessionId)
@@ -138,13 +150,11 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         Queue<FragmentedData> fragmentedData = FragmentedData.fragmentPacket(data, network.getFrameSize() - FragmentedData.FIXED_PRE_SIZE);
         if(fragmentedData.size() > 1)
         {
-            while(!fragmentedData.isEmpty())
-            {
-                System.out.printf("[%6s-%6s] Port [%d] Data Sent[%s]\n", getMac().substring(0, 6), "", sessionInformation.sourcePort(), data.toString());
-                byte[] arr = ByteConvertor.serialize(fragmentedData.poll());
-                System.out.println(arr.length);
-                send(packet.copy(arr));
-            }
+            byte[][] stream = new byte[fragmentedData.size()][];
+            for(int i = 0; !fragmentedData.isEmpty(); i++)
+                stream[i] = fragmentedData.poll().fragmentedData();
+            fragmentStoreMap.put(sessionId, stream);
+            send(packet.copy(ByteConvertor.serialize(new RequestWindowSize(stream.length))));
         }else{
             send(packet.copy(ByteConvertor.serialize(data)));
         }
@@ -170,8 +180,8 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
     }
 
     @Override
-    public void startStoringFragments(FragmentedData data, String sessionId) {
-        fragmentStoreMap.put(sessionId, new byte[data.totalFrames()][]);
+    public void startStoringFragments(int totalFrames, String sessionId) {
+        fragmentStoreMap.put(sessionId, new byte[totalFrames][]);
     }
 
     @Override
@@ -180,7 +190,29 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
     }
 
     @Override
-    public void fragmentCompletionHandler(Object object, String sessionId) {
+    public void fragmentReceiveCompletionHandler(Object object, String sessionId) {
+        fragmentStoreMap.remove(sessionId);
         triggerReceiver(sessionId, object);
+    }
+
+    @Override
+    public void fragmentSendCompletionHandler(String sessionId) {
+        fragmentStoreMap.remove(sessionId);
+    }
+
+    @Override
+    public void serializableDataSend(String sessionId, Serializable data) {
+        send(new Packet(
+                sessionId,
+                sessionManager.getSessionInformation(sessionId),
+                HandshakeData.ACK,
+                ByteConvertor.serialize(data),
+                getMac()
+        ));
+    }
+
+    @Override
+    public int askForWindowSize() {
+        return this.windowSize;
     }
 }
