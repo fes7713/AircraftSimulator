@@ -82,7 +82,7 @@ public class Packet {
         return new SessionInformation(sourcePort, destinationPort, destinationMac);
     }
 
-    public Packet copy(String sessionID)
+    public Packet copy(String sessionID, String destinationMac)
     {
         return new Packet(sessionID, handshakeData, Arrays.copyOf(data, data.length), sourcePort, destinationPort, sourceMac, destinationMac);
     }

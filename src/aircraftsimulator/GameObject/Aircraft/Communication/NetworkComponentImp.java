@@ -20,11 +20,13 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
 
     private final float updateInterval;
     private float timeClock;
+    private final int networkSpeed;
 
-    private Map<Class<? extends Serializable>, DataReceiver> dataReceiverMapper;
+    private final Map<Class<? extends Serializable>, DataReceiver> dataReceiverMapper;
 
     private final long timeout;
-    private static final long DEFAULT_TIMEOUT = 4000;
+    private static final long DEFAULT_TIMEOUT = 2500;
+    private final static int DEFAULT_NETWORK_SPEED = 5;
 
     public NetworkComponentImp(Network network, float updateInterval)
     {
@@ -41,6 +43,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         this.updateInterval = updateInterval;
         timeClock = updateInterval;
         timeout = DEFAULT_TIMEOUT;
+        networkSpeed = DEFAULT_NETWORK_SPEED;
 
         dataReceiverMapper = new HashMap<>();
     }
@@ -122,16 +125,16 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                     networkMode = NetworkMode.SENDING;
             }
             case SENDING -> {
-                Packet sendingPacket = sendingQueue.poll();
-                Integer sendingPort = sendingPacket.getSourcePort();
-                String destinationMac = sendingPacket.getDestinationMac();
-//                if(destinationMac != null && newSessionFlag)
-//                    throw new RuntimeException("Invalid state of program");
-
-                if(destinationMac != null)
-                    network.sendTo(destinationMac, sendingPacket);
-                else
-                    network.broadcast(sendingPacket, getMac(), sessionManager);
+                for(int i = 0 ; i < networkSpeed; i++)
+                {
+                    Packet sendingPacket = sendingQueue.poll();
+                    if(sendingPacket == null)
+                        break;
+                    if(sendingPacket.getDestinationMac() != null)
+                        network.sendTo(sendingPacket);
+                    else
+                        network.broadcast(sendingPacket, getMac(), sessionManager);
+                }
 
                 if(sendingQueue.isEmpty())
                     networkMode = NetworkMode.IDLE;
@@ -489,14 +492,14 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         };
 
         Network network = new NetworkImp();
-        NetworkComponent component1 = new ApplicationNetworkComponentImp(network, 0.1F);
+        NetworkComponent component1 = new ApplicationNetworkComponentImp(network, 0.01F);
         component1.openPort(10);
         component1.openPort(20);
-        NetworkComponent component2 = new ApplicationNetworkComponentImp(network, 0.1F);
+        NetworkComponent component2 = new ApplicationNetworkComponentImp(network, 0.01F);
 //        component2.openPort(10);
-        NetworkComponent component3 = new ApplicationNetworkComponentImp(network, 0.1F);
+        NetworkComponent component3 = new ApplicationNetworkComponentImp(network, 0.01F);
 //        component3.openPort(20);
-        NetworkComponent component4 = new ApplicationNetworkComponentImp(network, 0.1F);
+        NetworkComponent component4 = new ApplicationNetworkComponentImp(network, 0.01F);
         component4.openPort(20);
 
         network.addToNetwork(component1);
@@ -540,6 +543,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            network.update(0.03F);
 
             if(cnt == 150)
             {
