@@ -34,7 +34,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         mac = UUID.randomUUID().toString();
         portStateMap = new HashMap<>();
         arpTable = new HashMap<>();
-        sessionManager = new SessionManager(this);
+        sessionManager = new SessionManagerImp(this);
 
         sendingQueue = new ArrayDeque<>();
         receivingQueue = new ArrayDeque<>();
