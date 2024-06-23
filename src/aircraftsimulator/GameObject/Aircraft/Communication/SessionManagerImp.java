@@ -7,15 +7,10 @@ public class SessionManagerImp implements SessionManager{
     private final Map<String, SessionInformation> sessionInformationMap;
     private final Map<String, Long> sessionLastUpdatedMap;
 
-    private final TimeoutHandler timeoutHandler;
-
-    private Map<String, Map<TimeoutType, Long>> sessionTimeoutMap;
-
-    public SessionManagerImp(TimeoutHandler timeoutHandler) {
+    public SessionManagerImp() {
         portSessionMap = new HashMap<>();
         sessionInformationMap = new HashMap<>();
         sessionLastUpdatedMap = new HashMap<>();
-        this.timeoutHandler = timeoutHandler;
     }
 
     public boolean deleteSession(String sessionId)
@@ -87,7 +82,7 @@ public class SessionManagerImp implements SessionManager{
         if(sessionLastUpdatedMap.containsKey(sessionId)) {
             sessionLastUpdatedMap.put(sessionId, System.currentTimeMillis());
         }else{
-            System.out.printf("[%s] Session does not exist".formatted(sessionId));
+            System.out.printf("[%s] Session does not exist\n".formatted(sessionId));
         }
     }
 
@@ -99,24 +94,6 @@ public class SessionManagerImp implements SessionManager{
             sessionLastUpdatedMap.put(sessionId, System.currentTimeMillis());
         }else{
             System.out.printf("[%s] Session does not exist".formatted(sessionId));
-        }
-    }
-
-    public boolean isTimeout(String sessionId, Long timeout)
-    {
-        return System.currentTimeMillis() - sessionLastUpdatedMap.get(sessionId) > timeout;
-    }
-
-    public void checkTimeout(Long timeout)
-    {
-        Set<Integer> keySet = new HashSet(portSessionMap.keySet());
-        for(Integer port: keySet)
-        {
-            String sessionId = getSessionId(port);
-            if(isTimeout(sessionId, timeout))
-            {
-                timeoutHandler.triggerTimeout(port, sessionInformationMap.get(sessionId));
-            }
         }
     }
 }

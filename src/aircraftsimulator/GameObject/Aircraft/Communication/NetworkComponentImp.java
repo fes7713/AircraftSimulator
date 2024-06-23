@@ -1,18 +1,23 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionTimeoutHandler;
+import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutManager;
+import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutManagerImp;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
 // TODO -> Unreleased session in code.
 
-public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
+public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutHandler {
     protected final Network network;
     private final String mac;
 
     protected final Map<Integer, PortState> portStateMap;
     private final Map<String, Integer> arpTable;
     protected final SessionManager sessionManager;
+    protected final TimeoutManager timeoutManager;
 
     private final Queue<Packet> sendingQueue;
     private final Queue<Packet> receivingQueue;
@@ -25,7 +30,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     private final Map<Class<? extends Serializable>, DataReceiver> dataReceiverMapper;
 
     private final long timeout;
-    private static final long DEFAULT_TIMEOUT = 2500;
+    private static final long DEFAULT_TIMEOUT = 5000;
     private final static int DEFAULT_NETWORK_SPEED = 5;
 
     public NetworkComponentImp(Network network, float updateInterval)
@@ -34,7 +39,8 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         mac = UUID.randomUUID().toString();
         portStateMap = new HashMap<>();
         arpTable = new HashMap<>();
-        sessionManager = new SessionManagerImp(this);
+        sessionManager = new SessionManagerImp();
+        timeoutManager = new TimeoutManagerImp();
 
         sendingQueue = new ArrayDeque<>();
         receivingQueue = new ArrayDeque<>();
@@ -63,7 +69,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     public void update(float delta) {
         if(timeClock < 0)
         {
-            sessionManager.checkTimeout(timeout);
+            timeoutManager.checkTimeout();
             process();
             timeClock = updateInterval;
         }
@@ -130,10 +136,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                     Packet sendingPacket = sendingQueue.poll();
                     if(sendingPacket == null)
                         break;
-                    if(sendingPacket.getDestinationMac() != null)
-                        network.sendTo(sendingPacket);
-                    else
-                        network.broadcast(sendingPacket, getMac(), sessionManager);
+                    network.sendTo(sendingPacket);
                 }
 
                 if(sendingQueue.isEmpty())
@@ -148,7 +151,6 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                 if(receivingPacket.getSourceMac() == null)
                 {
                     System.out.printf("[%6s-%6s] Port [%d] connection rejected SYN\n", getMac().substring(0, 6), "", receivingPacket.getDestinationPort());
-//                    sessionManager.deleteSession(receivingPacket.getSessionID());
                     return;
                 }
 
@@ -166,6 +168,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                     );
                     send(responsePacket);
                     sessionManager.deleteSession(receivingPacket.getSessionID());
+                    timeoutManager.removeTimeout(receivingPacket.getSessionID());
                     return;
                 }
 
@@ -198,6 +201,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                         }else{
                             System.out.printf("[%6s-%6s] Port [%d] in use\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             sessionManager.deleteSession(receivingPacket.getSessionID());
+                            timeoutManager.removeTimeout(receivingPacket.getSessionID());
                         }
                     }
                     // SYN ACK
@@ -224,6 +228,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                                     null
                             );
                             sessionManager.deleteSession(receivingPacket.getSessionID());
+                            timeoutManager.removeTimeout(receivingPacket.getSessionID());
                         }
                     }
                     case 100 -> {
@@ -238,6 +243,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                         else {
                             System.out.printf("[%6s-%6s] Port [%d] connection failed ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
                             sessionManager.deleteSession(receivingPacket.getSessionID());
+                            timeoutManager.removeTimeout(receivingPacket.getSessionID());
                         }
                     }
                     case 1 -> {
@@ -318,7 +324,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
     @Override
     public void releasePort(int port)
     {
-        System.out.printf("[%6s-] Port [%d] released\n", getMac().substring(0, 6), port);
+        System.out.printf("[%6s-%6s] Port [%d] released\n", getMac().substring(0, 6), "", port);
         String sessionId = sessionManager.getSessionId(port);
         changePortState(sessionId, sessionManager.getSessionInformation(sessionId), PortState.OPEN);
     }
@@ -334,6 +340,7 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         {
             sessionManager.deleteSession(port);
             portStateMap.remove(port);
+            timeoutManager.removeTimeout(sessionManager.getSessionId(port));
         }
         else
             // open
@@ -350,7 +357,10 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         if(state == PortState.OPEN)
         {
             if(sessionId != null)
+            {
                 sessionManager.deleteSession(sessionId);
+                timeoutManager.removeTimeout(sessionId);
+            }
             else if(!(destinationPort == null && destinationMac == null))
                 throw new RuntimeException("Error !!!");
         }
@@ -360,24 +370,28 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
             {
                 sessionManager.deleteSession(sessionId);
                 portStateMap.remove(port);
+                timeoutManager.removeTimeout(sessionId);
             }else{
                 throw new RuntimeException("Error !!");
             }
         }
         else if(portStateMap.get(port) == PortState.OPEN && state == PortState.CONNECTING)
         {
-            // Syn
-            if(sessionId != null)
-                sessionManager.register(sessionId, port, destinationPort, destinationMac);
+            // SYN
+            sessionManager.register(sessionId, port, destinationPort, destinationMac);
+            timeoutManager.registerTimeout(sessionId, ConnectionTimeoutHandler.class, timeout, this::handleConnectionTimeout);
         }
         else if(portStateMap.get(port) == PortState.CONNECTING && state == PortState.CONNECTED)
         {
-            // Syn Ack
+            // Syn Ack // Ack
             sessionManager.updateSession(sessionId, port, destinationPort, destinationMac);
+            timeoutManager.removeTimeout(sessionId, ConnectionTimeoutHandler.class);
+            handleConnectionEstablished(sessionId, port);
         }
         else if(portStateMap.get(port) == PortState.CONNECTED && state == PortState.OPEN)
         {
             sessionManager.deleteSession(sessionId);
+            timeoutManager.removeTimeout(sessionId);
         }
         else{
             System.out.println("Invalid State Transition");
@@ -401,14 +415,15 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         if(!openPort(sourcePort))
             return;
 
-        changePortState(sourcePort, PortState.CONNECTING);
+        String sessionId = sessionManager.generateSession();
+        changePortState(sourcePort, PortState.CONNECTING, sessionId, destinationPort, null);
         Packet packet = new Packet(
+                sessionId,
+                sessionManager.getSessionInformation(sessionId),
                 HandshakeData.SYN,
                 null,
-                sourcePort,
-                destinationPort,
-                getMac(),
-                null);
+                getMac()
+        );
         System.out.printf("[%6s-%6s] Port [%d] connecting\n", getMac().substring(0, 6), "", sourcePort);
         send(packet);
     }
@@ -426,6 +441,21 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
                         this.getMac()
                 )
         );
+    }
+
+    @Override
+    public void handleConnectionTimeout(String sessionId, Integer retryNum) {
+        System.out.printf("[%6s-%6s] Port [%d] timeout\n", getMac().substring(0, 6), "", sessionManager.getSessionInformation(sessionId).sourcePort());
+
+        if(sessionManager.getSessionInformation(sessionId).destinationMac() != null)
+            disconnect(sessionId);
+        sessionManager.deleteSession(sessionId);
+        timeoutManager.removeTimeout(sessionId, ConnectionTimeoutHandler.class);
+    }
+
+    @Override
+    public void handleConnectionEstablished(String sessionId, Integer port) {
+        System.out.printf("[%6s-%6s] Port [%d] Connection established\n", getMac().substring(0, 6), "", port);
     }
 
     @Override
@@ -463,14 +493,6 @@ public class NetworkComponentImp implements NetworkComponent, TimeoutHandler{
         );
         System.out.printf("[%6s-%6s] Port [%d] Data Sent[%s]\n", getMac().substring(0, 6), "", sessionInformation.sourcePort(), data.toString());
         send(packet);
-    }
-
-    @Override
-    public void triggerTimeout(Integer port, SessionInformation sessionInformation) {
-        if(portStateMap.get(port) == PortState.CONNECTING) {
-            System.out.printf("[%6s-] Port [%d] timeout\n", getMac().substring(0, 6), port);
-            releasePort(port);
-        }
     }
 
     @Override

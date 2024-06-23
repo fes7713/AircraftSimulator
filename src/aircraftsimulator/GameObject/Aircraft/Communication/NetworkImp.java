@@ -28,25 +28,21 @@ public class NetworkImp implements Network{
         arpNetworkComponentMap.remove(networkComponent.getMac());
     }
 
-    @Override
-    public void broadcast(Packet packet, String sourceMac, SessionManager sessionManager) {
-        String sessionId = sessionManager.generateSession(
-                packet.getSourcePort(),
-                packet.getDestinationPort(),
-                packet.getDestinationMac()
-        );
-        if(sessionId == null)
-            return;
+    private void broadcast(Packet packet) {
         for(NetworkComponent networkComponent: arpNetworkComponentMap.values())
-            if(!networkComponent.getMac().equals(sourceMac))
-                sendTo(packet.copy(sessionId, networkComponent.getMac()));
+            if(!networkComponent.getMac().equals(packet.getSourceMac()))
+                sendTo(packet.copy(packet.getSessionID(), networkComponent.getMac()));
     }
 
     @Override
     public void sendTo(Packet packet) {
-        packetQueue.add(packet);
-        while(packetQueue.size() > networkSpeed)
-            packetQueue.remove(new Random().nextInt(packetQueue.size()));
+        if(packet.getDestinationMac() == null)
+            broadcast(packet);
+        else{
+            packetQueue.add(packet);
+            while(packetQueue.size() > networkSpeed)
+                packetQueue.remove(new Random().nextInt(packetQueue.size()));
+        }
     }
 
     @Override

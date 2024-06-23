@@ -1,9 +1,9 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
-import aircraftsimulator.GameObject.Aircraft.Communication.Data.AckWindowSizeData;
-import aircraftsimulator.GameObject.Aircraft.Communication.Data.FragmentedData;
-import aircraftsimulator.GameObject.Aircraft.Communication.Data.KeepAliveData;
-import aircraftsimulator.GameObject.Aircraft.Communication.Data.RequestWindowSize;
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.*;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.KeepAliveAckHandler;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.KeepAliveHandler;
+import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutInformation;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 
-public class ApplicationNetworkComponentImp extends NetworkComponentImp implements ApplicationNetworkComponent, FragmentHandler {
+public class ApplicationNetworkComponentImp extends NetworkComponentImp implements ApplicationNetworkComponent, FragmentHandler, KeepAliveHandler, KeepAliveAckHandler {
 
     private final Map<String, Integer> resentNumberMap;
     private final Map<String, Packet> lastSentPacketMap;
@@ -56,13 +56,11 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         this.windowSize = DEFAULT_WINDOW_SIZE;
 
         addDataReceiver(KeepAliveData.class, (object, sessionId) -> {
-            send(new Packet(
-                    sessionId,
-                    sessionManager.getSessionInformation(sessionId),
-                    HandshakeData.ACK,
-                    null,
-                    getMac()
-            ));
+//            sendData(sessionManager.getSessionInformation(sessionId).sourcePort(), new KeepAliveAckData());
+        });
+
+        addDataReceiver(KeepAliveAckData.class, (object, sessionId) -> {
+            timeoutManager.registerTimeout(sessionId, KeepAliveHandler.class, new TimeoutInformation(sessionId, keepaliveTime, keepAliveInterval, 1, 0, keepAliveRetry, this::handleKeepAlive, timeoutManager::removeTimeout));
         });
 
         addDataReceiver(FragmentedData.class, this::fragmentDataReceiver);
@@ -70,70 +68,6 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         addDataReceiver(RequestWindowSize.class, this::requestWindowSizeDataReceiver);
 
         addDataReceiver(AckWindowSizeData.class, this::ackWindowDataReceived);
-    }
-
-    private void resendData(String sessionId)
-    {
-        if(!lastSentPacketMap.containsKey(sessionId))
-            return;
-        if(!sessionManager.isTimeout(sessionId, resendTimeout))
-            resentNumberMap.remove(sessionId);
-
-        if(!sessionManager.isTimeout(sessionId, resendTimeout * (resentNumberMap.getOrDefault(sessionId, 0) + 1)))
-            return;
-        else
-            resentNumberMap.put(sessionId, resentNumberMap.getOrDefault(sessionId, 0) + 1);
-
-        SessionInformation info = sessionManager.getSessionInformation(sessionId);
-
-        if(resentNumberMap.get(sessionId) > resendRetry)
-        {
-            int port = sessionManager.getSessionInformation(sessionId).sourcePort();
-            releasePort(port);
-            resentNumberMap.remove(sessionId);
-            return;
-        }
-
-        if(lastSentPacketMap.containsKey(sessionId))
-        {
-            send(lastSentPacketMap.get(sessionId));
-            System.out.printf("[%6s-%6s] Port [%d] Resent last packet [%d]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), resentNumberMap.get(sessionId));
-        }
-        else{
-            System.out.printf("[%6s-] Port [%d] Failed to resent last packet\n", getMac().substring(0, 6), info.sourcePort());
-        }
-    }
-
-    private void keepAlive(String sessionId)
-    {
-        if(!sessionManager.isTimeout(sessionId, keepaliveTime))
-            resentNumberMap.remove(sessionId);
-
-        if(!sessionManager.isTimeout(sessionId, keepaliveTime + keepAliveInterval * resentNumberMap.getOrDefault(sessionId, 0)))
-            return;
-        else
-            resentNumberMap.put(sessionId, resentNumberMap.getOrDefault(sessionId, 0) + 1);
-
-        SessionInformation info = sessionManager.getSessionInformation(sessionId);
-
-        if(resentNumberMap.get(sessionId) > keepAliveRetry)
-        {
-            int port = sessionManager.getSessionInformation(sessionId).sourcePort();
-            releasePort(port);
-            resentNumberMap.remove(sessionId);
-            return;
-        }
-
-        send(
-                new Packet(
-                        sessionId,
-                        info,
-                        new HandshakeData(false, false, false, false),
-                        ByteConvertor.serialize(new KeepAliveData()),
-                        getMac()
-                )
-        );
-        System.out.printf("[%6s-%6s] Port [%d] keep alive [%d]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), resentNumberMap.get(sessionId));
     }
 
     @Override
@@ -168,15 +102,12 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
     }
 
     @Override
-    public void triggerTimeout(Integer port, SessionInformation sessionInformation) {
-        if(portStateMap.get(port) == PortState.CONNECTING) {
-//            changePortState(port, PortState.OPEN, sessionManager.getSessionId(port), sessionInformation.destinationPort(), sessionInformation.destinationMac());
-//            sessionManager.updateSession(sessionManager.getSessionId(port));
-            resendData(sessionManager.getSessionId(port));
-        }
-        else if(portStateMap.get(port) == PortState.CONNECTED) {
-            keepAlive(sessionManager.getSessionId(port));
-        }
+    public void handleConnectionEstablished(String sessionId, Integer port) {
+        super.handleConnectionEstablished(sessionId, port);
+        timeoutManager.registerTimeout(
+                sessionId,
+                KeepAliveHandler.class,
+                new TimeoutInformation(sessionId, keepaliveTime, keepAliveInterval, 1, 1, keepAliveRetry, this::handleKeepAlive, s -> {releasePort(sessionManager.getSessionInformation(s).sourcePort());}));
     }
 
     @Override
@@ -214,5 +145,21 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
     @Override
     public int askForWindowSize() {
         return this.windowSize;
+    }
+
+    @Override
+    public void registerKeepAliveTimeout(String sessionId, long timeout) {
+
+    }
+
+    @Override
+    public void handleKeepAlive(String sessionId, Integer retryNum) {
+        sendData(sessionManager.getSessionInformation(sessionId).sourcePort(), new KeepAliveData());
+    }
+
+    @Override
+    public void handleKeepAliveAck(String sessionId, Integer retryNum) {
+        timeoutManager.updateTimeout(sessionId, KeepAliveAckHandler.class);
+        System.out.println(retryNum);
     }
 }

@@ -18,12 +18,11 @@ public class Packet {
 
     public Packet(String sessionID, SessionInformation info, HandshakeData handshakeData, byte[] data, String sourceMac)
     {
-        this(handshakeData, data, info.sourcePort(), info.destinationPort(), sourceMac, info.destinationMac());
-        this.sessionID = sessionID;
+        this(sessionID, handshakeData, data, info.sourcePort(), info.destinationPort(), sourceMac, info.destinationMac());
     }
 
-    public Packet(HandshakeData handshakeData, byte[] data, @NotNull Integer sourcePort, @NotNull Integer destinationPort, String sourceMac, String  destinationMac)
-    {
+    private Packet(String sessionID, HandshakeData handshakeData, byte[] data, @NotNull Integer sourcePort, @NotNull Integer destinationPort, String sourceMac, String  destinationMac) {
+        this.sessionID = sessionID;
         this.handshakeData = handshakeData;
         this.data = data == null ? "".getBytes() : data;
         this.sourcePort = sourcePort;
@@ -32,11 +31,6 @@ public class Packet {
         this.destinationMac = destinationMac;
 
         created = System.currentTimeMillis();
-    }
-
-    private Packet(String sessionID, HandshakeData handshakeData, byte[] data, @NotNull Integer sourcePort, @NotNull Integer destinationPort, String sourceMac, String  destinationMac) {
-        this(handshakeData, data, sourcePort, destinationPort, sourceMac, destinationMac);
-        this.sessionID = sessionID;
     }
 
     public HandshakeData getHandshake()
