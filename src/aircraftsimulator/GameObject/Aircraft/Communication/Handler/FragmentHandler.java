@@ -1,9 +1,11 @@
-package aircraftsimulator.GameObject.Aircraft.Communication;
+package aircraftsimulator.GameObject.Aircraft.Communication.Handler;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.ByteConvertor;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.AckWindowSizeData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.FragmentedData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.RequestWindowSize;
 
+import java.io.IOException;
 import java.io.Serializable;
 
 public interface FragmentHandler {
@@ -76,25 +78,25 @@ public interface FragmentHandler {
         fragmentArr[data.sequenceNumber()] = data.fragmentedData();
 
         printFragmentProgress(sessionId);
-//
-//        if(isFragmentLost(sessionId))
-//            return;
-//
-//        if(data.sequenceNumber() == data.ackNumber() + data.windowSize() - 1 || data.sequenceNumber() == data.totalFrames() - 1)
-//        {
-//            serializableDataSend(sessionId, new AckWindowSizeData(data.sequenceNumber() + 1, askForWindowSize()));
-//        }
-//
-//        if(fragmentArr[fragmentArr.length - 1] != null)
-//        {
-//            try {
-//                fragmentReceiveCompletionHandler(ByteConvertor.deSerialize(fragmentArr), sessionId);
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            } catch (ClassNotFoundException e) {
-//                e.printStackTrace();
-//            }
-//        }
+
+        if(isFragmentLost(sessionId))
+            return;
+
+        if(data.sequenceNumber() == data.ackNumber() + data.windowSize() - 1 || data.sequenceNumber() == data.totalFrames() - 1)
+        {
+            serializableDataSend(sessionId, new AckWindowSizeData(data.sequenceNumber() + 1, askForWindowSize()));
+        }
+
+        if(fragmentArr[fragmentArr.length - 1] != null)
+        {
+            try {
+                fragmentReceiveCompletionHandler(ByteConvertor.deSerialize(fragmentArr), sessionId);
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     default boolean isFragmentLost(String sessionId)

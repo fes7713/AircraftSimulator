@@ -1,6 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.*;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.FragmentHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.KeepAliveAckHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.KeepAliveHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutInformation;
@@ -56,12 +57,12 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         this.windowSize = DEFAULT_WINDOW_SIZE;
 
         addDataReceiver(KeepAliveData.class, (object, sessionId) -> {
-//            sendData(sessionManager.getSessionInformation(sessionId).sourcePort(), new KeepAliveAckData());
+            sendData(sessionManager.getSessionInformation(sessionId).sourcePort(), null);
         });
 
-        addDataReceiver(KeepAliveAckData.class, (object, sessionId) -> {
-            timeoutManager.registerTimeout(sessionId, KeepAliveHandler.class, new TimeoutInformation(sessionId, keepaliveTime, keepAliveInterval, 1, 0, keepAliveRetry, this::handleKeepAlive, timeoutManager::removeTimeout));
-        });
+//        addDataReceiver(EmptyData.class, (object, sessionId) -> {
+//            timeoutManager.registerTimeout(sessionId, KeepAliveHandler.class, new TimeoutInformation(sessionId, keepaliveTime, keepAliveInterval, 1, 0, keepAliveRetry, this::handleKeepAlive, timeoutManager::removeTimeout));
+//        });
 
         addDataReceiver(FragmentedData.class, this::fragmentDataReceiver);
 
@@ -99,6 +100,12 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         super.send(packet);
         if(packet.getDestinationMac() != null)
             lastSentPacketMap.put(packet.getSessionID(), packet);
+    }
+
+    @Override
+    protected void processData(byte[] data, String sessionId, boolean ack) {
+        timeoutManager.updateTimeout(sessionId, KeepAliveHandler.class);
+        super.processData(data, sessionId, ack);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.EmptyData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionTimeoutHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutManager;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutManagerImp;
@@ -298,20 +299,22 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
         }
     }
 
-    private void processData(byte[] data, String sessionId, boolean ack)
+    protected void processData(byte[] data, String sessionId, boolean ack)
     {
         SessionInformation info = sessionManager.getSessionInformation(sessionId);
         Object object;
-        if(data.length == 0)
-        {
-            System.out.printf("[%6s-%6s] Port [%d] Empty Data received [%s]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), ack ? "ACK" : "");
-            return;
-        }
 
         try {
             object = ByteConvertor.deSerialize(data);
         } catch (ClassNotFoundException | IOException e) {
-            e.printStackTrace();
+            object = null;
+        }
+
+        if(object == null)
+        {
+            System.out.printf("[%6s-%6s] Port [%d] Empty Data received [%s]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), ack ? "ACK" : "");
+            if(dataReceiverMapper.containsKey(EmptyData.class))
+                triggerReceiver(sessionId, new EmptyData());
             return;
         }
 

@@ -75,7 +75,8 @@ public class TimeoutInformation
             }
             retryNum++;
             timeout = timeoutStartTime + (int)(timeoutRetryInterval * Math.pow(timeoutPowerMultiplier, retryNum) + retryNum * timeoutRetryInterval * timeoutLinearMultiplier);
-            System.out.println(timeout);
+//            if(retryMaxNum >= retryNum)
+//                System.out.println(timeout);
             timeoutHandler.accept(sessionId, retryNum);
         }
         else
