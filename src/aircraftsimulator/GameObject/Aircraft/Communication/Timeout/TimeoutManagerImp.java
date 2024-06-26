@@ -59,4 +59,10 @@ public class TimeoutManagerImp implements TimeoutManager{
             throw new RuntimeException("Timeout type is not registered");
         timeoutMap.get(sessionId).get(type).resetTimeout();
     }
+
+    @Override
+    public void updateTimeout(String sessionId, Class<? extends Handler> type, BiConsumer<String, Integer> handler) {
+        updateTimeout(sessionId, type);
+        timeoutMap.get(sessionId).get(type).setTimeoutHandler(handler);
+    }
 }

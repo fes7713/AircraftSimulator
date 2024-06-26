@@ -9,7 +9,7 @@ public class TimeoutInformation
     private long startTime;
     private long timeout;
     private final long timeoutStartTime;
-    private final BiConsumer<String, Integer> timeoutHandler;
+    private BiConsumer<String, Integer> timeoutHandler;
     private final Consumer<String> retryTimeoutHandler;
 
     private int retryNum;
@@ -25,7 +25,7 @@ public class TimeoutInformation
 
     public TimeoutInformation(String sessionId, long timeoutStartTime, BiConsumer<String, Integer> timeoutHandler, Consumer<String> retryTimeoutHandler)
     {
-        this(sessionId, timeoutStartTime, 1, 0.0, 0.0, 0, timeoutHandler, retryTimeoutHandler);
+        this(sessionId, timeoutStartTime, 1, 0.0, 0.0, 1, timeoutHandler, retryTimeoutHandler);
     }
 
     public TimeoutInformation(String sessionId, long timeoutStartTime, long timeoutRetryInterval, BiConsumer<String, Integer> timeoutHandler, Consumer<String> retryTimeoutHandler)
@@ -81,5 +81,9 @@ public class TimeoutInformation
         }
         else
             System.out.println("Remaining timeout retry [remove session!!]");
+    }
+
+    public void setTimeoutHandler(BiConsumer<String, Integer> timeoutHandler) {
+        this.timeoutHandler = timeoutHandler;
     }
 }

@@ -1,22 +1,24 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
-import aircraftsimulator.GameObject.Aircraft.Communication.Data.*;
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.AckWindowSizeData;
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.FragmentedData;
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.KeepAliveData;
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.RequestWindowSize;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.FragmentHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.KeepAliveAckHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.KeepAliveHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutInformation;
-import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 
-public class ApplicationNetworkComponentImp extends NetworkComponentImp implements ApplicationNetworkComponent, FragmentHandler, KeepAliveHandler, KeepAliveAckHandler {
-
-    private final Map<String, Integer> resentNumberMap;
-    private final Map<String, Packet> lastSentPacketMap;
+public class ApplicationNetworkComponentImp extends NetworkComponentImp implements ApplicationNetworkComponent, KeepAliveHandler, KeepAliveAckHandler {
     private final Map<String, byte[][]> fragmentStoreMap;
+    private final Map<String, Integer> fragmentLastSentMap;
+    private final Map<String, Integer> windowSizeMap;
 
     private final int resendRetry;
     private final long resendTimeout;
@@ -30,7 +32,7 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
     private static final long DEFAULT_TIMEOUT = 3000;
     private static final int DEFAULT_RESENT_RETRY= 3;
 
-    private static final long DEFAULT_KEEP_ALIVE_TIME = 10000;
+    private static final long DEFAULT_KEEP_ALIVE_TIME = 1000000;
     private static final long DEFAULT_KEEP_ALIVE_INTERVAL = 3000;
     private static final int DEFAULT_KEEP_ALIVE_RETRY = 3;
 
@@ -43,9 +45,9 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
     public ApplicationNetworkComponentImp(Network network, float updateInterval, long resendTimeout, int resentRetry, long keepaliveTime, long keepAliveInterval, int keepAliveRetry)
     {
         super(network, updateInterval);
-        resentNumberMap = new HashMap<>();
-        lastSentPacketMap = new HashMap<>();
         fragmentStoreMap = new HashMap<>();
+        fragmentLastSentMap = new HashMap<>();
+        windowSizeMap = new HashMap<>();
 
         this.resendTimeout = resendTimeout;
         this.resendRetry = resentRetry;
@@ -64,11 +66,79 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
 //            timeoutManager.registerTimeout(sessionId, KeepAliveHandler.class, new TimeoutInformation(sessionId, keepaliveTime, keepAliveInterval, 1, 0, keepAliveRetry, this::handleKeepAlive, timeoutManager::removeTimeout));
 //        });
 
-        addDataReceiver(FragmentedData.class, this::fragmentDataReceiver);
+        addDataReceiver(FragmentedData.class, (data, sessionId) -> {
+            int waitingFragment = 0;
+            byte[][] fragmentArr = fragmentStoreMap.get(sessionId);
+            for(int i = 0; i < fragmentArr.length; i++)
+                if(fragmentArr[i] == null)
+                {
+                    waitingFragment = i;
+                    break;
+                }
+            if(waitingFragment <= data.sequenceNumber())
+            {
+                if(waitingFragment == data.sequenceNumber())
+                {
+                    fragmentArr[waitingFragment] = data.fragmentedData();
+                    StringBuilder sb = new StringBuilder();
+                    for(int i = 0; i < fragmentArr.length; i++)
+                        sb.append(fragmentArr[i] != null ? "[v]":"[ ]");
+                    System.out.println(sb);
+                }
+                serializableDataSend(sessionId, new AckWindowSizeData(waitingFragment, askForWindowSize()));
+            }
 
-        addDataReceiver(RequestWindowSize.class, this::requestWindowSizeDataReceiver);
+            if(waitingFragment == fragmentArr.length - 1) {
+                try {
+                    fragmentReceiveCompletionHandler(ByteConvertor.deSerialize(fragmentArr), sessionId);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
-        addDataReceiver(AckWindowSizeData.class, this::ackWindowDataReceived);
+        addDataReceiver(RequestWindowSize.class, ((data, sessionId) -> {
+            fragmentStoreMap.put(sessionId, new byte[data.totalFrameSize()][]);
+            serializableDataSend(sessionId, new AckWindowSizeData(0, askForWindowSize()));
+        }));
+
+        addDataReceiver(AckWindowSizeData.class, ((data, sessionId) -> {
+            int lastSent = fragmentLastSentMap.getOrDefault(sessionId, -1);
+            byte[][] fragmentArr = fragmentStoreMap.get(sessionId);
+            if(fragmentArr[data.ackNumber()] == null)
+                return;
+            if(data.ackNumber() == fragmentArr.length - 1)
+            {
+                fragmentSendCompletionHandler(sessionId);
+                return;
+            }
+
+            for(int i = 0; i < data.ackNumber(); i++)
+                    fragmentArr[i] = null;
+            boolean sentFlag = false;
+            for(int i = lastSent + 1; i < data.windowSize() + data.ackNumber() && i < fragmentArr.length; i++)
+            {
+                fragmentLastSentMap.put(sessionId, i);
+                serializableDataSend(sessionId, new FragmentedData(fragmentArr[i], i, 0, data.windowSize(), fragmentArr.length));
+                sentFlag = true;
+            }
+            if(sentFlag)
+            {
+                timeoutManager.registerTimeout(sessionId, FragmentHandler.class,
+                        new TimeoutInformation(sessionId, resendTimeout, resendTimeout, 0, 1, 3,
+                                (s, integer) -> {
+                                    for(int i = data.ackNumber(); i < data.windowSize() + data.ackNumber() && i < fragmentArr.length; i++)
+                                        serializableDataSend(s, new FragmentedData(fragmentArr[i], i, 0, data.windowSize(), fragmentArr.length));
+                                },
+                                s -> {
+                                    timeoutManager.removeTimeout(s, FragmentHandler.class);
+                                    fragmentStoreMap.remove(s);
+                                }
+                        ));
+            }
+        }));
     }
 
     @Override
@@ -90,6 +160,17 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
                 stream[i] = fragmentedData.poll().fragmentedData();
             fragmentStoreMap.put(sessionId, stream);
             send(packet.copy(ByteConvertor.serialize(new RequestWindowSize(stream.length))));
+            timeoutManager.registerTimeout(sessionId, FragmentHandler.class,
+                    new TimeoutInformation(sessionId, resendTimeout, resendTimeout, 0, 1, 3,
+                        ((s, integer) -> {
+                            send(packet.copy(ByteConvertor.serialize(new RequestWindowSize(stream.length))));
+                            }
+                        ),
+                        s -> {
+                            timeoutManager.removeTimeout(s, FragmentHandler.class);
+                            fragmentStoreMap.remove(s);
+                        }
+                    ));
         }else{
             send(packet.copy(ByteConvertor.serialize(data)));
         }
@@ -98,8 +179,6 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
     @Override
     public void send(Packet packet) {
         super.send(packet);
-        if(packet.getDestinationMac() != null)
-            lastSentPacketMap.put(packet.getSessionID(), packet);
     }
 
     @Override
@@ -117,28 +196,16 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
                 new TimeoutInformation(sessionId, keepaliveTime, keepAliveInterval, 1, 1, keepAliveRetry, this::handleKeepAlive, s -> {releasePort(sessionManager.getSessionInformation(s).sourcePort());}));
     }
 
-    @Override
-    public void startStoringFragments(int totalFrames, String sessionId) {
-        fragmentStoreMap.put(sessionId, new byte[totalFrames][]);
-    }
-
-    @Override
-    public byte @Nullable [][] getFragmentArr(String sessionId) {
-        return fragmentStoreMap.getOrDefault(sessionId, null);
-    }
-
-    @Override
     public void fragmentReceiveCompletionHandler(Object object, String sessionId) {
         fragmentStoreMap.remove(sessionId);
         triggerReceiver(sessionId, object);
     }
 
-    @Override
     public void fragmentSendCompletionHandler(String sessionId) {
         fragmentStoreMap.remove(sessionId);
+        timeoutManager.removeTimeout(sessionId, FragmentHandler.class);
     }
 
-    @Override
     public void serializableDataSend(String sessionId, Serializable data) {
         send(new Packet(
                 sessionId,
@@ -149,7 +216,6 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         ));
     }
 
-    @Override
     public int askForWindowSize() {
         return this.windowSize;
     }
