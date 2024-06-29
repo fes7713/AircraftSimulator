@@ -71,6 +71,11 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
 //        });
 
         addDataReceiver(FragmentedData.class, (data, sessionId) -> {
+            if(!progressMap.containsKey(sessionId))
+            {
+                serializableDataSend(sessionId, new AckWindowSizeData(data.totalFrames(), askForWindowSize()));
+                return;
+            }
             int waitingFragment = progressMap.get(sessionId);
             byte[][] fragmentArr = fragmentStoreMap.get(sessionId);
 
@@ -114,18 +119,12 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
                 return;
             }
 
-            if(data.ackNumber() == 22)
-                System.out.println("Here");
-
             int lastSent = fragmentLastSentMap.getOrDefault(sessionId, -1);
             int ackedTill = progressMap.get(sessionId);
             byte[][] fragmentArr = fragmentStoreMap.get(sessionId);
 
             if(ackedTill > data.ackNumber())
                 return;
-
-            if(lastSent + 1 < data.ackNumber())
-                throw new RuntimeException("Illegal Ack");
 
             progressMap.put(sessionId, data.ackNumber() - 1);
 
@@ -144,11 +143,13 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
                     return;
                 }
             }else{
+                // Already Acked data, no sending
                 if(ackedTill  >= data.ackNumber() - 1)
                 {
                     return;
                 }
                 else{
+                    // Continouse Sending
                     if(lastSent + 1 < fragmentArr.length)
                     {
                         fragmentLastSentMap.put(sessionId, lastSent + 1);
@@ -256,6 +257,7 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
 
     public void fragmentSendAckCompletionHandler(String sessionId)
     {
+        System.out.println("Data Ack Comp");
         fragmentStoreMap.remove(sessionId);
         timeoutManager.removeTimeout(sessionId, FragmentHandler.class);
         windowSizeMap.remove(sessionId);
