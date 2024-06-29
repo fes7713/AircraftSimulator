@@ -1,6 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.Handler.SendCompletion;
 
-import aircraftsimulator.GameObject.Aircraft.Communication.Logger;
+import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
 
 public class DefaultSendCompletionHandler implements SendCompletionHandler {
     @Override

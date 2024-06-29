@@ -4,8 +4,9 @@ import aircraftsimulator.GameObject.Aircraft.Communication.ByteConvertor;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.AckWindowSizeData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.FragmentedData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.RequestWindowSize;
-import aircraftsimulator.GameObject.Aircraft.Communication.Logger;
+import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
+import aircraftsimulator.GameObject.Aircraft.Communication.Logger.ProgressLogger;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutManager;
 
@@ -87,10 +88,12 @@ public class FragmentHandler implements Handler{
         }
 
         fragmentArr[waitingFragment] = data.fragmentedData();
-        StringBuilder sb = new StringBuilder();
-        for(int i = 0; i < fragmentArr.length; i++)
-            sb.append(fragmentArr[i] != null ? "[v]":"[ ]");
-        System.out.println(sb);
+//        StringBuilder sb = new StringBuilder();
+//        for(int i = 0; i < fragmentArr.length; i++)
+//            sb.append(fragmentArr[i] != null ? "[v]":"[ ]");
+//        System.out.println(sb);
+        ProgressLogger.PutProgressData(sessionId, waitingFragment + 1);
+        ProgressLogger.PrintProgress(sessionId);
         progressMap.put(sessionId, waitingFragment + 1);
         adaptor.serializableDataSend(sessionId, new AckWindowSizeData(waitingFragment + 1, adaptor.askForWindowSize()));
         if(waitingFragment == fragmentArr.length - 1) {
@@ -177,6 +180,9 @@ public class FragmentHandler implements Handler{
 
     protected void fragmentReceiveCompletionHandler(Object object, String sessionId) {
         fragmentStoreMap.remove(sessionId);
+        ProgressLogger.PrintProgress(sessionId);
+        System.out.print("\n");
+        ProgressLogger.RemoveProgressData(sessionId);
         adaptor.triggerReceiver(sessionId, object);
         progressMap.remove(sessionId);
     }

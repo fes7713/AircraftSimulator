@@ -9,6 +9,8 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.SendCompletion.DefaultSendCompletionHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.SendCompletion.SendCompletionHandler;
+import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
+import aircraftsimulator.GameObject.Aircraft.Communication.Logger.ProgressLogger;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutInformation;
 
 import java.io.Serializable;
@@ -77,6 +79,7 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
             for(int i = 0; !fragmentedData.isEmpty(); i++)
                 stream[i] = fragmentedData.poll().fragmentedData();
             fragmentHandler.sendData(sessionId, stream);
+            ProgressLogger.AddProgressData(sessionId, stream.length);
         }else{
             send(packet.copy(ByteConvertor.serialize(data)));
         }

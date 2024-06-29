@@ -1,4 +1,4 @@
-package aircraftsimulator.GameObject.Aircraft.Communication;
+package aircraftsimulator.GameObject.Aircraft.Communication.Logger;
 
 public class Logger {
     public static LogLevel Log_Filter = LogLevel.INFO;
