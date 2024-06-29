@@ -510,21 +510,21 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
         {
             {
                 String message = "";
-                for(int i = 0; i < 1000; i++)
+                for(int i = 0; i < 1200; i++)
                     message += "AAAAAAAAAAAAAAA";
                 add(new PositionCommand(100, message));
             }
         };
 
-        Network network = new NetworkImp();
-        NetworkComponent component1 = new ApplicationNetworkComponentImp(network, 0.01F);
+        Network network = new NetworkImp(0.01F);
+        NetworkComponent component1 = new SlowStartApplicationNetworkComponentImp(network, 0.01F);
         component1.openPort(10);
         component1.openPort(20);
-        NetworkComponent component2 = new ApplicationNetworkComponentImp(network, 0.01F);
+        NetworkComponent component2 = new SlowStartApplicationNetworkComponentImp(network, 0.01F);
 //        component2.openPort(10);
-        NetworkComponent component3 = new ApplicationNetworkComponentImp(network, 0.01F);
+        NetworkComponent component3 = new SlowStartApplicationNetworkComponentImp(network, 0.01F);
 //        component3.openPort(20);
-        NetworkComponent component4 = new ApplicationNetworkComponentImp(network, 0.01F);
+        NetworkComponent component4 = new SlowStartApplicationNetworkComponentImp(network, 0.01F);
         component4.openPort(20);
 
         network.addToNetwork(component1);

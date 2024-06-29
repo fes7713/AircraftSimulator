@@ -15,10 +15,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 
-public class ApplicationNetworkComponentImp extends NetworkComponentImp implements ApplicationNetworkComponent, KeepAliveHandler, KeepAliveAckHandler {
+public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp implements ApplicationNetworkComponent, KeepAliveHandler, KeepAliveAckHandler {
     private final Map<String, byte[][]> fragmentStoreMap;
     private final Map<String, Integer> fragmentLastSentMap;
     private final Map<String, Integer> windowSizeMap;
+    private final Map<String, Integer> progressMap;
+    private final Map<String, Integer> windowChangePointMap;
 
     private final int resendRetry;
     private final long resendTimeout;
@@ -38,16 +40,18 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
 
     private static final int DEFAULT_WINDOW_SIZE = 20;
 
-    public ApplicationNetworkComponentImp(Network network, float updateInterval) {
+    public SlowStartApplicationNetworkComponentImp(Network network, float updateInterval) {
         this(network, updateInterval, DEFAULT_TIMEOUT, DEFAULT_RESENT_RETRY, DEFAULT_KEEP_ALIVE_TIME, DEFAULT_KEEP_ALIVE_INTERVAL, DEFAULT_KEEP_ALIVE_RETRY);
     }
 
-    public ApplicationNetworkComponentImp(Network network, float updateInterval, long resendTimeout, int resentRetry, long keepaliveTime, long keepAliveInterval, int keepAliveRetry)
+    public SlowStartApplicationNetworkComponentImp(Network network, float updateInterval, long resendTimeout, int resentRetry, long keepaliveTime, long keepAliveInterval, int keepAliveRetry)
     {
         super(network, updateInterval);
         fragmentStoreMap = new HashMap<>();
         fragmentLastSentMap = new HashMap<>();
         windowSizeMap = new HashMap<>();
+        progressMap = new HashMap<>();
+        windowChangePointMap = new HashMap<>();
 
         this.resendTimeout = resendTimeout;
         this.resendRetry = resentRetry;
@@ -67,27 +71,25 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
 //        });
 
         addDataReceiver(FragmentedData.class, (data, sessionId) -> {
-            int waitingFragment = 0;
+            int waitingFragment = progressMap.get(sessionId);
             byte[][] fragmentArr = fragmentStoreMap.get(sessionId);
-            for(int i = 0; i < fragmentArr.length; i++)
-                if(fragmentArr[i] == null)
-                {
-                    waitingFragment = i;
-                    break;
-                }
-            if(waitingFragment <= data.sequenceNumber())
+
+            if(waitingFragment > data.sequenceNumber())
+                return;
+
+            if(waitingFragment < data.sequenceNumber())
             {
-                if(waitingFragment == data.sequenceNumber())
-                {
-                    fragmentArr[waitingFragment] = data.fragmentedData();
-                    StringBuilder sb = new StringBuilder();
-                    for(int i = 0; i < fragmentArr.length; i++)
-                        sb.append(fragmentArr[i] != null ? "[v]":"[ ]");
-                    System.out.println(sb);
-                }
                 serializableDataSend(sessionId, new AckWindowSizeData(waitingFragment, askForWindowSize()));
+                return;
             }
 
+            fragmentArr[waitingFragment] = data.fragmentedData();
+            StringBuilder sb = new StringBuilder();
+            for(int i = 0; i < fragmentArr.length; i++)
+                sb.append(fragmentArr[i] != null ? "[v]":"[ ]");
+            System.out.println(sb);
+            progressMap.put(sessionId, waitingFragment + 1);
+            serializableDataSend(sessionId, new AckWindowSizeData(waitingFragment + 1, askForWindowSize()));
             if(waitingFragment == fragmentArr.length - 1) {
                 try {
                     fragmentReceiveCompletionHandler(ByteConvertor.deSerialize(fragmentArr), sessionId);
@@ -102,43 +104,66 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
         addDataReceiver(RequestWindowSize.class, ((data, sessionId) -> {
             fragmentStoreMap.put(sessionId, new byte[data.totalFrameSize()][]);
             serializableDataSend(sessionId, new AckWindowSizeData(0, askForWindowSize()));
+            progressMap.put(sessionId, 0);
         }));
 
-        addDataReceiver(AckWindowSizeData.class, ((data, sessionId) -> {
+        addDataReceiver(AckWindowSizeData.class, (data, sessionId) -> {
+            if(fragmentStoreMap.get(sessionId) == null)
+            {
+                timeoutManager.removeTimeout(sessionId, FragmentHandler.class);
+                return;
+            }
+
             int lastSent = fragmentLastSentMap.getOrDefault(sessionId, -1);
+            int ackedTill = progressMap.get(sessionId);
             byte[][] fragmentArr = fragmentStoreMap.get(sessionId);
-            if(fragmentArr[data.ackNumber()] == null)
+
+            if(ackedTill > data.ackNumber())
                 return;
-            if(data.ackNumber() == fragmentArr.length - 1)
+
+            if(lastSent + 1 < data.ackNumber())
+                throw new RuntimeException("Illegal Ack");
+
+            progressMap.put(sessionId, data.ackNumber() - 1);
+
+            if(lastSent + 1 == data.ackNumber())
             {
-                fragmentSendCompletionHandler(sessionId);
+                windowSizeMap.put(sessionId, Math.min(windowSizeMap.get(sessionId) * 2, data.windowSize()));
+                int windowsSize = windowSizeMap.get(sessionId);
+                int lastIndex = Math.min(fragmentArr.length, lastSent + windowsSize + 1);
+                fragmentLastSentMap.put(sessionId, lastIndex - 1);
+                for(int i = lastSent + 1; i < lastIndex; i++)
+                    serializableDataSend(sessionId, new FragmentedData(fragmentArr[i], i, 0, windowsSize, fragmentArr.length));
+                if(fragmentArr.length == lastIndex && lastIndex != lastSent + 1)
+                {
+                    fragmentSendCompletionHandler(sessionId);
+                    return;
+                }
+            }else{
+//                serializableDataSend(sessionId, new FragmentedData(fragmentArr[0], 0, 0, 1, fragmentArr.length));
+            }
+
+            if(fragmentArr.length == data.ackNumber())
+            {
+                fragmentSendAckCompletionHandler(sessionId);
                 return;
             }
 
-            for(int i = 0; i < data.ackNumber(); i++)
-                    fragmentArr[i] = null;
-            boolean sentFlag = false;
-            for(int i = lastSent + 1; i < data.windowSize() + data.ackNumber() && i < fragmentArr.length; i++)
-            {
-                fragmentLastSentMap.put(sessionId, i);
-                serializableDataSend(sessionId, new FragmentedData(fragmentArr[i], i, 0, data.windowSize(), fragmentArr.length));
-                sentFlag = true;
-            }
-            if(sentFlag)
-            {
-                timeoutManager.registerTimeout(sessionId, FragmentHandler.class,
-                        new TimeoutInformation(sessionId, resendTimeout, resendTimeout, 0, 1, 3,
-                                (s, integer) -> {
-                                    for(int i = data.ackNumber(); i < data.windowSize() + data.ackNumber() && i < fragmentArr.length; i++)
-                                        serializableDataSend(s, new FragmentedData(fragmentArr[i], i, 0, data.windowSize(), fragmentArr.length));
-                                },
-                                s -> {
-                                    timeoutManager.removeTimeout(s, FragmentHandler.class);
-                                    fragmentStoreMap.remove(s);
-                                }
-                        ));
-            }
-        }));
+            timeoutManager.registerTimeout(sessionId, FragmentHandler.class,
+                    new TimeoutInformation(sessionId, resendTimeout, resendTimeout, 0, 1, 3,
+                            (s, integer) -> {
+                                int last = fragmentLastSentMap.get(sessionId);
+                                int askedTill = progressMap.get(sessionId);
+                                windowSizeMap.put(s, 1);
+                                for(int i = askedTill + 1; i <= last; i++)
+                                    serializableDataSend(sessionId, new FragmentedData(fragmentArr[i], i, 0, 1, fragmentArr.length));
+                            },
+                            s -> {
+                                fragmentSendAckCompletionHandler(s);
+                            }
+                    )
+            );
+        });
     }
 
     @Override
@@ -159,6 +184,10 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
             for(int i = 0; !fragmentedData.isEmpty(); i++)
                 stream[i] = fragmentedData.poll().fragmentedData();
             fragmentStoreMap.put(sessionId, stream);
+            windowSizeMap.put(sessionId, 1);
+            progressMap.put(sessionId, -1);
+            fragmentLastSentMap.put(sessionId, -1);
+
             send(packet.copy(ByteConvertor.serialize(new RequestWindowSize(stream.length))));
             timeoutManager.registerTimeout(sessionId, FragmentHandler.class,
                     new TimeoutInformation(sessionId, resendTimeout, resendTimeout, 0, 1, 3,
@@ -167,8 +196,7 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
                             }
                         ),
                         s -> {
-                            timeoutManager.removeTimeout(s, FragmentHandler.class);
-                            fragmentStoreMap.remove(s);
+                            fragmentSendAckCompletionHandler(s);
                         }
                     ));
         }else{
@@ -199,11 +227,20 @@ public class ApplicationNetworkComponentImp extends NetworkComponentImp implemen
     public void fragmentReceiveCompletionHandler(Object object, String sessionId) {
         fragmentStoreMap.remove(sessionId);
         triggerReceiver(sessionId, object);
+        progressMap.remove(sessionId);
     }
 
     public void fragmentSendCompletionHandler(String sessionId) {
+        System.out.println("Data Send Complete");
+    }
+
+    public void fragmentSendAckCompletionHandler(String sessionId)
+    {
         fragmentStoreMap.remove(sessionId);
         timeoutManager.removeTimeout(sessionId, FragmentHandler.class);
+        windowSizeMap.remove(sessionId);
+        progressMap.remove(sessionId);
+        fragmentLastSentMap.remove(sessionId);
     }
 
     public void serializableDataSend(String sessionId, Serializable data) {

@@ -1,10 +1,9 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.Timeout;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.Handler;
+import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 
 public class TimeoutManagerImp implements TimeoutManager{
@@ -18,7 +17,8 @@ public class TimeoutManagerImp implements TimeoutManager{
     public void checkTimeout() {
         for(String sessionId: new HashSet<>(timeoutMap.keySet()))
         {
-            for(TimeoutInformation timeoutInformation: timeoutMap.getOrDefault(sessionId, new HashMap<>()).values())
+            Collection<TimeoutInformation> infoSet = new HashSet<>(timeoutMap.getOrDefault(sessionId, new HashMap<>()).values());
+            for(TimeoutInformation timeoutInformation: infoSet)
             {
                 timeoutInformation.checkTimeout();
             }

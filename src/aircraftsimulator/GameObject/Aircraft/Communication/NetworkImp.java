@@ -5,17 +5,27 @@ import java.util.*;
 public class NetworkImp implements Network{
     private final Map<String, NetworkComponent> arpNetworkComponentMap;
     private final int frameSize;
-    private final List<Packet> packetQueue;
+    private final Queue<Packet> packetQueue;
+    private final int queueSize;
+
+    private final float updateInterval;
+    private float timeClock;
     private final int networkSpeed;
 
-    private final static int DEFAULT_NETWORK_SPEED = 7;
+    private final static int DEFAULT_NETWORK_SPEED = 4;
+    private final static int DEFAULT_QUEUE_SIZE = 7;
     private final static int DEFAULT_FRAME_SIZE = 512;
 
-    public NetworkImp() {
+    public NetworkImp(float updateInterval) {
         this.arpNetworkComponentMap = new HashMap<>();
-        packetQueue = new ArrayList<>();
+        packetQueue = new ArrayDeque<>();
+
+        this.updateInterval = updateInterval;
+        timeClock = updateInterval;
+
         networkSpeed = DEFAULT_NETWORK_SPEED;
         frameSize = DEFAULT_FRAME_SIZE;
+        queueSize = DEFAULT_QUEUE_SIZE;
     }
 
     @Override
@@ -39,9 +49,10 @@ public class NetworkImp implements Network{
         if(packet.getDestinationMac() == null)
             broadcast(packet);
         else{
-            packetQueue.add(packet);
-            while(packetQueue.size() > networkSpeed)
-                packetQueue.remove(new Random().nextInt(packetQueue.size()));
+            if(packetQueue.size() + 1 < queueSize)
+                packetQueue.offer(packet);
+//            while(packetQueue.size() > networkSpeed)
+//                packetQueue.remove(new Random().nextInt(packetQueue.size()));
         }
     }
 
@@ -52,8 +63,17 @@ public class NetworkImp implements Network{
 
     @Override
     public void update(float delta) {
-        for(Packet packet: packetQueue)
-            arpNetworkComponentMap.get(packet.getDestinationMac()).receive(packet);
-        packetQueue.clear();
+        if(timeClock < 0)
+        {
+            for(int i = 0; i < networkSpeed && !packetQueue.isEmpty(); i++)
+            {
+                Packet packet = packetQueue.poll();
+                arpNetworkComponentMap.get(packet.getDestinationMac()).receive(packet);
+            }
+            timeClock = updateInterval;
+        }
+        else{
+            timeClock -= delta;
+        }
     }
 }
