@@ -1,5 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.NetworkError.NetworkErrorType;
+
 import java.io.Serializable;
 
 public interface NetworkComponent extends DataReceiverSwitcher{
@@ -19,4 +21,6 @@ public interface NetworkComponent extends DataReceiverSwitcher{
     void sendData(Integer port, Serializable data);
 
     <E extends Serializable> void addDataReceiver(Class<E> cls, DataReceiver<E> dataReceiver);
+    void errorHandler(String sessionId, NetworkErrorType type);
+    void errorHandler(int port, NetworkErrorType type);
 }

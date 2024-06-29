@@ -2,6 +2,8 @@ package aircraftsimulator.GameObject.Aircraft.Communication;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.EmptyData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionTimeoutHandler;
+import aircraftsimulator.GameObject.Aircraft.Communication.NetworkError.NetworkErrorHandler;
+import aircraftsimulator.GameObject.Aircraft.Communication.NetworkError.NetworkErrorType;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutManager;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutManagerImp;
 
@@ -14,6 +16,7 @@ import java.util.*;
 public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutHandler {
     protected final Network network;
     private final String mac;
+    private final NetworkErrorHandler errorHandler;
 
     protected final Map<Integer, PortState> portStateMap;
     private final Map<String, Integer> arpTable;
@@ -34,9 +37,10 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
     private static final long DEFAULT_TIMEOUT = 5000;
     private final static int DEFAULT_NETWORK_SPEED = 5;
 
-    public NetworkComponentImp(Network network, float updateInterval)
+    public NetworkComponentImp(Network network, float updateInterval, NetworkErrorHandler errorHandler)
     {
         this.network = network;
+        this.errorHandler = errorHandler;
         mac = UUID.randomUUID().toString();
         portStateMap = new HashMap<>();
         arpTable = new HashMap<>();
@@ -64,6 +68,18 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
     @Override
     public <E extends Serializable> void addDataReceiver(Class<E> cls, DataReceiver<E> dataReceiver) {
         dataReceiverMapper.put(cls, dataReceiver);
+    }
+
+    @Override
+    public void errorHandler(String sessionId, NetworkErrorType type) {
+        if(errorHandler != null)
+            errorHandler.handle(sessionManager.getSessionInformation(sessionId).sourcePort(), type);
+    }
+
+    @Override
+    public void errorHandler(int port, NetworkErrorType type) {
+        if(errorHandler != null)
+            errorHandler.handle(port, type);
     }
 
     @Override
@@ -511,33 +527,38 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
             {
                 String message = "";
                 for(int i = 0; i < 1200; i++)
-                    message += "AAAAAAAAAAAAAAA";
+                    message += "Keita";
                 add(new PositionCommand(100, message));
             }
         };
 
-        Network network = new NetworkImp(0.01F);
-        NetworkComponent component1 = new SlowStartApplicationNetworkComponentImp(network, 0.01F);
+        Network network1 = new NetworkImp(0.01F);
+        Network network2 = new NetworkImp(0.01F);
+        NetworkComponent component1 = new SlowStartApplicationNetworkComponentImp(network1, 0.01F);
         component1.openPort(10);
-        component1.openPort(20);
-        NetworkComponent component2 = new SlowStartApplicationNetworkComponentImp(network, 0.01F);
-//        component2.openPort(10);
-        NetworkComponent component3 = new SlowStartApplicationNetworkComponentImp(network, 0.01F);
-//        component3.openPort(20);
-        NetworkComponent component4 = new SlowStartApplicationNetworkComponentImp(network, 0.01F);
+        NetworkComponent component2 = new SlowStartApplicationNetworkComponentImp(network1, 0.01F);
+        component2.openPort(10);
+        NetworkComponent component3 = new SlowStartApplicationNetworkComponentImp(network2, 0.01F);
+        component3.openPort(20);
+        NetworkComponent component4 = new SlowStartApplicationNetworkComponentImp(network2, 0.01F);
         component4.openPort(20);
 
-        network.addToNetwork(component1);
-        network.addToNetwork(component2);
-        network.addToNetwork(component3);
-        network.addToNetwork(component4);
+        network1.addToNetwork(component1);
+        network1.addToNetwork(component2);
+        network2.addToNetwork(component3);
+        network2.addToNetwork(component4);
 
 //        component1.connect(10);
 //        component1.connect(20);
-        component2.connect(10);
+        component1.connect(10);
         component3.connect(20);
 
-        component1.addDataReceiver(positionData.getClass(), ((data, sessionId) -> {
+        component2.addDataReceiver(positionData.getClass(), ((data, sessionId) -> {
+            ArrayList<PositionCommand> array = data;
+            for(PositionCommand p: array)
+                System.out.println(p);
+        }));
+        component4.addDataReceiver(positionData.getClass(), ((data, sessionId) -> {
             ArrayList<PositionCommand> array = data;
             for(PositionCommand p: array)
                 System.out.println(p);
@@ -562,16 +583,23 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                 e.printStackTrace();
             }
             component3.update(0.03F);
-//            component4.update(0.03F);
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            network.update(0.03F);
+            component4.update(0.03F);
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            network1.update(0.03F);
+            network2.update(0.03F);
 
             if(cnt == 150)
             {
+                component1.sendData(10, positionData);
                 component3.sendData(20, positionData);
             }
 

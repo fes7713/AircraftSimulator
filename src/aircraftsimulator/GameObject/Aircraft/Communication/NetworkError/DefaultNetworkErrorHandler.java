@@ -1,0 +1,8 @@
+package aircraftsimulator.GameObject.Aircraft.Communication.NetworkError;
+
+public class DefaultNetworkErrorHandler implements NetworkErrorHandler{
+    @Override
+    public void handle(int port, NetworkErrorType type) {
+        System.out.printf("Port [%3d] Error [%s]", port, type.name());
+    }
+}
