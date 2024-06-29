@@ -2,7 +2,7 @@ package aircraftsimulator.GameObject.Aircraft.Communication.Handler;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
 import aircraftsimulator.GameObject.Aircraft.Communication.DataReceiver;
-import aircraftsimulator.GameObject.Aircraft.Communication.NetworkError.NetworkErrorType;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
 
 import java.io.Serializable;
 
@@ -13,4 +13,7 @@ public interface FragmentAdaptor {
 
     void triggerReceiver(String sessionId, Object object);
     void errorHandler(String sessionId, NetworkErrorType type);
+    void sendCompletionHandler(String sessionId);
+
+    int getPortNumber(String sessionId);
 }

@@ -2,8 +2,8 @@ package aircraftsimulator.GameObject.Aircraft.Communication;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.EmptyData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionTimeoutHandler;
-import aircraftsimulator.GameObject.Aircraft.Communication.NetworkError.NetworkErrorHandler;
-import aircraftsimulator.GameObject.Aircraft.Communication.NetworkError.NetworkErrorType;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorHandler;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutManager;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutManagerImp;
 
@@ -73,7 +73,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
     @Override
     public void errorHandler(String sessionId, NetworkErrorType type) {
         if(errorHandler != null)
-            errorHandler.handle(sessionManager.getSessionInformation(sessionId).sourcePort(), type);
+            errorHandler.handle(sessionManager.getPort(sessionId), type);
     }
 
     @Override
@@ -101,15 +101,15 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
         {
 
             case OPEN -> {
-                System.out.printf("[%6s-%6s] Port [%d] already open\n", getMac().substring(0, 6), "", port);
+                Logger.Log(Logger.LogLevel.INFO, "already open", getMac(), port);
                 return true;
             }
             case CONNECTED, CONNECTING -> {
-                System.out.printf("[%6s-%6s] Port [%d] in use\n", getMac().substring(0, 6), "", port);
+                Logger.Log(Logger.LogLevel.INFO, "in use", getMac(), port);
                 return false;
             }
             case CLOSED ->{
-                System.out.printf("[%6s-%6s] Port [%d] opened\n", getMac().substring(0, 6), "", port);
+                Logger.Log(Logger.LogLevel.INFO, "opened", getMac(), port);
                 changePortState(port, PortState.OPEN);
                 return true;
             }
@@ -124,14 +124,14 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
         switch (portState)
         {
             case OPEN -> {
-                System.out.printf("[%6s-%6s] Open Port [%d] closed\n", getMac().substring(0, 6), "", port);
+                Logger.Log(Logger.LogLevel.INFO, "closed", getMac(), port);
             }
             case CONNECTED, CONNECTING -> {
-                System.out.printf("[%6s-%6s] Port [%d] closing\n", getMac().substring(0, 6), "", port);
+                Logger.Log(Logger.LogLevel.INFO, "closing", getMac(), port);
 //                disconnect(port);
             }
             default -> {
-                System.out.printf("[%6s-%6s] Port [%d] not open\n", getMac().substring(0, 6), "", port);
+                Logger.Log(Logger.LogLevel.INFO, "not open", getMac(), port);
             }
         }
         changePortState(port, null);
@@ -167,7 +167,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                 HandshakeData handshakeData = receivingPacket.getHandshake();
                 if(receivingPacket.getSourceMac() == null)
                 {
-                    System.out.printf("[%6s-%6s] Port [%d] connection rejected SYN\n", getMac().substring(0, 6), "", receivingPacket.getDestinationPort());
+                    Logger.Log(Logger.LogLevel.ERROR, "connection rejected SYN", getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                     return;
                 }
 
@@ -175,7 +175,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                 int code = (handshakeData.isSyn() ? 1000:0) + (handshakeData.isAck() ? 100:0) + (handshakeData.isRst() ? 10:0) + (handshakeData.isFin() ? 1:0);
                 if(!portStateMap.containsKey(receivingPacket.getDestinationPort()))
                 {
-                    System.out.printf("[%6s-%6s] Port [%d] is closed \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                    Logger.Log(Logger.LogLevel.ERROR, "is closed", getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                     responsePacket = new Packet(
                             receivingPacket.getSessionID(),
                             receivingPacket.getSessionInformation().reverse(receivingPacket.getSourceMac()),
@@ -192,7 +192,8 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                 Integer port = receivingPacket.getDestinationPort();
                 if(portStateMap.get(port) != PortState.OPEN && !sessionManager.isRegistered(receivingPacket.getSessionID(), receivingPacket.getSourceMac()))
                 {
-                    System.out.printf("[%6s-%6s] Port [%d] Session id [%6s] is not registered\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSessionID());
+                    Logger.Log(Logger.LogLevel.ERROR, 
+                            String.format("Session id [%6s] is not registered", receivingPacket.getSessionID()), getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                     return;
                 }
 
@@ -206,7 +207,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                     case 1000 -> {
                         if(portStateMap.get(port) == PortState.OPEN)
                         {
-                            System.out.printf("[%6s-%6s] Port [%d] connecting SYN\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            Logger.Log(Logger.LogLevel.INFO, "connecting SYN", getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             changePortState(receivingPacket.getSessionID(), receivingPacket.getSessionInformation().reverse(receivingPacket.getSourceMac()), PortState.CONNECTING);
                             responsePacket = new Packet(
                                     receivingPacket.getSessionID(),
@@ -216,7 +217,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                                     getMac()
                             );
                         }else{
-                            System.out.printf("[%6s-%6s] Port [%d] in use\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            Logger.Log(Logger.LogLevel.ERROR, "in use", getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             sessionManager.deleteSession(receivingPacket.getSessionID());
                             timeoutManager.removeTimeout(receivingPacket.getSessionID());
                         }
@@ -225,7 +226,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                     case 1100 -> {
                         if(portStateMap.get(port) == PortState.CONNECTING)
                         {
-                            System.out.printf("[%6s-%6s] Port [%d] connected to [%6s] Port [%d]\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getSourcePort());
+                            Logger.Log(Logger.LogLevel.INFO, String.format("connected to [%6s] Port [%d]", receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getSourcePort()), getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             arpTable.put(receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             changePortState(receivingPacket.getSessionID(), receivingPacket.getSessionInformation().reverse(receivingPacket.getSourceMac()), PortState.CONNECTED);
                             responsePacket = new Packet(
@@ -236,7 +237,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                                     getMac()
                             );
                         }else{
-                            System.out.printf("[%6s-%6s] Port [%d] invalid packet SYN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            Logger.Log(Logger.LogLevel.ERROR, "invalid packet SYN ACK", getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             responsePacket = new Packet(
                                     receivingPacket.getSessionID(),
                                     receivingPacket.getSessionInformation().reverse(receivingPacket.getSourceMac()),
@@ -250,7 +251,8 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                     }
                     case 100 -> {
                         if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING){
-                            System.out.printf("[%6s-%6s] Port [%d] connected to [%s] Port [%d] ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), receivingPacket.getSourceMac(), receivingPacket.getSourcePort());
+                            Logger.Log(Logger.LogLevel.INFO,
+                                    String.format("connected to [%6s] Port [%d] ACK", receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getSourcePort()), getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             registerArp(receivingPacket);
                             changePortState(receivingPacket.getSessionID(), sessionManager.getSessionInformation(receivingPacket.getSessionID()), PortState.CONNECTED);
                         }
@@ -258,7 +260,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                             processData(receivingPacket.getData(), receivingPacket.getSessionID(), true);
                         }
                         else {
-                            System.out.printf("[%6s-%6s] Port [%d] connection failed ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            Logger.Log(Logger.LogLevel.ERROR, "connection failed ACK", getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             sessionManager.deleteSession(receivingPacket.getSessionID());
                             timeoutManager.removeTimeout(receivingPacket.getSessionID());
                         }
@@ -268,10 +270,10 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                         {
                             if(arpTable.containsKey(receivingPacket.getSourceMac()))
                             {
-                                System.out.printf("[%6s-%6s] Port [%d] disconnected \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                                Logger.Log(Logger.LogLevel.INFO, "disconnected", getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                                 arpTable.remove(receivingPacket.getSourceMac());
                             }else{
-                                System.out.printf("[%6s-%6s] Port [%d] connection cancelled \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                                Logger.Log(Logger.LogLevel.ERROR, "connection cancelled", getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             }
 
                             responsePacket = new Packet(
@@ -283,20 +285,21 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                             );
                             releasePort(port);
                         }else{
-                            System.out.printf("[%6s-%6s] Port [%d] invalid packet FIN \n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            Logger.Log(Logger.LogLevel.ERROR, "invalid packet FIN", getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                         }
                     }
                     case 101 -> {
                         if(arpTable.containsKey(receivingPacket.getSourceMac()) &&
                                 portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTED)
                         {
-                            System.out.printf("[%6s-%6s] Port [%d] disconnected FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            Logger.Log(Logger.LogLevel.INFO, "disconnected FIN ACK", getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             arpTable.remove(receivingPacket.getSourceMac());
                         }else if (portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTING){
-                            System.out.printf("[%6s-%6s] Port [%d] connection failed FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            Logger.Log(Logger.LogLevel.ERROR, "connection failed FIN ACK", getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
+                            
                         }
                         else{
-                            System.out.printf("[%6s-%6s] Port [%d] invalid packet FIN ACK\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort());
+                            Logger.Log(Logger.LogLevel.ERROR, "invalid packet FIN ACK", getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             return;
                         }
                         releasePort(port);
@@ -305,7 +308,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                         processData(receivingPacket.getData(), receivingPacket.getSessionID(), false);
                     }
                     default -> {
-                        System.out.printf("[%6s-%6s] Port [%d] code [%d] received\n", getMac().substring(0, 6), receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getDestinationPort(), code);
+                        Logger.Log(Logger.LogLevel.INFO, String.format("code [%d] received", code), getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                     }
                 }
                 if(responsePacket != null) {
@@ -328,13 +331,12 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
 
         if(object == null)
         {
-            System.out.printf("[%6s-%6s] Port [%d] Empty Data received [%s]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), ack ? "ACK" : "");
+            Logger.Log(Logger.LogLevel.DEBUG, String.format("Empty Data received [%s]", ack ? "ACK" : ""), getMac(), info.destinationMac(), info.sourcePort());
             if(dataReceiverMapper.containsKey(EmptyData.class))
                 triggerReceiver(sessionId, new EmptyData());
             return;
         }
-
-        System.out.printf("[%6s-%6s] Port [%d] Date Received [%s] received [%s]\n", getMac().substring(0, 6), info.destinationMac().substring(0, 6), info.sourcePort(), object, ack ? "ACK" : "");
+        Logger.Log(Logger.LogLevel.DEBUG, String.format("Data received [%s]", object), getMac(), info.destinationMac(), info.sourcePort());
         if(dataReceiverMapper.containsKey(object.getClass()))
             triggerReceiver(sessionId, object);
 
@@ -343,7 +345,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
     @Override
     public void releasePort(int port)
     {
-        System.out.printf("[%6s-%6s] Port [%d] released\n", getMac().substring(0, 6), "", port);
+        Logger.Log(Logger.LogLevel.INFO, "released", getMac(), port);
         String sessionId = sessionManager.getSessionId(port);
         changePortState(sessionId, sessionManager.getSessionInformation(sessionId), PortState.OPEN);
     }
@@ -413,7 +415,8 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
             timeoutManager.removeTimeout(sessionId);
         }
         else{
-            System.out.println("Invalid State Transition");
+            Logger.Log(Logger.LogLevel.ERROR, String.format("Invalid State Transition to [%s]", state.name()), getMac(), destinationMac, port);
+            errorHandler(sessionId, NetworkErrorType.INVALID_STATE_TRANSITION);
             return;
         }
         portStateMap.put(port, state);
@@ -443,14 +446,14 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                 null,
                 getMac()
         );
-        System.out.printf("[%6s-%6s] Port [%d] connecting\n", getMac().substring(0, 6), "", sourcePort);
+        Logger.Log(Logger.LogLevel.INFO, "connecting", getMac(), sourcePort);
         send(packet);
     }
 
     @Override
     public void disconnect(String sessionId) {
         SessionInformation sessionInformation = sessionManager.getSessionInformation(sessionId);
-        System.out.printf("[%6s-%6s] Port [%d] disconnecting\n", getMac().substring(0, 6), "", sessionInformation.sourcePort());
+        Logger.Log(Logger.LogLevel.INFO, "disconnecting", getMac(), sessionInformation.sourcePort());
         send(
                 new Packet(
                         sessionId,
@@ -464,8 +467,8 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
 
     @Override
     public void handleConnectionTimeout(String sessionId, Integer retryNum) {
-        System.out.printf("[%6s-%6s] Port [%d] timeout\n", getMac().substring(0, 6), "", sessionManager.getSessionInformation(sessionId).sourcePort());
-
+        Logger.Log(Logger.LogLevel.ERROR, "timeout", getMac(), sessionManager.getPort(sessionId));
+        errorHandler(sessionId, NetworkErrorType.TIMEOUT);
         if(sessionManager.getSessionInformation(sessionId).destinationMac() != null)
             disconnect(sessionId);
         sessionManager.deleteSession(sessionId);
@@ -474,7 +477,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
 
     @Override
     public void handleConnectionEstablished(String sessionId, Integer port) {
-        System.out.printf("[%6s-%6s] Port [%d] Connection established\n", getMac().substring(0, 6), "", port);
+        Logger.Log(Logger.LogLevel.INFO, "Connection established", getMac(), port);
     }
 
     @Override
@@ -496,7 +499,8 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
     public void sendData(Integer port, Serializable data) {
         if(portStateMap.getOrDefault(port, PortState.CLOSED) != PortState.CONNECTED)
         {
-            System.out.printf("[%6s-%6s] Port [%d] Failed to send data [%s]\n", getMac().substring(0, 6), "", port, data.toString());
+            Logger.Log(Logger.LogLevel.ERROR, String.format("Failed to send data [%s]", data), getMac(), port);
+            errorHandler(port, NetworkErrorType.NOT_CONNECTED);
             return;
         }
         String sessionId = sessionManager.getSessionId(port);
@@ -510,7 +514,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                 this.getMac()
 
         );
-        System.out.printf("[%6s-%6s] Port [%d] Data Sent[%s]\n", getMac().substring(0, 6), "", sessionInformation.sourcePort(), data.toString());
+        Logger.Log(Logger.LogLevel.INFO, String.format("Data Sent[%s]", data), getMac(), sessionInformation.sourcePort());
         send(packet);
     }
 
@@ -521,7 +525,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
 
     public static void main(String[] args )
     {
-
+        Logger.Log_Filter = Logger.LogLevel.INFO;
         ArrayList<PositionCommand> positionData = new ArrayList<>()
         {
             {
@@ -597,10 +601,9 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
             network1.update(0.03F);
             network2.update(0.03F);
 
-            if(cnt == 150)
+            if(cnt == 100)
             {
                 component1.sendData(10, positionData);
-                component3.sendData(20, positionData);
             }
 
 //            if(cnt==100)

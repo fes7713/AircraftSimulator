@@ -47,6 +47,11 @@ public class SessionManagerImp implements SessionManager{
         return portSessionMap.getOrDefault(port, null);
     }
 
+    @Override
+    public Integer getPort(String sessionId) {
+        return getSessionInformation(sessionId).sourcePort();
+    }
+
     public Map<String, SessionInformation> getSessionInformationMap(Integer port)
     {
         Map<String, SessionInformation> sessionInformationList = new HashMap<>();

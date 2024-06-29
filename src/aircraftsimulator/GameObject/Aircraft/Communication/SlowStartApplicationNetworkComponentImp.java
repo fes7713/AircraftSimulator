@@ -4,16 +4,19 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.FragmentedData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.KeepAliveData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.*;
-import aircraftsimulator.GameObject.Aircraft.Communication.NetworkError.DefaultNetworkErrorHandler;
-import aircraftsimulator.GameObject.Aircraft.Communication.NetworkError.NetworkErrorHandler;
-import aircraftsimulator.GameObject.Aircraft.Communication.NetworkError.NetworkErrorType;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.DefaultNetworkErrorHandler;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorHandler;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.SendCompletion.DefaultSendCompletionHandler;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.SendCompletion.SendCompletionHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutInformation;
 
 import java.io.Serializable;
 import java.util.Queue;
 
-public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp implements ApplicationNetworkComponent, KeepAliveHandler, KeepAliveAckHandler, FragmentAdaptor {
+public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp implements ApplicationNetworkComponent, KeepAliveHandler, FragmentAdaptor {
     private final FragmentHandler fragmentHandler;
+    private final SendCompletionHandler sendCompletionHandler;
 
     private final long keepaliveTime;
     private final long keepAliveInterval;
@@ -24,23 +27,24 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
     private static final long DEFAULT_TIMEOUT = 3000;
     private static final int DEFAULT_RESENT_RETRY= 3;
 
-    private static final long DEFAULT_KEEP_ALIVE_TIME = 1000000;
+    private static final long DEFAULT_KEEP_ALIVE_TIME = 10000;
     private static final long DEFAULT_KEEP_ALIVE_INTERVAL = 3000;
     private static final int DEFAULT_KEEP_ALIVE_RETRY = 3;
 
     private static final int DEFAULT_WINDOW_SIZE = 20;
 
     public SlowStartApplicationNetworkComponentImp(Network network, float updateInterval) {
-        this(network, updateInterval, new DefaultNetworkErrorHandler());
+        this(network, updateInterval, new DefaultSendCompletionHandler(), new DefaultNetworkErrorHandler());
     }
 
-    public SlowStartApplicationNetworkComponentImp(Network network, float updateInterval, NetworkErrorHandler errorHandler) {
-        this(network, updateInterval, DEFAULT_TIMEOUT, DEFAULT_RESENT_RETRY, DEFAULT_KEEP_ALIVE_TIME, DEFAULT_KEEP_ALIVE_INTERVAL, DEFAULT_KEEP_ALIVE_RETRY, errorHandler);
+    public SlowStartApplicationNetworkComponentImp(Network network, float updateInterval, SendCompletionHandler sendCompletionHandler, NetworkErrorHandler errorHandler) {
+        this(network, updateInterval, DEFAULT_TIMEOUT, DEFAULT_RESENT_RETRY, DEFAULT_KEEP_ALIVE_TIME, DEFAULT_KEEP_ALIVE_INTERVAL, DEFAULT_KEEP_ALIVE_RETRY, sendCompletionHandler, errorHandler);
     }
 
-    public SlowStartApplicationNetworkComponentImp(Network network, float updateInterval, long resendTimeout, int resentRetry, long keepaliveTime, long keepAliveInterval, int keepAliveRetry, NetworkErrorHandler errorHandler)
+    public SlowStartApplicationNetworkComponentImp(Network network, float updateInterval, long resendTimeout, int resentRetry, long keepaliveTime, long keepAliveInterval, int keepAliveRetry, SendCompletionHandler sendCompletionHandler, NetworkErrorHandler errorHandler)
     {
         super(network, updateInterval, errorHandler);
+        this.sendCompletionHandler = sendCompletionHandler;
 
         this.keepaliveTime = keepaliveTime;
         this.keepAliveInterval = keepAliveInterval;
@@ -48,8 +52,11 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
 
         this.windowSize = DEFAULT_WINDOW_SIZE;
 
+        addDataReceiver(KeepAliveData.class, (object, sessionId) -> {
+            sendData(sessionManager.getPort(sessionId), null);
+        });
+
         fragmentHandler = new ContinuousFragmentHandler(resendTimeout, timeoutManager, this);
-        fragmentHandler.initHandler();
     }
 
     @Override
@@ -73,11 +80,6 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
         }else{
             send(packet.copy(ByteConvertor.serialize(data)));
         }
-    }
-
-    @Override
-    public void send(Packet packet) {
-        super.send(packet);
     }
 
     @Override
@@ -111,18 +113,24 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
     }
 
     @Override
+    public void sendCompletionHandler(String sessionId) {
+        sendCompletionHandler.handle(sessionManager.getPort(sessionId));
+    }
+
+    @Override
+    public int getPortNumber(String sessionId) {
+        return sessionManager.getPort(sessionId);
+    }
+
+    @Override
     public void registerKeepAliveTimeout(String sessionId, long timeout) {
 
     }
 
     @Override
     public void handleKeepAlive(String sessionId, Integer retryNum) {
-        sendData(sessionManager.getSessionInformation(sessionId).sourcePort(), new KeepAliveData());
-    }
-
-    @Override
-    public void handleKeepAliveAck(String sessionId, Integer retryNum) {
-        timeoutManager.updateTimeout(sessionId, KeepAliveAckHandler.class);
-        System.out.println(retryNum);
+        Logger.Log(Logger.LogLevel.INFO, String.format("KEEP ALIVE [%d]", retryNum),
+                getMac(), sessionManager.getSessionInformation(sessionId).destinationMac(), sessionManager.getPort(sessionId));
+        sendData(sessionManager.getPort(sessionId), new KeepAliveData());
     }
 }

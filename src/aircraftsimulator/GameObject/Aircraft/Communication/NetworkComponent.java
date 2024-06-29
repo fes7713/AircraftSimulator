@@ -1,6 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
-import aircraftsimulator.GameObject.Aircraft.Communication.NetworkError.NetworkErrorType;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
 
 import java.io.Serializable;
 

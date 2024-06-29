@@ -13,6 +13,7 @@ public interface SessionManager {
 
     SessionInformation getSessionInformation(String sessionId);
     String getSessionId(Integer port);
+    Integer getPort(String sessionId);
 
     boolean isRegistered(String sessionId, String destinationMac);
      boolean register(String sessionId, Integer sourcePort, Integer destinationPort, String destinationArp);

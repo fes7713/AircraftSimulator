@@ -2,7 +2,7 @@ package aircraftsimulator.GameObject.Aircraft.Communication.Handler;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.AckWindowSizeData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.FragmentedData;
-import aircraftsimulator.GameObject.Aircraft.Communication.NetworkError.NetworkErrorType;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutManager;
 

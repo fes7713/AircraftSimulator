@@ -4,7 +4,8 @@ import aircraftsimulator.GameObject.Aircraft.Communication.ByteConvertor;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.AckWindowSizeData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.FragmentedData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.RequestWindowSize;
-import aircraftsimulator.GameObject.Aircraft.Communication.NetworkError.NetworkErrorType;
+import aircraftsimulator.GameObject.Aircraft.Communication.Logger;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutManager;
 
@@ -35,6 +36,8 @@ public class FragmentHandler implements Handler{
         windowSizeMap = new HashMap<>();
         progressMap = new HashMap<>();
         windowChangePointMap = new HashMap<>();
+
+        initHandler();
     }
 
     public void initHandler()
@@ -179,17 +182,18 @@ public class FragmentHandler implements Handler{
     }
 
     protected void fragmentSendCompletionHandler(String sessionId) {
-        System.out.println("Data Send Complete");
+        Logger.Log(Logger.LogLevel.DEBUG, "Data Send Complete", "", adaptor.getPortNumber(sessionId));
     }
 
     protected void fragmentSendAckCompletionHandler(String sessionId)
     {
-        System.out.println("Data Ack Comp");
+        Logger.Log(Logger.LogLevel.DEBUG, "Data Send Complete ACK", "", adaptor.getPortNumber(sessionId));
         fragmentStoreMap.remove(sessionId);
         timeoutManager.removeTimeout(sessionId, FragmentHandler.class);
         windowSizeMap.remove(sessionId);
         progressMap.remove(sessionId);
         fragmentLastSentMap.remove(sessionId);
+        adaptor.sendCompletionHandler(sessionId);
     }
 
 

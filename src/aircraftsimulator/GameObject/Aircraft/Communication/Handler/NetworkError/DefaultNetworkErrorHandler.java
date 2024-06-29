@@ -1,4 +1,4 @@
-package aircraftsimulator.GameObject.Aircraft.Communication.NetworkError;
+package aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError;
 
 public class DefaultNetworkErrorHandler implements NetworkErrorHandler{
     @Override
