@@ -114,6 +114,9 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
                 return;
             }
 
+            if(data.ackNumber() == 22)
+                System.out.println("Here");
+
             int lastSent = fragmentLastSentMap.getOrDefault(sessionId, -1);
             int ackedTill = progressMap.get(sessionId);
             byte[][] fragmentArr = fragmentStoreMap.get(sessionId);
@@ -126,11 +129,12 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
 
             progressMap.put(sessionId, data.ackNumber() - 1);
 
-            if(lastSent + 1 == data.ackNumber())
+            if(windowChangePointMap.get(sessionId) <= data.ackNumber())
             {
                 windowSizeMap.put(sessionId, Math.min(windowSizeMap.get(sessionId) * 2, data.windowSize()));
                 int windowsSize = windowSizeMap.get(sessionId);
                 int lastIndex = Math.min(fragmentArr.length, lastSent + windowsSize + 1);
+                windowChangePointMap.put(sessionId, lastIndex);
                 fragmentLastSentMap.put(sessionId, lastIndex - 1);
                 for(int i = lastSent + 1; i < lastIndex; i++)
                     serializableDataSend(sessionId, new FragmentedData(fragmentArr[i], i, 0, windowsSize, fragmentArr.length));
@@ -140,7 +144,20 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
                     return;
                 }
             }else{
-//                serializableDataSend(sessionId, new FragmentedData(fragmentArr[0], 0, 0, 1, fragmentArr.length));
+                if(ackedTill  >= data.ackNumber() - 1)
+                {
+                    return;
+                }
+                else{
+                    if(lastSent + 1 < fragmentArr.length)
+                    {
+                        fragmentLastSentMap.put(sessionId, lastSent + 1);
+                        serializableDataSend(sessionId, new FragmentedData(fragmentArr[lastSent + 1], lastSent + 1, 0, windowSizeMap.get(sessionId), fragmentArr.length));
+                    }else{
+                        fragmentSendCompletionHandler(sessionId);
+                        return;
+                    }
+                }
             }
 
             if(fragmentArr.length == data.ackNumber())
@@ -152,11 +169,13 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
             timeoutManager.registerTimeout(sessionId, FragmentHandler.class,
                     new TimeoutInformation(sessionId, resendTimeout, resendTimeout, 0, 1, 3,
                             (s, integer) -> {
-                                int last = fragmentLastSentMap.get(sessionId);
                                 int askedTill = progressMap.get(sessionId);
                                 windowSizeMap.put(s, 1);
-                                for(int i = askedTill + 1; i <= last; i++)
-                                    serializableDataSend(sessionId, new FragmentedData(fragmentArr[i], i, 0, 1, fragmentArr.length));
+                                windowChangePointMap.put(s, askedTill + 1 + 1);
+                                fragmentLastSentMap.put(s, askedTill + 1);
+                                serializableDataSend(sessionId, new FragmentedData(fragmentArr[askedTill + 1], askedTill + 1, 0, 1, fragmentArr.length));
+//                                for(int i = askedTill + 1; i <= last; i++)
+//                                    serializableDataSend(sessionId, new FragmentedData(fragmentArr[i], i, 0, 1, fragmentArr.length));
                             },
                             s -> {
                                 fragmentSendAckCompletionHandler(s);
@@ -187,6 +206,7 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
             windowSizeMap.put(sessionId, 1);
             progressMap.put(sessionId, -1);
             fragmentLastSentMap.put(sessionId, -1);
+            windowChangePointMap.put(sessionId, 0);
 
             send(packet.copy(ByteConvertor.serialize(new RequestWindowSize(stream.length))));
             timeoutManager.registerTimeout(sessionId, FragmentHandler.class,
