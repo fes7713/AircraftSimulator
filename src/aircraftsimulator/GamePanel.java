@@ -4,13 +4,6 @@ import aircraftsimulator.Animation.AnimationManager;
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.LaserInformation;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
-import aircraftsimulator.GameObject.Aircraft.GuidedMissile;
-import aircraftsimulator.GameObject.Aircraft.Missile;
-import aircraftsimulator.GameObject.Aircraft.Radar.Radar.AngleRadar;
-import aircraftsimulator.GameObject.Aircraft.Radar.RadarFrequency;
-import aircraftsimulator.GameObject.Aircraft.Spawner.Gun;
-import aircraftsimulator.GameObject.Aircraft.Spawner.MissileLauncher;
-import aircraftsimulator.GameObject.Aircraft.Thruster.VariableThruster;
 import aircraftsimulator.GameObject.GameObject;
 import aircraftsimulator.GameObject.Team;
 import org.jetbrains.annotations.NotNull;
@@ -48,40 +41,40 @@ public class GamePanel extends JPanel {
                 new Vector3f(1, 0, 0), Color.ORANGE, 5, 100,
                 Aircraft.THRUSTER_MAGNITUDE * 2);
 
-        aircraftAcc.setThruster(new VariableThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE * 2, 3600));
+//        aircraftAcc.setThruster(new VariableThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE * 2, 3600));
 //        aircraftAcc.addComponent(new SimpleRadar(aircraftAcc, 100, info -> {
 //            aircraftAcc.receive(info);
 //        }));
 
-        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, RadarFrequency.X, 1000, 80, aircraftAcc.getDirection()));
-        aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
+//        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, RadarFrequency.X, 1000, 80, aircraftAcc.getDirection()));
+//        aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
 
-        Missile missile = new GuidedMissile(A, 100, 80);
-        aircraftAcc.addComponent(new MissileLauncher(aircraftAcc, missile, 1F, 6));
+//        Missile missile = new GuidedMissile(A, 100, 80);
+//        aircraftAcc.addComponent(new MissileLauncher(aircraftAcc, missile, 1F, 6));
 
-        Aircraft aircraftAcc1 = new Aircraft(B,
-                new SwitchValueFlightController<>(),
-                new Vector3f(1000, 300, 100),
-                new Vector3f(-1, 0, 0), Color.BLUE, 5, 100,
-                Aircraft.THRUSTER_MAGNITUDE * 2);
+//        Aircraft aircraftAcc1 = new Aircraft(B,
+//                new SwitchValueFlightController<>(),
+//                new Vector3f(1000, 300, 100),
+//                new Vector3f(-1, 0, 0), Color.BLUE, 5, 100,
+//                Aircraft.THRUSTER_MAGNITUDE * 2);
 
-        aircraftAcc1.setThruster(new VariableThruster(aircraftAcc1, Aircraft.THRUSTER_MAGNITUDE * 2, 3600));
+//        aircraftAcc1.setThruster(new VariableThruster(aircraftAcc1, Aircraft.THRUSTER_MAGNITUDE * 2, 3600));
 //        aircraftAcc.addComponent(new SimpleRadar(aircraftAcc, 100, info -> {
 //            aircraftAcc.receive(info);
 //        }));
 
-        aircraftAcc1.addComponent(new AngleRadar(aircraftAcc1, RadarFrequency.X,1000, 60, aircraftAcc1.getDirection()));
-        aircraftAcc1.addComponent(new Gun(aircraftAcc1, 0.2F, 2, 50));
+//        aircraftAcc1.addComponent(new AngleRadar(aircraftAcc1, RadarFrequency.X,1000, 60, aircraftAcc1.getDirection()));
+//        aircraftAcc1.addComponent(new Gun(aircraftAcc1, 0.2F, 2, 50));
+//
+//        Missile missile1 = new GuidedMissile(B, 10, 80);
+//        aircraftAcc1.addComponent(new MissileLauncher(aircraftAcc1, missile1, 4, 2));
 
-        Missile missile1 = new GuidedMissile(B, 10, 80);
-        aircraftAcc1.addComponent(new MissileLauncher(aircraftAcc1, missile1, 4, 2));
-
-        Aircraft aircraftAcc2 = aircraftAcc1.clone();
-        aircraftAcc2.activate(
-                new Vector3f(1000, 90, 100),
-                new Vector3f(-1, 0, 0),
-                new Vector3f(-1, 0, 0)
-        );
+//        Aircraft aircraftAcc2 = aircraftAcc1.clone();
+//        aircraftAcc2.activate(
+//                new Vector3f(1000, 90, 100),
+//                new Vector3f(-1, 0, 0),
+//                new Vector3f(-1, 0, 0)
+//        );
 
 //        Missile missile1 = new Missile(A, aircraft1.send(MotionInformation.class), new Vector3f(90, 95, 100),
 //                new Vector3f(16, 0, 0), 100, 129);
@@ -89,7 +82,7 @@ public class GamePanel extends JPanel {
 
 //        DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
 
-        Stream.of(aircraftAcc1, aircraftAcc, aircraftAcc2).forEach(this::addObject);
+        Stream.of(aircraftAcc).forEach(this::addObject);
     }
 
     public void update(float delta)

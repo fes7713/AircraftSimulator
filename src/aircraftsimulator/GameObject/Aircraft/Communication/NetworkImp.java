@@ -75,5 +75,7 @@ public class NetworkImp implements Network{
         else{
             timeClock -= delta;
         }
+        for(NetworkComponent component: arpNetworkComponentMap.values())
+            component.update(delta);
     }
 }

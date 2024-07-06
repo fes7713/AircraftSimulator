@@ -48,7 +48,8 @@ public class FragmentHandler implements Handler{
         adaptor.addDataReceiver(AckWindowSizeData.class, this::handleAckWindowSizeData);
     }
 
-    public void sendData(String sessionId, byte[][] stream) {
+    public void sendData(int port, byte[][] stream) {
+        String sessionId = adaptor.getSessionId(port);
         fragmentStoreMap.put(sessionId, stream);
         windowSizeMap.put(sessionId, 1);
         progressMap.put(sessionId, -1);
@@ -63,13 +64,14 @@ public class FragmentHandler implements Handler{
                         }
                         ),
                         s -> {
-                            fragmentSendAckCompletionHandler(s);
+                            fragmentSendAckCompletionHandler(port);
                             adaptor.errorHandler(s, NetworkErrorType.TIMEOUT);
                         }
                 ));
     }
 
-    protected void handleFragmentData(FragmentedData data, String sessionId) {
+    protected void handleFragmentData(FragmentedData data, int port) {
+        String sessionId = adaptor.getSessionId(port);
         if(!progressMap.containsKey(sessionId))
         {
             adaptor.serializableDataSend(sessionId, new AckWindowSizeData(data.totalFrames(), adaptor.askForWindowSize()));
@@ -98,7 +100,7 @@ public class FragmentHandler implements Handler{
         adaptor.serializableDataSend(sessionId, new AckWindowSizeData(waitingFragment + 1, adaptor.askForWindowSize()));
         if(waitingFragment == fragmentArr.length - 1) {
             try {
-                fragmentReceiveCompletionHandler(ByteConvertor.deSerialize(fragmentArr), sessionId);
+                fragmentReceiveCompletionHandler(ByteConvertor.deSerialize(fragmentArr), port);
             } catch (IOException e) {
                 e.printStackTrace();
                 adaptor.errorHandler(sessionId, NetworkErrorType.DATA_CORRUPTED);
@@ -109,13 +111,15 @@ public class FragmentHandler implements Handler{
         }
     };
 
-    protected void handleRequestWindowSize(RequestWindowSize data, String sessionId) {
+    protected void handleRequestWindowSize(RequestWindowSize data, int port) {
+        String sessionId = adaptor.getSessionId(port);
         fragmentStoreMap.put(sessionId, new byte[data.totalFrameSize()][]);
         adaptor.serializableDataSend(sessionId, new AckWindowSizeData(0, adaptor.askForWindowSize()));
         progressMap.put(sessionId, 0);
     };
 
-    protected void handleAckWindowSizeData(AckWindowSizeData data, String sessionId) {
+    protected void handleAckWindowSizeData(AckWindowSizeData data, int port) {
+        String sessionId = adaptor.getSessionId(port);
         if(fragmentStoreMap.get(sessionId) == null)
         {
             timeoutManager.removeTimeout(sessionId, FragmentHandler.class);
@@ -142,7 +146,7 @@ public class FragmentHandler implements Handler{
                 adaptor.serializableDataSend(sessionId, new FragmentedData(fragmentArr[i], i, 0, windowsSize, fragmentArr.length));
             if(fragmentArr.length == lastIndex && lastIndex != lastSent + 1)
             {
-                fragmentSendCompletionHandler(sessionId);
+                fragmentSendCompletionHandler(port);
                 return;
             }
         }else{
@@ -155,7 +159,7 @@ public class FragmentHandler implements Handler{
 
         if(fragmentArr.length == data.ackNumber())
         {
-            fragmentSendAckCompletionHandler(sessionId);
+            fragmentSendAckCompletionHandler(port);
             return;
         }
 
@@ -171,14 +175,15 @@ public class FragmentHandler implements Handler{
 //                                    serializableDataSend(sessionId, new FragmentedData(fragmentArr[i], i, 0, 1, fragmentArr.length));
                         },
                         s -> {
-                            fragmentSendAckCompletionHandler(s);
+                            fragmentSendAckCompletionHandler(port);
                             adaptor.errorHandler(s, NetworkErrorType.TIMEOUT);
                         }
                 )
         );
     };
 
-    protected void fragmentReceiveCompletionHandler(Object object, String sessionId) {
+    protected void fragmentReceiveCompletionHandler(Object object, int port) {
+        String sessionId = adaptor.getSessionId(port);
         fragmentStoreMap.remove(sessionId);
         ProgressLogger.PrintProgress(sessionId);
         System.out.print("\n");
@@ -187,13 +192,14 @@ public class FragmentHandler implements Handler{
         progressMap.remove(sessionId);
     }
 
-    protected void fragmentSendCompletionHandler(String sessionId) {
-        Logger.Log(Logger.LogLevel.DEBUG, "Data Send Complete", "", adaptor.getPortNumber(sessionId));
+    protected void fragmentSendCompletionHandler(int port) {
+        Logger.Log(Logger.LogLevel.DEBUG, "Data Send Complete", "", port);
     }
 
-    protected void fragmentSendAckCompletionHandler(String sessionId)
+    protected void fragmentSendAckCompletionHandler(int port)
     {
-        Logger.Log(Logger.LogLevel.DEBUG, "Data Send Complete ACK", "", adaptor.getPortNumber(sessionId));
+        String sessionId = adaptor.getSessionId(port);
+        Logger.Log(Logger.LogLevel.DEBUG, "Data Send Complete ACK", "", port);
         fragmentStoreMap.remove(sessionId);
         timeoutManager.removeTimeout(sessionId, FragmentHandler.class);
         windowSizeMap.remove(sessionId);

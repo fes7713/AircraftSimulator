@@ -1,9 +1,11 @@
 package aircraftsimulator.GameObject.Aircraft.Communication.Timeout;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.Handler;
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.Information;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.function.BiConsumer;
 
 public class TimeoutManagerImp implements TimeoutManager{
@@ -64,5 +66,10 @@ public class TimeoutManagerImp implements TimeoutManager{
     public void updateTimeout(String sessionId, Class<? extends Handler> type, BiConsumer<String, Integer> handler) {
         updateTimeout(sessionId, type);
         timeoutMap.get(sessionId).get(type).setTimeoutHandler(handler);
+    }
+
+    @Override
+    public boolean isRegistered(String sessionId, Class<? extends Handler> type) {
+        return timeoutMap.containsKey(sessionId) ? timeoutMap.get(sessionId).containsKey(type) : false;
     }
 }

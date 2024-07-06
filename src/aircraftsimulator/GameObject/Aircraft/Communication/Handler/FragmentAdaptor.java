@@ -15,5 +15,5 @@ public interface FragmentAdaptor {
     void errorHandler(String sessionId, NetworkErrorType type);
     void sendCompletionHandler(String sessionId);
 
-    int getPortNumber(String sessionId);
+    String getSessionId(int port);
 }

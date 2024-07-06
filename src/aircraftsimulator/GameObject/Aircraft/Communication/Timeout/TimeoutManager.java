@@ -12,4 +12,5 @@ public interface TimeoutManager {
     void removeTimeout(String sessionId, Class<? extends Handler> type);
     void updateTimeout(String sessionId, Class<? extends Handler> type);
     void updateTimeout(String sessionId, Class<? extends Handler> type, BiConsumer<String, Integer> handler);
+    boolean isRegistered(String sessionId, Class<? extends Handler> type);
 }

@@ -2,15 +2,15 @@ package aircraftsimulator.GameObject.Aircraft;
 
 import aircraftsimulator.GameObject.Aircraft.CentralStrategy.CentralStrategy;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.*;
-import aircraftsimulator.GameObject.Aircraft.Communication.ReceiverInterface;
-import aircraftsimulator.GameObject.Aircraft.Communication.SenderInterface;
-import aircraftsimulator.GameObject.Aircraft.FlightController.AdvancedFlightController;
+import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
+import aircraftsimulator.GameObject.Aircraft.Communication.*;
 import aircraftsimulator.GameObject.Aircraft.FlightController.FlightControllerInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
-import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
 import aircraftsimulator.GameObject.Aircraft.Spawner.WeaponSystem;
 import aircraftsimulator.GameObject.Aircraft.Thruster.SimpleThruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
+import aircraftsimulator.GameObject.Aircraft.Thruster.ThrusterLevel;
+import aircraftsimulator.GameObject.Aircraft.Thruster.ThrusterRequest;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.GameObject.DestructibleMovingObject;
 import aircraftsimulator.GameObject.Team;
@@ -31,35 +31,38 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     protected final FlightControllerInterface flightControl;
     protected Thruster thruster;
 
+    private Network network;
+    private NetworkComponent networkComponent;
+
     public static final float THRUSTER_MAGNITUDE = 1F;
     public static final float THRUSTER_FUEL = 3600F;
     public static final float FLIGHT_CONTROLLER_INTERVAL = 1F;
     public static final float ANGULAR_ACCELERATION = 0.01F;
     public static final float MAX_G_FORCE = 0.5F;
 
-    public Aircraft(Aircraft a) {
-        super(a);
-
-        switch (a.flightControl)
-        {
-            case SwitchValueFlightController ignored -> flightControl = new SwitchValueFlightController<>(a.flightControl.getInterval());
-            case AdvancedFlightController ignored1 -> flightControl = new AdvancedFlightController(a.flightControl.getInterval());
-            case SimpleFlightController ignored2 -> flightControl = new SimpleFlightController(a.flightControl.getInterval());
-
-            default -> throw new RuntimeException("Error in copy constructor of Aircraft");
-        }
-        centralStrategy = new CentralStrategy(this);
-        flightControl.setParent(this);
-        thruster = a.thruster.clone();
-        angularSpeed = 0;
-        angularAcceleration = a.angularAcceleration;
-        angularAccelerationMagnitude = a.angularAccelerationMagnitude;
-        maxG = a.maxG;
-        addComponent(thruster);
-        for(Component c: a.components)
-            if(!(c instanceof Thruster))
-                addComponent(c.clone());
-    }
+//    public Aircraft(Aircraft a) {
+//        super(a);
+//
+//        switch (a.flightControl)
+//        {
+//            case SwitchValueFlightController ignored -> flightControl = new SwitchValueFlightController<>(a.flightControl.getInterval());
+//            case AdvancedFlightController ignored1 -> flightControl = new AdvancedFlightController(a.flightControl.getInterval());
+//            case SimpleFlightController ignored2 -> flightControl = new SimpleFlightController(a.flightControl.getInterval());
+//
+//            default -> throw new RuntimeException("Error in copy constructor of Aircraft");
+//        }
+//        centralStrategy = new CentralStrategy(this);
+//        flightControl.setParent(this);
+//        thruster = a.thruster.clone();
+//        angularSpeed = 0;
+//        angularAcceleration = a.angularAcceleration;
+//        angularAccelerationMagnitude = a.angularAccelerationMagnitude;
+//        maxG = a.maxG;
+//        addComponent(thruster);
+//        for(Component c: a.components)
+//            if(!(c instanceof Thruster))
+//                addComponent(c.clone());
+//    }
 
     public Aircraft(Team team, Vector3f position, Color color, float size, float health) {
         this(team, new SimpleFlightController(FLIGHT_CONTROLLER_INTERVAL), position, color, size, health);
@@ -78,6 +81,8 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 
     public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Vector3f velocity, Color color, float size, float health, float thrusterMagnitude, float fuel) {
         super(team, position, velocity, color, size, health);
+
+        network = new NetworkImp(0.01F);
         centralStrategy = new CentralStrategy(this);
         flightControl = fci;
         fci.setParent(this);
@@ -87,10 +92,21 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         angularAccelerationMagnitude = ANGULAR_ACCELERATION;
         maxG = MAX_G_FORCE;
         addComponent(thruster);
+
+        Logger.Log_Filter = Logger.LogLevel.INFO;
+
+        networkComponent = new SlowStartApplicationNetworkComponentImp(network, 0.01F);
+        network.addToNetwork(thruster.getNetworkComponent());
+        networkComponent.openPort(SystemPort.THRUSTER);
+        networkComponent.connect(SystemPort.THRUSTER, port -> {
+            networkComponent.sendData(port, new ThrusterRequest(ThrusterLevel.MAX));
+        });
+
     }
 
     public void update(float delta)
     {
+        network.update(delta);
         centralStrategy.update(delta);
         angularAcceleration = 0;
 
@@ -131,8 +147,8 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
                 velocity.length() * angularSpeed,
                 flightControl.getTargetAngle());
         int y = (int)(position.y - 5);
-//        for (String line : text.split("\n"))
-//            g2d.drawString(line, (int)position.x + 5, y += g2d.getFontMetrics().getHeight());
+        for (String line : text.split("\n"))
+            g2d.drawString(line, (int)position.x + 5, y += g2d.getFontMetrics().getHeight());
     }
 
     @Override
@@ -245,8 +261,13 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         return super.send(type);
     }
 
-    @Override
-    public Aircraft clone() {
-        return new Aircraft(this);
+//    @Override
+//    public Aircraft clone() {
+//        return new Aircraft(this);
+//    }
+
+    public Network getNetwork()
+    {
+        return network;
     }
 }

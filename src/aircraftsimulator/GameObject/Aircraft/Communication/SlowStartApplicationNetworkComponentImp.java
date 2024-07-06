@@ -1,6 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.EmptyData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.FragmentedData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.KeepAliveData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.*;
@@ -35,6 +36,11 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
 
     private static final int DEFAULT_WINDOW_SIZE = 20;
 
+    public SlowStartApplicationNetworkComponentImp(Network network)
+    {
+        this(network, DEFAULT_UPDATE_INTERVAL);
+    }
+
     public SlowStartApplicationNetworkComponentImp(Network network, float updateInterval) {
         this(network, updateInterval, new DefaultSendCompletionHandler(), new DefaultNetworkErrorHandler());
     }
@@ -54,11 +60,13 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
 
         this.windowSize = DEFAULT_WINDOW_SIZE;
 
-        addDataReceiver(KeepAliveData.class, (object, sessionId) -> {
-            sendData(sessionManager.getPort(sessionId), null);
+        addDataReceiver(KeepAliveData.class, (object, port) -> {
+            sendData(port, new EmptyData());
         });
 
+        // TODO Better init system
         fragmentHandler = new ContinuousFragmentHandler(resendTimeout, timeoutManager, this);
+        network.addToNetwork(this);
     }
 
     @Override
@@ -78,8 +86,9 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
             byte[][] stream = new byte[fragmentedData.size()][];
             for(int i = 0; !fragmentedData.isEmpty(); i++)
                 stream[i] = fragmentedData.poll().fragmentedData();
-            fragmentHandler.sendData(sessionId, stream);
+            fragmentHandler.sendData(port, stream);
             ProgressLogger.AddProgressData(sessionId, stream.length);
+            System.out.println();
         }else{
             send(packet.copy(ByteConvertor.serialize(data)));
         }
@@ -121,8 +130,8 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
     }
 
     @Override
-    public int getPortNumber(String sessionId) {
-        return sessionManager.getPort(sessionId);
+    public String getSessionId(int port) {
+        return sessionManager.getSessionId(port);
     }
 
     @Override

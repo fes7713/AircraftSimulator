@@ -1,6 +1,7 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.EmptyData;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionEstablishedHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionTimeoutHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
@@ -33,10 +34,17 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
     private final int networkSpeed;
 
     private final Map<Class<? extends Serializable>, DataReceiver> dataReceiverMapper;
+    private final Map<Integer, ConnectionEstablishedHandler> connectionEstablishedHandlerMap;
 
     private final long timeout;
     private static final long DEFAULT_TIMEOUT = 5000;
     private final static int DEFAULT_NETWORK_SPEED = 5;
+    protected final static float DEFAULT_UPDATE_INTERVAL = 0.01F;
+
+    public NetworkComponentImp(Network network, NetworkErrorHandler errorHandler)
+    {
+        this(network, DEFAULT_UPDATE_INTERVAL, errorHandler);
+    }
 
     public NetworkComponentImp(Network network, float updateInterval, NetworkErrorHandler errorHandler)
     {
@@ -47,6 +55,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
         arpTable = new HashMap<>();
         sessionManager = new SessionManagerImp();
         timeoutManager = new TimeoutManagerImp();
+        connectionEstablishedHandlerMap = new HashMap<>();
 
         sendingQueue = new ArrayDeque<>();
         receivingQueue = new ArrayDeque<>();
@@ -75,6 +84,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
     public void errorHandler(String sessionId, NetworkErrorType type) {
         if(errorHandler != null)
             errorHandler.handle(sessionManager.getPort(sessionId), type);
+        connectionEstablishedHandlerMap.remove(sessionId);
     }
 
     @Override
@@ -229,14 +239,15 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                         {
                             Logger.Log(Logger.LogLevel.INFO, String.format("connected to [%6s] Port [%d]", receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getSourcePort()), getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             arpTable.put(receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
-                            changePortState(receivingPacket.getSessionID(), receivingPacket.getSessionInformation().reverse(receivingPacket.getSourceMac()), PortState.CONNECTED);
-                            responsePacket = new Packet(
+                            // First send ack packet
+                            send(new Packet(
                                     receivingPacket.getSessionID(),
                                     sessionManager.getSessionInformation(receivingPacket.getSessionID()),
                                     HandshakeData.ACK,
                                     null,
                                     getMac()
-                            );
+                            ));
+                            changePortState(receivingPacket.getSessionID(), receivingPacket.getSessionInformation().reverse(receivingPacket.getSourceMac()), PortState.CONNECTED);
                         }else{
                             Logger.Log(Logger.LogLevel.ERROR, "invalid packet SYN ACK", getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             responsePacket = new Packet(
@@ -408,6 +419,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
             // Syn Ack // Ack
             sessionManager.updateSession(sessionId, port, destinationPort, destinationMac);
             timeoutManager.removeTimeout(sessionId, ConnectionTimeoutHandler.class);
+            portStateMap.put(port, state);
             handleConnectionEstablished(sessionId, port);
         }
         else if(portStateMap.get(port) == PortState.CONNECTED && state == PortState.OPEN)
@@ -430,6 +442,12 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
 
     @Override
     public void connect(int sourcePort) {
+        connect(sourcePort, sourcePort);
+    }
+
+    @Override
+    public void connect(int sourcePort, ConnectionEstablishedHandler handler) {
+        connectionEstablishedHandlerMap.put(sourcePort, handler);
         connect(sourcePort, sourcePort);
     }
 
@@ -479,6 +497,8 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
     @Override
     public void handleConnectionEstablished(String sessionId, Integer port) {
         Logger.Log(Logger.LogLevel.INFO, "Connection established", getMac(), port);
+        if(connectionEstablishedHandlerMap.containsKey(port))
+            connectionEstablishedHandlerMap.get(port).established(port);
     }
 
     @Override
@@ -521,17 +541,16 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
 
     @Override
     public void triggerReceiver(String sessionId, Object object) {
-        dataReceiverMapper.get(object.getClass()).dataReceived(object, sessionId);
+        dataReceiverMapper.get(object.getClass()).dataReceived(object, sessionManager.getPort(sessionId));
     }
 
-    public static void main(String[] args )
-    {
+    public static void main(String[] args ) throws InterruptedException {
         Logger.Log_Filter = Logger.LogLevel.INFO;
         ArrayList<PositionCommand> positionData = new ArrayList<>()
         {
             {
                 String message = "";
-                for(int i = 0; i < 1200; i++)
+                for(int i = 0; i < 4000; i++)
                     message += "Keita";
                 add(new PositionCommand(100, message));
             }
@@ -548,15 +567,14 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
         NetworkComponent component4 = new SlowStartApplicationNetworkComponentImp(network2, 0.01F);
         component4.openPort(20);
 
-        network1.addToNetwork(component1);
-        network1.addToNetwork(component2);
-        network2.addToNetwork(component3);
-        network2.addToNetwork(component4);
-
 //        component1.connect(10);
 //        component1.connect(20);
-        component1.connect(10);
-        component3.connect(20);
+        component1.connect(10, port -> {
+            component1.sendData(port, positionData);
+        });
+        component3.connect(20, port -> {
+//            component3.sendData(port, positionData);
+        });
 
         component2.addDataReceiver(positionData.getClass(), ((data, sessionId) -> {
             ArrayList<PositionCommand> array = data;
@@ -573,40 +591,10 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
 
         while(true)
         {
-            cnt++;
-
-            component1.update(0.03F);
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            component2.update(0.03F);
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            component3.update(0.03F);
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            component4.update(0.03F);
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            Thread.sleep(30);
             network1.update(0.03F);
+            Thread.sleep(30);
             network2.update(0.03F);
-
-            if(cnt == 100)
-            {
-                component1.sendData(10, positionData);
-            }
-
 //            if(cnt==100)
 //            {
 //                component3.setDataReceiver(s ->{

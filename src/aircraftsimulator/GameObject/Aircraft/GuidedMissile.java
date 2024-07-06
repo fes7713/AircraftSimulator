@@ -7,10 +7,10 @@ import javax.vecmath.Vector3f;
 import java.awt.*;
 
 public class GuidedMissile extends Missile implements Guided, Cloneable {
-    public GuidedMissile(Missile m) {
-        super(m);
-
-    }
+//    public GuidedMissile(Missile m) {
+//        super(m);
+//
+//    }
 
     public GuidedMissile(Team team, float health, float baseDamage) {
         super(team, health, baseDamage);
@@ -33,6 +33,6 @@ public class GuidedMissile extends Missile implements Guided, Cloneable {
     // TODO do something toreplace it with super.clone()
     @Override
     public GuidedMissile clone() {
-        return new GuidedMissile(this);
+        return null;
     }
 }

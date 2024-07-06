@@ -13,10 +13,12 @@ public class ContinuousFragmentHandler extends FragmentHandler{
         super(resendTimeout, timeoutManager, adaptor);
     }
 
-    protected void handleAckWindowSizeData(AckWindowSizeData data, String sessionId) {
+    protected void handleAckWindowSizeData(AckWindowSizeData data, int port) {
+        String sessionId = adaptor.getSessionId(port);
         if(fragmentStoreMap.get(sessionId) == null)
         {
-            timeoutManager.removeTimeout(sessionId, FragmentHandler.class);
+            if(timeoutManager.isRegistered(sessionId, FragmentHandler.class))
+                timeoutManager.removeTimeout(sessionId, FragmentHandler.class);
             return;
         }
 
@@ -40,7 +42,7 @@ public class ContinuousFragmentHandler extends FragmentHandler{
                 adaptor.serializableDataSend(sessionId, new FragmentedData(fragmentArr[i], i, 0, windowsSize, fragmentArr.length));
             if(fragmentArr.length == lastIndex && lastIndex != lastSent + 1)
             {
-                fragmentSendCompletionHandler(sessionId);
+                fragmentSendCompletionHandler(port);
                 return;
             }
         }else{
@@ -56,7 +58,7 @@ public class ContinuousFragmentHandler extends FragmentHandler{
                     fragmentLastSentMap.put(sessionId, lastSent + 1);
                     adaptor.serializableDataSend(sessionId, new FragmentedData(fragmentArr[lastSent + 1], lastSent + 1, 0, windowSizeMap.get(sessionId), fragmentArr.length));
                 }else{
-                    fragmentSendCompletionHandler(sessionId);
+                    fragmentSendCompletionHandler(port);
                     return;
                 }
             }
@@ -64,7 +66,7 @@ public class ContinuousFragmentHandler extends FragmentHandler{
 
         if(fragmentArr.length == data.ackNumber())
         {
-            fragmentSendAckCompletionHandler(sessionId);
+            fragmentSendAckCompletionHandler(port);
             return;
         }
 
@@ -78,7 +80,7 @@ public class ContinuousFragmentHandler extends FragmentHandler{
                             adaptor.serializableDataSend(sessionId, new FragmentedData(fragmentArr[askedTill + 1], askedTill + 1, 0, 1, fragmentArr.length));
                         },
                         s -> {
-                            fragmentSendAckCompletionHandler(s);
+                            fragmentSendAckCompletionHandler(port);
                             adaptor.errorHandler(s, NetworkErrorType.TIMEOUT);
                         }
                 )

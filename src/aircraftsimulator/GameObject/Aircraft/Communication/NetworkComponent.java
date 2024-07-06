@@ -1,5 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft.Communication;
 
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionEstablishedHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
 
 import java.io.Serializable;
@@ -12,6 +13,7 @@ public interface NetworkComponent extends DataReceiverSwitcher{
 
     boolean isConnected(int port);
     void connect(int port);
+    void connect(int sourcePort, ConnectionEstablishedHandler handler);
     void connect(int sourcePort, int destinationPort);
     void disconnect(Integer port);
     void disconnect(String sessionId);

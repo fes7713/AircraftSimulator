@@ -23,14 +23,14 @@ public class Missile extends Aircraft implements DamageGenerator{
     public final static float MINIMUM_SPEED = 4;
     public final static float MISSILE_AIR_RESISTANCE = 0.010F;
 
-    public Missile(Missile m)
-    {
-        super(m);
-        baseDamage = m.baseDamage;
-        minimumSpeed = m.minimumSpeed;
-        // TODO change fuse to proximity
-        fuse = new ContactFuse(this);
-    }
+//    public Missile(Missile m)
+//    {
+//        super(m);
+//        baseDamage = m.baseDamage;
+//        minimumSpeed = m.minimumSpeed;
+//        // TODO change fuse to proximity
+//        fuse = new ContactFuse(this);
+//    }
 
     public Missile(Team team, float health, float baseDamage) {
         this(team, null, new Vector3f(), new Vector3f(), MISSILE_COLOR, MISSILE_SIZE, health, MISSILE_THRUST, baseDamage);
@@ -80,8 +80,9 @@ public class Missile extends Aircraft implements DamageGenerator{
         return baseDamage;
     }
 
+    // TODo FIX NULL
     @Override
     public Missile clone() {
-        return new Missile(this);
+        return null;
     }
 }
