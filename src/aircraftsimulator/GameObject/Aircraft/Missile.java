@@ -33,15 +33,15 @@ public class Missile extends Aircraft implements DamageGenerator{
 //    }
 
     public Missile(Team team, float health, float baseDamage) {
-        this(team, null, new Vector3f(), new Vector3f(), MISSILE_COLOR, MISSILE_SIZE, health, MISSILE_THRUST, baseDamage);
+        this(team, null, new Vector3f(), new Vector3f(), MISSILE_COLOR, MISSILE_SIZE, health, baseDamage);
     }
 
     public Missile(Team team, Information target, Vector3f position, Vector3f velocity, float health, float baseDamage) {
-        this(team, target, position, velocity, MISSILE_COLOR, MISSILE_SIZE, health, MISSILE_THRUST, baseDamage);
+        this(team, target, position, velocity, MISSILE_COLOR, MISSILE_SIZE, health, baseDamage);
     }
 
-    public Missile(Team team, Information target, Vector3f position, Vector3f velocity, Color color, float size, float health, float thrusterMagnitude, float baseDamage) {
-        super(team, new SwitchValueFlightController<>(), position, velocity, color, size, health, thrusterMagnitude, MISSILE_FUEL);
+    public Missile(Team team, Information target, Vector3f position, Vector3f velocity, Color color, float size, float health, float baseDamage) {
+        super(team, new SwitchValueFlightController<>(), position, velocity, color, size, health);
         flightControl.setParent(this);
         this.baseDamage = baseDamage;
         // TODO change fuse to proximity

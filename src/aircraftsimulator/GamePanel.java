@@ -4,6 +4,11 @@ import aircraftsimulator.Animation.AnimationManager;
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.LaserInformation;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
+import aircraftsimulator.GameObject.Aircraft.Radar.Radar.AngleRadar;
+import aircraftsimulator.GameObject.Aircraft.Radar.RadarData;
+import aircraftsimulator.GameObject.Aircraft.Radar.RadarFrequency;
+import aircraftsimulator.GameObject.Aircraft.SystemPort;
+import aircraftsimulator.GameObject.Aircraft.Thruster.SimpleThruster;
 import aircraftsimulator.GameObject.GameObject;
 import aircraftsimulator.GameObject.Team;
 import org.jetbrains.annotations.NotNull;
@@ -38,25 +43,25 @@ public class GamePanel extends JPanel {
         Aircraft aircraftAcc = new Aircraft(A,
                 new SwitchValueFlightController<>(),
                 new Vector3f(100, 100, 100),
-                new Vector3f(1, 0, 0), Color.ORANGE, 5, 100,
-                Aircraft.THRUSTER_MAGNITUDE * 2);
+                new Vector3f(1, 0, 0), Color.ORANGE, 5, 100);
 
 //        aircraftAcc.setThruster(new VariableThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE * 2, 3600));
 //        aircraftAcc.addComponent(new SimpleRadar(aircraftAcc, 100, info -> {
 //            aircraftAcc.receive(info);
 //        }));
-
-//        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, RadarFrequency.X, 1000, 80, aircraftAcc.getDirection()));
+        aircraftAcc.setThruster(new SimpleThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE * 2, Aircraft.THRUSTER_FUEL));
+        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.X, 1000, 120), SystemPort.SEARCH_RADAR, new RadarData());
 //        aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
 
 //        Missile missile = new GuidedMissile(A, 100, 80);
 //        aircraftAcc.addComponent(new MissileLauncher(aircraftAcc, missile, 1F, 6));
 
-//        Aircraft aircraftAcc1 = new Aircraft(B,
-//                new SwitchValueFlightController<>(),
-//                new Vector3f(1000, 300, 100),
-//                new Vector3f(-1, 0, 0), Color.BLUE, 5, 100,
-//                Aircraft.THRUSTER_MAGNITUDE * 2);
+        Aircraft aircraftAcc1 = new Aircraft(B,
+                new SwitchValueFlightController<>(),
+                new Vector3f(0, 100, 100 + 433),
+                new Vector3f(2, 0, 0), Color.BLUE, 5, 100);
+
+        aircraftAcc1.setThruster(new SimpleThruster(aircraftAcc1, Aircraft.THRUSTER_MAGNITUDE * 10, Aircraft.THRUSTER_FUEL));
 
 //        aircraftAcc1.setThruster(new VariableThruster(aircraftAcc1, Aircraft.THRUSTER_MAGNITUDE * 2, 3600));
 //        aircraftAcc.addComponent(new SimpleRadar(aircraftAcc, 100, info -> {
@@ -82,7 +87,7 @@ public class GamePanel extends JPanel {
 
 //        DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
 
-        Stream.of(aircraftAcc).forEach(this::addObject);
+        Stream.of(aircraftAcc, aircraftAcc1).forEach(this::addObject);
     }
 
     public void update(float delta)
@@ -165,7 +170,7 @@ public class GamePanel extends JPanel {
     private void paintLasers(Graphics2D g2d)
     {
         // TODO replace intensity with proper range/
-        for(List<LaserInformation> laserList: laserMap.values())
+        for(List<LaserInformation> laserList: new ArrayList<>(laserMap.values()))
             for(int i = 0; i < laserList.size(); i++)
                 PaintDrawer.DrawLaser(g2d, laserList.get(i));
 

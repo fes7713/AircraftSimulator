@@ -6,6 +6,7 @@ import aircraftsimulator.GameObject.Team;
 import map.NoiseMapPanel;
 
 import javax.swing.*;
+import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.util.List;
 import java.util.Timer;
@@ -43,9 +44,21 @@ public class Environment extends JPanel{
         gamePanel.removeObject(o);
     }
 
-    public void addLaser(LaserInformation o)
+    public void addLaser(LaserInformation laser, Team team)
     {
-        gamePanel.addLaser(o);
+        gamePanel.addLaser(laser);
+
+        List<GameObject> objects = environment.getObjects(team);
+        for(GameObject o: objects)
+        {
+            Vector3f targetVector = new Vector3f(o.getPosition());
+            targetVector.sub(laser.getPosition());
+            float angleCos = laser.getDirection().dot(targetVector) / laser.getDirection().length() / targetVector.length();
+            boolean detected = angleCos > Math.cos(Math.toRadians(laser.getAngle() / 2));
+            boolean withinRange = targetVector.lengthSquared() < laser.getIntensity() * laser.getIntensity();
+            if(detected && withinRange)
+                gamePanel.addLaser(o.reflect(laser.getPosition(), laser.getFrequency(), laser.getIntensity()));
+        }
     }
 
     public List<LaserInformation> getLasers(float frequency)

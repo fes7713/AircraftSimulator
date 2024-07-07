@@ -3,6 +3,7 @@ package aircraftsimulator.GameObject.Aircraft.Communication;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.EmptyData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionEstablishedHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionTimeoutHandler;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.Handler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
 import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
@@ -12,6 +13,7 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutManage
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.function.Consumer;
 
 // TODO -> Unreleased session in code.
 
@@ -91,6 +93,21 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
     public void errorHandler(int port, NetworkErrorType type) {
         if(errorHandler != null)
             errorHandler.handle(port, type);
+    }
+
+    @Override
+    public void registerTimeout(int port, long timeout, Consumer<Integer> handler) {
+        timeoutManager.registerTimeout(sessionManager.getSessionId(port), Handler.class, timeout, (s, integer) -> handler.accept(port));
+    }
+
+    @Override
+    public void updateTimeout(int port, long timeout) {
+        timeoutManager.updateTimeout(sessionManager.getSessionId(port), Handler.class);
+    }
+
+    @Override
+    public void removeTimeout(int port) {
+        timeoutManager.removeTimeout(sessionManager.getSessionId(port));
     }
 
     @Override
@@ -437,6 +454,8 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
 
     @Override
     public boolean isConnected(int port) {
+        if(portStateMap.containsKey(port) && portStateMap.get(port) == PortState.CONNECTED)
+            return true;
         return false;
     }
 

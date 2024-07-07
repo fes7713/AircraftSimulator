@@ -4,6 +4,7 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionEst
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
 
 import java.io.Serializable;
+import java.util.function.Consumer;
 
 public interface NetworkComponent extends DataReceiverSwitcher{
     String getMac();
@@ -25,4 +26,8 @@ public interface NetworkComponent extends DataReceiverSwitcher{
     <E extends Serializable> void addDataReceiver(Class<E> cls, DataReceiver<E> dataReceiver);
     void errorHandler(String sessionId, NetworkErrorType type);
     void errorHandler(int port, NetworkErrorType type);
+
+    void registerTimeout(int port, long timeout, Consumer<Integer> handler);
+    void updateTimeout(int port, long timeout);
+    void removeTimeout(int port);
 }

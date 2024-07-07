@@ -16,4 +16,9 @@ public abstract class Component implements ComponentInterface, Cloneable {
             throw new AssertionError();
         }
     }
+
+    @Override
+    public void setup() {
+
+    }
 }

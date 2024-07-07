@@ -1,16 +1,18 @@
 package aircraftsimulator.GameObject.Aircraft;
 
 import aircraftsimulator.GameObject.Aircraft.CentralStrategy.CentralStrategy;
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.*;
 import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
 import aircraftsimulator.GameObject.Aircraft.Communication.*;
 import aircraftsimulator.GameObject.Aircraft.FlightController.FlightControllerInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
+import aircraftsimulator.GameObject.Aircraft.Radar.RadarData;
 import aircraftsimulator.GameObject.Aircraft.Spawner.WeaponSystem;
-import aircraftsimulator.GameObject.Aircraft.Thruster.SimpleThruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.ThrusterLevel;
 import aircraftsimulator.GameObject.Aircraft.Thruster.ThrusterRequest;
+import aircraftsimulator.GameObject.Aircraft.Thruster.ThrusterRequestAck;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.GameObject.DestructibleMovingObject;
 import aircraftsimulator.GameObject.Team;
@@ -31,8 +33,8 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     protected final FlightControllerInterface flightControl;
     protected Thruster thruster;
 
-    private Network network;
-    private NetworkComponent networkComponent;
+    private final Network network;
+    private final NetworkComponent networkComponent;
 
     public static final float THRUSTER_MAGNITUDE = 1F;
     public static final float THRUSTER_FUEL = 3600F;
@@ -69,39 +71,30 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     }
 
     public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Color color, float size, float health){
-        this(team, fci, position, color, size, health, THRUSTER_MAGNITUDE, THRUSTER_FUEL);
+        this(team, fci, position, new Vector3f(-1 , -1, 0), color, size, health);
     }
 
-    public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Color color, float size, float health, float thrusterMagnitude, float fuel){
-        this(team, fci, position, new Vector3f(-1 , -1, 0), color, size, health, thrusterMagnitude, fuel);
-    }
-    public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Vector3f velocity, Color color, float size, float health, float thrusterMagnitude) {
-        this(team, fci, position, velocity, color, size, health, thrusterMagnitude, THRUSTER_FUEL);
-    }
-
-    public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Vector3f velocity, Color color, float size, float health, float thrusterMagnitude, float fuel) {
+    public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Vector3f velocity, Color color, float size, float health) {
         super(team, position, velocity, color, size, health);
 
         network = new NetworkImp(0.01F);
+        networkComponent = new SlowStartApplicationNetworkComponentImp(network, 0.01F);
+
         centralStrategy = new CentralStrategy(this);
         flightControl = fci;
         fci.setParent(this);
-        thruster = new SimpleThruster(this, thrusterMagnitude, fuel);
         angularSpeed = 0;
         angularAcceleration = ANGULAR_ACCELERATION;
         angularAccelerationMagnitude = ANGULAR_ACCELERATION;
         maxG = MAX_G_FORCE;
-        addComponent(thruster);
 
-        Logger.Log_Filter = Logger.LogLevel.INFO;
-
-        networkComponent = new SlowStartApplicationNetworkComponentImp(network, 0.01F);
-        network.addToNetwork(thruster.getNetworkComponent());
-        networkComponent.openPort(SystemPort.THRUSTER);
-        networkComponent.connect(SystemPort.THRUSTER, port -> {
-            networkComponent.sendData(port, new ThrusterRequest(ThrusterLevel.MAX));
+        networkComponent.addDataReceiver(RadarData.class, (data, port) -> {
+            System.out.println(data.toString());
         });
-
+        networkComponent.addDataReceiver(ThrusterRequestAck.class, (data, port) -> {
+            System.out.println(data.toString());
+        });
+        Logger.Log_Filter = Logger.LogLevel.INFO;
     }
 
     public void update(float delta)
@@ -183,9 +176,20 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     @Override
     public void setThruster(Thruster thruster) {
         removeComponent(this.thruster);
-        addComponent(thruster);
         this.thruster = thruster;
+        addComponent(thruster, SystemPort.THRUSTER, new ThrusterRequest(ThrusterLevel.MAX));
         flightControl.configurationChanged();
+    }
+
+    @Override
+    public void addComponent(Component component, int port, Data initialData) {
+        super.addComponent(component);
+
+        network.addToNetwork(thruster.getNetworkComponent());
+        networkComponent.openPort(port);
+        networkComponent.connect(port, p -> {
+            networkComponent.sendData(p, initialData);
+        });
     }
 
     @Override

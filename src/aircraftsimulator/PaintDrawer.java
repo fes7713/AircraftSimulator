@@ -27,5 +27,6 @@ public class PaintDrawer {
         double centerAngle = GameMath.directionToAngle(new Vector2f(direction.x, direction.y)) % 360;
 
         g2d.fillArc((int)(center.x - length), (int)(center.y - length), (int)(length * 2), (int)(length * 2), (int)(centerAngle - angle / 2), (int)angle);
+        g2d.fillArc((int)(center.x - length / 4), (int)(center.y - length / 4), (int)(length / 2), (int)(length / 2), (int)(centerAngle - angle / 2), (int)angle);
     }
 }

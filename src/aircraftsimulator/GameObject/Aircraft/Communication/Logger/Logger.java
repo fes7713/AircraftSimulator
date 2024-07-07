@@ -18,7 +18,12 @@ public class Logger {
             }
         }
         if(log == LogLevel.ERROR)
-            System.err.printf("[%-6s] [%6s-%6s] Port [%d] %s\n", log.name(), myMac.substring(0, Math.min(myMac.length(), 6)), destMac.substring(0, Math.min(destMac.length(), 6)), port, message);
+        {
+            if(destMac == null)
+                System.err.printf("[%-6s] [%6s-%6s] Port [%d] %s\n", log.name(), myMac.substring(0, Math.min(myMac.length(), 6)), "", port, message);
+            else
+                System.err.printf("[%-6s] [%6s-%6s] Port [%d] %s\n", log.name(), myMac.substring(0, Math.min(myMac.length(), 6)), destMac.substring(0, Math.min(destMac.length(), 6)), port, message);
+        }
         else
             System.out.printf("[%-6s] [%6s-%6s] Port [%d] %s\n", log.name(), myMac.substring(0, Math.min(myMac.length(), 6)), destMac.substring(0, Math.min(destMac.length(), 6)), port, message);
     }

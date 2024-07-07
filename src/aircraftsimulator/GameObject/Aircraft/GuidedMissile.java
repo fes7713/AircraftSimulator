@@ -20,8 +20,8 @@ public class GuidedMissile extends Missile implements Guided, Cloneable {
         super(team, target, position, velocity, health, baseDamage);
     }
 
-    public GuidedMissile(Team team, Information target, Vector3f position, Vector3f velocity, Color color, float size, float health, float thrusterMagnitude, float baseDamage) {
-        super(team, target, position, velocity, color, size, health, thrusterMagnitude, baseDamage);
+    public GuidedMissile(Team team, Information target, Vector3f position, Vector3f velocity, Color color, float size, float health, float baseDamage) {
+        super(team, target, position, velocity, color, size, health, baseDamage);
     }
 
     @Override
