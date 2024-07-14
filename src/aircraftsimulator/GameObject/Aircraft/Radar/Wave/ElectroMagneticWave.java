@@ -1,10 +1,13 @@
 package aircraftsimulator.GameObject.Aircraft.Radar.Wave;
 
 import aircraftsimulator.Environment;
+import aircraftsimulator.GameMath;
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
 import aircraftsimulator.GameObject.Aircraft.Radar.RadarFrequency;
 import aircraftsimulator.GameObject.GameObject;
 import aircraftsimulator.GameObject.GameObjectInterface;
 
+import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.util.ArrayList;
@@ -25,6 +28,7 @@ public class ElectroMagneticWave {
     private Color color;
 
     private boolean reflected;
+    private Data data;
 
     private double virtualRange;
     private double actualRange;
@@ -57,9 +61,8 @@ public class ElectroMagneticWave {
         this.direction = direction;
         this.angle = angle;
         this.code = code;
-        float colorPos = (float)((Math.log10(frequency) - Math.log10(RadarFrequency.MIN)) / (Math.log10(RadarFrequency.MAX) - Math.log10(RadarFrequency.MIN)));
-        int colorIndex = Math.max(Math.min((int)(colorPos * 10), 9), 0);
-        color = mixColors(colors.get(colorIndex + 1), colors.get(colorIndex), Math.max(Math.min(colorPos * 10F - colorIndex, 1), 0));
+
+        color = ElectroMagneticWave.GenerateFrequencyColor(frequency);
         reflected = false;
     }
 
@@ -73,17 +76,11 @@ public class ElectroMagneticWave {
         direction.sub(parent.getPosition());
     }
 
-    private Color mixColors(Color color1, Color color2, double percent){
-        double inverse_percent = 1.0 - percent;
-        int redPart = (int) (color1.getRed()*percent + color2.getRed()*inverse_percent);
-        int greenPart = (int) (color1.getGreen()*percent + color2.getGreen()*inverse_percent);
-        int bluePart = (int) (color1.getBlue()*percent + color2.getBlue()*inverse_percent);
-        return new Color(redPart, greenPart, bluePart);
-    }
+
 
     public double getIntensity()
     {
-        return power / (4 * Math.PI * actualRange);
+        return power / (4 * Math.PI * actualRange * actualRange);
     }
 
     public boolean isReflected() {
@@ -148,7 +145,6 @@ public class ElectroMagneticWave {
         return actualRange;
     }
 
-
     public float getAngle() {
         return angle;
     }
@@ -157,9 +153,44 @@ public class ElectroMagneticWave {
         return color;
     }
 
+    public Data getData(String code) {
+        if(isSameCode(code))
+            return data;
+        else
+            return null;
+    }
+
+    public void setData(Data data)
+    {
+        this.data = data;
+    }
+
     public boolean isSameCode(String code)
     {
         return this.code.equals(code);
+    }
+
+    public void draw(Graphics2D g2d)
+    {
+        g2d.setColor(color);
+        double range = actualRange;
+        double centerAngle = GameMath.directionToAngle(new Vector2f(direction.x, direction.y)) % 360;
+        g2d.drawArc((int)(position.x - range), (int)(position.y - range), (int)(range * 2), (int)(range * 2), (int)(centerAngle - angle / 2), (int)angle);
+    }
+
+    public static Color GenerateFrequencyColor(double frequency)
+    {
+        float colorPos = (float)((Math.log10(frequency) - Math.log10(RadarFrequency.MIN)) / (Math.log10(RadarFrequency.MAX) - Math.log10(RadarFrequency.MIN)));
+        int colorIndex = Math.max(Math.min((int)(colorPos * 10), 9), 0);
+        return mixColors(colors.get(colorIndex + 1), colors.get(colorIndex), Math.max(Math.min(colorPos * 10F - colorIndex, 1), 0));
+    }
+
+    private static Color mixColors(Color color1, Color color2, double percent){
+        double inverse_percent = 1.0 - percent;
+        int redPart = (int) (color1.getRed()*percent + color2.getRed()*inverse_percent);
+        int greenPart = (int) (color1.getGreen()*percent + color2.getGreen()*inverse_percent);
+        int bluePart = (int) (color1.getBlue()*percent + color2.getBlue()*inverse_percent);
+        return new Color(redPart, greenPart, bluePart);
     }
 
     public static void main(String[] args)

@@ -91,7 +91,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 
         networkComponent.addDataReceiver(RadarData.class, (data, port) -> {
             System.out.println(data.toString());
-            radarPosition = new Vector3f(data.positionList().get(0));
+            radarPosition = new Vector3f(data.waves().get(0).getPosition());
         });
         networkComponent.addDataReceiver(ThrusterRequestAck.class, (data, port) -> {
             System.out.println(data.toString());

@@ -25,7 +25,7 @@ public class GameObject implements GameObjectInterface, SenderInterface, Reflect
     protected final Router router;
 
     // 0 to 1
-    protected float surfaceRoughness;
+    protected float surfaceRoughness = 1000;
 
     public GameObject(Team team, Vector3f position, Color color, float size)
     {
@@ -35,7 +35,7 @@ public class GameObject implements GameObjectInterface, SenderInterface, Reflect
         this.size = size;
         components = new ArrayList<>();
         router = new LocalRouter();
-        surfaceRoughness = 0.5F;
+//        surfaceRoughness = 0.5F;
     }
 
     @Override
@@ -96,7 +96,7 @@ public class GameObject implements GameObjectInterface, SenderInterface, Reflect
 
     @Override
     public float getRCS() {
-        return size * size * (float) Math.PI;
+        return size * size * (float) Math.PI * surfaceRoughness;
     }
 
     @Override

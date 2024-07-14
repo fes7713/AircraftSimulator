@@ -11,7 +11,6 @@ import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.util.List;
 import java.util.Set;
-import java.util.Timer;
 
 public class Environment extends JPanel{
     private final NoiseMapPanel mapPanel;
@@ -22,7 +21,7 @@ public class Environment extends JPanel{
     private Timer timer;
 
 
-    public final static float ENVIRONMENTAL_WAVE = 5;
+    public final static float ENVIRONMENTAL_WAVE = 1;
 
     private Environment(){
         mapPanel = new NoiseMapPanel() ;
@@ -85,7 +84,7 @@ public class Environment extends JPanel{
         gamePanel.addWaveToSensor(object, wave);
     }
 
-    public List<Vector3f> detectWave(GameObject object, String code) {
+    public List<ElectroMagneticWave> detectWave(GameObject object, String code) {
         return gamePanel.detectEMWave(object, code);
     }
 

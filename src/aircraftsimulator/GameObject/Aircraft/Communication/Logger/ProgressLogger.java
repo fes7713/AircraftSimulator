@@ -39,6 +39,8 @@ public class ProgressLogger {
 
     public static void PutProgressData(String identifier, int progress)
     {
+        if(!progressMap.containsKey(identifier))
+            return;
         progressMap.get(identifier).progress = progress;
     }
 
@@ -49,6 +51,8 @@ public class ProgressLogger {
 
     public static void PrintProgress(String identifier)
     {
+        if(!progressMap.containsKey(identifier))
+            return;
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("%6s : %3.1f%% [", identifier.substring(0, Math.min(6, identifier.length())), progressMap.get(identifier).percentage() * 100));
         int num = (int)(30 * progressMap.get(identifier).percentage());

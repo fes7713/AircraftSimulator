@@ -1,9 +1,9 @@
 package aircraftsimulator.GameObject.Aircraft.Radar;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
+import aircraftsimulator.GameObject.Aircraft.Radar.Wave.ElectroMagneticWaveData;
 
-import javax.vecmath.Vector3f;
 import java.util.List;
 
-public record RadarData(List<Vector3f> positionList) implements Data {
+public record RadarData(List<ElectroMagneticWaveData> waves) implements Data {
 }

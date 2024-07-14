@@ -20,7 +20,6 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.util.List;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class GamePanel extends JPanel {
@@ -31,7 +30,7 @@ public class GamePanel extends JPanel {
     private final Map<Team, List<GameObject>> teamDetectionObjectMap;
     private final AnimationManager animationManager;
     private final Set<ElectroMagneticWave> emWaves;
-    private final Map<GameObject, Stack<ElectroMagneticWave>> sensorStackMap;
+    private final Map<GameObject, List<ElectroMagneticWave>> sensorStackMap;
 
     public final static float LASER_DRAW_TIME = 1.5F;
 
@@ -59,7 +58,7 @@ public class GamePanel extends JPanel {
 //            aircraftAcc.receive(info);
 //        }));
         aircraftAcc.setThruster(new SimpleThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE, Aircraft.THRUSTER_FUEL));
-        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.X, 5000, 100000, 0.1F), SystemPort.SEARCH_RADAR, new ConnectRequest());
+        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.P, 500, 500000, 1F, 1), SystemPort.SEARCH_RADAR, new ConnectRequest());
 //        aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
 
 //        Missile missile = new GuidedMissile(A, 100, 80);
@@ -121,7 +120,6 @@ public class GamePanel extends JPanel {
 
         for(ElectroMagneticWave wave: new HashSet<>(emWaves))
         {
-            System.out.println(wave.getIntensity());
             if(wave.getIntensity() < Environment.ENVIRONMENTAL_WAVE)
                 emWaves.remove(wave);
             else
@@ -129,19 +127,16 @@ public class GamePanel extends JPanel {
         }
     }
 
-    public List<Vector3f> detectEMWave(GameObject object, String code)
+    public List<ElectroMagneticWave> detectEMWave(GameObject object, String code)
     {
-        List<Vector3f> pos = sensorStackMap.getOrDefault(object, new Stack<>()).stream()
-                .filter(wave -> wave.isSameCode(code))
-                .map(ElectroMagneticWave::getPosition)
-                .collect(Collectors.toList());
+        List<ElectroMagneticWave> waves = sensorStackMap.getOrDefault(object, new ArrayList<>());
         sensorStackMap.remove(object);
-        return pos;
+        return waves;
     }
 
     public Team newTeam()
     {
-        Team team = new Team("" + (teamDetectionObjectMap.size() + 1));
+        Team team = new Team("" + (teamDetectionObjectMap.size() + 1), UUID.randomUUID().toString());
         teamDetectionObjectMap.put(team, new ArrayList<>());
         return team;
     }
@@ -205,8 +200,8 @@ public class GamePanel extends JPanel {
     public void addWaveToSensor(GameObject object, ElectroMagneticWave wave)
     {
         if(!sensorStackMap.containsKey(object))
-            sensorStackMap.put(object, new Stack<>());
-        sensorStackMap.get(object).push(wave);
+            sensorStackMap.put(object, new ArrayList<>());
+        sensorStackMap.get(object).add(wave);
     }
 
     @Override
@@ -223,7 +218,7 @@ public class GamePanel extends JPanel {
         paintLasers(g2d);
 
         for(ElectroMagneticWave wave: new HashSet<>(emWaves))
-            PaintDrawer.DrawPulse(g2d, wave);
+            wave.draw(g2d);
 
         g2d.setColor(Color.BLACK);
         for(int i = 0; i < objects.size(); i++){

@@ -34,20 +34,7 @@ public class PaintDrawer {
 
     public static void DrawPulse(Graphics2D g2d, ElectroMagneticWave wave)
     {
-        Vector3f direction = wave.getDirection();
-        Vector3f center = wave.getPosition();
-        float angle = wave.getAngle();
-        g2d.setColor(wave.getColor());
-        double angleCos =
-                Math.sqrt((direction.x * direction.x + direction.y * direction.y)
-                        / (direction.x * direction.x + direction.y * direction.y + direction.z * direction.z));
 
-        // TODO change intensity
-        double range = wave.getRange();
-
-        double centerAngle = GameMath.directionToAngle(new Vector2f(direction.x, direction.y)) % 360;
-
-        g2d.drawArc((int)(center.x - range), (int)(center.y - range), (int)(range * 2), (int)(range * 2), (int)(centerAngle - angle / 2), (int)angle);
 //        g2d.fillArc((int)(center.x - length / 4), (int)(center.y - length / 4), (int)(length / 2), (int)(length / 2), (int)(centerAngle - angle / 2), (int)angle);
     }
 }
