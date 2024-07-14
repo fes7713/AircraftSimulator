@@ -42,6 +42,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     public static final float ANGULAR_ACCELERATION = 0.01F;
     public static final float MAX_G_FORCE = 0.5F;
 
+    private Vector3f radarPosition;
 //    public Aircraft(Aircraft a) {
 //        super(a);
 //
@@ -90,6 +91,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 
         networkComponent.addDataReceiver(RadarData.class, (data, port) -> {
             System.out.println(data.toString());
+            radarPosition = new Vector3f(data.positionList().get(0));
         });
         networkComponent.addDataReceiver(ThrusterRequestAck.class, (data, port) -> {
             System.out.println(data.toString());
@@ -142,6 +144,13 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         int y = (int)(position.y - 5);
         for (String line : text.split("\n"))
             g2d.drawString(line, (int)position.x + 5, y += g2d.getFontMetrics().getHeight());
+
+        if(radarPosition != null)
+        {
+            g2d.drawLine((int)(radarPosition.x - size), (int)(radarPosition.y), (int)(radarPosition.x + size), (int)(radarPosition.y));
+            g2d.drawLine((int)(radarPosition.x), (int)(radarPosition.y - size), (int)(radarPosition.x), (int)(radarPosition.y + size));
+        }
+
     }
 
     @Override

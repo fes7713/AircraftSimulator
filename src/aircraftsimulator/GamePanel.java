@@ -2,11 +2,12 @@ package aircraftsimulator;
 
 import aircraftsimulator.Animation.AnimationManager;
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
+import aircraftsimulator.GameObject.Aircraft.Communication.Data.ConnectRequest;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.LaserInformation;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
 import aircraftsimulator.GameObject.Aircraft.Radar.Radar.AngleRadar;
-import aircraftsimulator.GameObject.Aircraft.Radar.RadarData;
 import aircraftsimulator.GameObject.Aircraft.Radar.RadarFrequency;
+import aircraftsimulator.GameObject.Aircraft.Radar.Wave.ElectroMagneticWave;
 import aircraftsimulator.GameObject.Aircraft.SystemPort;
 import aircraftsimulator.GameObject.Aircraft.Thruster.SimpleThruster;
 import aircraftsimulator.GameObject.GameObject;
@@ -17,18 +18,22 @@ import javax.swing.*;
 import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class GamePanel extends JPanel {
     private final aircraftsimulator.Environment environment;
     private final List<GameObject> objects;
     private final Map<Float, List<LaserInformation>> laserMap;
+    private final Map<LaserInformation, Float>laserDrawTimeMap;
     private final Map<Team, List<GameObject>> teamDetectionObjectMap;
     private final AnimationManager animationManager;
+    private final Set<ElectroMagneticWave> emWaves;
+    private final Map<GameObject, Stack<ElectroMagneticWave>> sensorStackMap;
+
+    public final static float LASER_DRAW_TIME = 1.5F;
 
     public GamePanel(Environment environment){
         this.environment = environment;
@@ -36,6 +41,10 @@ public class GamePanel extends JPanel {
         objects = new ArrayList<>();
         teamDetectionObjectMap = new HashMap<>();
         laserMap = new HashMap<>();
+        laserDrawTimeMap = new HashMap<>();
+        emWaves = new HashSet<>();
+        sensorStackMap = new HashMap<>();
+
 //        objects.add(new GameObject(new Vector3f(100, 100, 100), Color.CYAN, 5));
         Team A = newTeam();
         Team B = newTeam();
@@ -49,8 +58,8 @@ public class GamePanel extends JPanel {
 //        aircraftAcc.addComponent(new SimpleRadar(aircraftAcc, 100, info -> {
 //            aircraftAcc.receive(info);
 //        }));
-        aircraftAcc.setThruster(new SimpleThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE * 2, Aircraft.THRUSTER_FUEL));
-        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.X, 1000, 120), SystemPort.SEARCH_RADAR, new RadarData());
+        aircraftAcc.setThruster(new SimpleThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE, Aircraft.THRUSTER_FUEL));
+        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.X, 5000, 100000, 0.1F), SystemPort.SEARCH_RADAR, new ConnectRequest());
 //        aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
 
 //        Missile missile = new GuidedMissile(A, 100, 80);
@@ -58,10 +67,10 @@ public class GamePanel extends JPanel {
 
         Aircraft aircraftAcc1 = new Aircraft(B,
                 new SwitchValueFlightController<>(),
-                new Vector3f(0, 100, 100 + 433),
+                new Vector3f(0, 100, 100),
                 new Vector3f(2, 0, 0), Color.BLUE, 5, 100);
 
-        aircraftAcc1.setThruster(new SimpleThruster(aircraftAcc1, Aircraft.THRUSTER_MAGNITUDE * 10, Aircraft.THRUSTER_FUEL));
+        aircraftAcc1.setThruster(new SimpleThruster(aircraftAcc1, Aircraft.THRUSTER_MAGNITUDE * 2, Aircraft.THRUSTER_FUEL));
 
 //        aircraftAcc1.setThruster(new VariableThruster(aircraftAcc1, Aircraft.THRUSTER_MAGNITUDE * 2, 3600));
 //        aircraftAcc.addComponent(new SimpleRadar(aircraftAcc, 100, info -> {
@@ -86,13 +95,23 @@ public class GamePanel extends JPanel {
 //        aircraftAcc.addToNetwork(missile1);
 
 //        DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
+        GameObject object = new GameObject(B, new Vector3f(500, 50, 50), Color.BLACK, 10);
+        Stream.of(aircraftAcc, aircraftAcc1, object).forEach(this::addObject);
 
-        Stream.of(aircraftAcc, aircraftAcc1).forEach(this::addObject);
+//        emWaves.add(new ElectroMagneticWave(new Vector3f(100, 100, 100), 5000, RadarFrequency.Ku, new Vector3f(1, 0, 0), 360, "AA"));
     }
 
     public void update(float delta)
     {
         laserMap.clear();
+
+        for(LaserInformation laser: new HashSet<>(laserDrawTimeMap.keySet()))
+        {
+            if(laserDrawTimeMap.get(laser) - delta > 0)
+                laserDrawTimeMap.put(laser, laserDrawTimeMap.get(laser) - delta);
+            else
+                laserDrawTimeMap.remove(laser);
+        }
         animationManager.update(delta);
         for(int i = 0; i < objects.size(); i++)
             objects.get(i).componentUpdate(delta);
@@ -100,6 +119,24 @@ public class GamePanel extends JPanel {
         for(int i = 0; i < objects.size(); i++)
             objects.get(i).update(delta);
 
+        for(ElectroMagneticWave wave: new HashSet<>(emWaves))
+        {
+            System.out.println(wave.getIntensity());
+            if(wave.getIntensity() < Environment.ENVIRONMENTAL_WAVE)
+                emWaves.remove(wave);
+            else
+                wave.update(delta);
+        }
+    }
+
+    public List<Vector3f> detectEMWave(GameObject object, String code)
+    {
+        List<Vector3f> pos = sensorStackMap.getOrDefault(object, new Stack<>()).stream()
+                .filter(wave -> wave.isSameCode(code))
+                .map(ElectroMagneticWave::getPosition)
+                .collect(Collectors.toList());
+        sensorStackMap.remove(object);
+        return pos;
     }
 
     public Team newTeam()
@@ -107,6 +144,18 @@ public class GamePanel extends JPanel {
         Team team = new Team("" + (teamDetectionObjectMap.size() + 1));
         teamDetectionObjectMap.put(team, new ArrayList<>());
         return team;
+    }
+
+    @NotNull
+    public Set<GameObject> getObjects()
+    {
+        return new HashSet<>()
+        {
+            {
+                for(List<GameObject> objects: teamDetectionObjectMap.values())
+                    addAll(objects);
+            }
+        };
     }
 
     @NotNull
@@ -141,11 +190,23 @@ public class GamePanel extends JPanel {
 //                .anyMatch(laser -> laser.getInformation().getSource() == laserInformation.getSource());
 //        if(!flag)
         laserMap.get(laserInformation.getFrequency()).add(laserInformation);
+        laserDrawTimeMap.put(laserInformation, LASER_DRAW_TIME);
+    }
+
+    public void addPulseWave(ElectroMagneticWave wave) {
+        emWaves.add(wave);
     }
 
     public List<LaserInformation> getLasers(float frequency)
     {
         return laserMap.get(frequency);
+    }
+
+    public void addWaveToSensor(GameObject object, ElectroMagneticWave wave)
+    {
+        if(!sensorStackMap.containsKey(object))
+            sensorStackMap.put(object, new Stack<>());
+        sensorStackMap.get(object).push(wave);
     }
 
     @Override
@@ -161,6 +222,9 @@ public class GamePanel extends JPanel {
 
         paintLasers(g2d);
 
+        for(ElectroMagneticWave wave: new HashSet<>(emWaves))
+            PaintDrawer.DrawPulse(g2d, wave);
+
         g2d.setColor(Color.BLACK);
         for(int i = 0; i < objects.size(); i++){
             objects.get(i).draw(g2d);
@@ -170,9 +234,8 @@ public class GamePanel extends JPanel {
     private void paintLasers(Graphics2D g2d)
     {
         // TODO replace intensity with proper range/
-        for(List<LaserInformation> laserList: new ArrayList<>(laserMap.values()))
-            for(int i = 0; i < laserList.size(); i++)
-                PaintDrawer.DrawLaser(g2d, laserList.get(i));
+        for(LaserInformation laser: new ArrayList<>(laserDrawTimeMap.keySet()))
+            PaintDrawer.DrawLaser(g2d, laser, laserDrawTimeMap.get(laser) / LASER_DRAW_TIME);
 
 //                g2d.fillOval((int)(laserList.get(i).getPosition().x - laserSize / 2), (int)(laserList.get(i).getPosition().y - laserSize / 2), laserSize, laserSize);
     }

@@ -1,6 +1,7 @@
 package aircraftsimulator;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.LaserInformation;
+import aircraftsimulator.GameObject.Aircraft.Radar.Wave.ElectroMagneticWave;
 import aircraftsimulator.GameObject.GameObject;
 import aircraftsimulator.GameObject.Team;
 import map.NoiseMapPanel;
@@ -9,6 +10,7 @@ import javax.swing.*;
 import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 
 public class Environment extends JPanel{
@@ -18,6 +20,9 @@ public class Environment extends JPanel{
     private final GamePanel gamePanel;
 
     private Timer timer;
+
+
+    public final static float ENVIRONMENTAL_WAVE = 5;
 
     private Environment(){
         mapPanel = new NoiseMapPanel() ;
@@ -33,6 +38,10 @@ public class Environment extends JPanel{
 
     public List<GameObject> getObjects(Team team) {
         return gamePanel.getObjects(team);
+    }
+
+    public Set<GameObject> getObjects() {
+        return gamePanel.getObjects();
     }
 
     public void addObject(GameObject o) {
@@ -64,6 +73,20 @@ public class Environment extends JPanel{
     public List<LaserInformation> getLasers(float frequency)
     {
         return gamePanel.getLasers(frequency);
+    }
+
+    public void addPulseWave(ElectroMagneticWave wave)
+    {
+        gamePanel.addPulseWave(wave);
+    }
+
+    public void addWaveToSensor(GameObject object, ElectroMagneticWave wave)
+    {
+        gamePanel.addWaveToSensor(object, wave);
+    }
+
+    public List<Vector3f> detectWave(GameObject object, String code) {
+        return gamePanel.detectEMWave(object, code);
     }
 
     public void updateGame(float delta)

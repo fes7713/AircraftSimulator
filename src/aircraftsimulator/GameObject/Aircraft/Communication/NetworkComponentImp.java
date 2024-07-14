@@ -102,7 +102,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
 
     @Override
     public void updateTimeout(int port, long timeout) {
-        timeoutManager.updateTimeout(sessionManager.getSessionId(port), Handler.class);
+        timeoutManager.updateTimeout(sessionManager.getSessionId(port), Handler.class, timeout);
     }
 
     @Override

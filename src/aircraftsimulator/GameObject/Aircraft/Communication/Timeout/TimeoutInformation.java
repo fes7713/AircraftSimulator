@@ -8,7 +8,7 @@ public class TimeoutInformation
     private final String sessionId;
     private long startTime;
     private long timeout;
-    private final long timeoutStartTime;
+    private long timeoutStartTime;
     private BiConsumer<String, Integer> timeoutHandler;
     private final Consumer<String> retryTimeoutHandler;
 
@@ -54,6 +54,14 @@ public class TimeoutInformation
 
     public void resetTimeout()
     {
+        timeout = timeoutStartTime;
+        retryNum = 0;
+        startTime = System.currentTimeMillis();
+    }
+
+    public void resetTimeout(long timeoutStartTime)
+    {
+        this.timeoutStartTime = timeoutStartTime;
         timeout = timeoutStartTime;
         retryNum = 0;
         startTime = System.currentTimeMillis();

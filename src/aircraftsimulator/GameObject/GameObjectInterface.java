@@ -16,4 +16,6 @@ public interface GameObjectInterface extends PositionnInterface{
     void draw(Graphics2D g2d);
     void remove();
     Router getRouter();
+
+    float getRCS();
 }

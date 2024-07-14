@@ -95,6 +95,11 @@ public class GameObject implements GameObjectInterface, SenderInterface, Reflect
     }
 
     @Override
+    public float getRCS() {
+        return size * size * (float) Math.PI;
+    }
+
+    @Override
     public <T extends PositionInformation> PositionInformation send(Class<T> type) {
         return new PositionInformationImp(this, position);
     }
