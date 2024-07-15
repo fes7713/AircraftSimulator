@@ -27,6 +27,8 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
     protected final SessionManager sessionManager;
     protected final TimeoutManager timeoutManager;
 
+    protected final List<Integer> portTransferMap;
+
     private final Queue<Packet> sendingQueue;
     private final Queue<Packet> receivingQueue;
     private NetworkMode networkMode;
@@ -39,7 +41,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
     private final Map<Integer, ConnectionEstablishedHandler> connectionEstablishedHandlerMap;
 
     private final long timeout;
-    private static final long DEFAULT_TIMEOUT = 5000;
+    private static final long DEFAULT_TIMEOUT = 500000;
     private final static int DEFAULT_NETWORK_SPEED = 5;
     protected final static float DEFAULT_UPDATE_INTERVAL = 0.01F;
 
@@ -58,6 +60,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
         sessionManager = new SessionManagerImp();
         timeoutManager = new TimeoutManagerImp();
         connectionEstablishedHandlerMap = new HashMap<>();
+        portTransferMap = new ArrayList<>();
 
         sendingQueue = new ArrayDeque<>();
         receivingQueue = new ArrayDeque<>();
@@ -145,6 +148,17 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
         return false;
     }
 
+    @Override
+    public void enabledPortTransfer(int port) {
+        if(portTransferMap.contains(port))
+        {
+            Logger.Log(Logger.LogLevel.INFO, "already enabled port transfer", getMac(), port);
+            return;
+        }
+        portTransferMap.add(port);
+        Logger.Log(Logger.LogLevel.INFO, "enabled port transfer", getMac(), port);
+    }
+
     public void closePort(int port)
     {
         PortState portState = portStateMap.getOrDefault(port, null);
@@ -220,6 +234,24 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                 Integer port = receivingPacket.getDestinationPort();
                 if(portStateMap.get(port) != PortState.OPEN && !sessionManager.isRegistered(receivingPacket.getSessionID(), receivingPacket.getSourceMac()))
                 {
+                    if (portTransferMap.contains(port))
+                    {
+                        int transferringPort = port * 1000;
+                        while(portStateMap.containsKey(transferringPort))
+                            transferringPort++;
+                        Logger.Log(Logger.LogLevel.INFO, "transferring to port [%d]".formatted(transferringPort), getMac(), receivingPacket.getSourceMac(), port);
+                        openPort(transferringPort);
+                        Logger.Log(Logger.LogLevel.INFO, "connecting SYN", getMac(), receivingPacket.getSourceMac(), transferringPort);
+                        changePortState(receivingPacket.getSessionID(), new SessionInformation(transferringPort, receivingPacket.getSourcePort(), receivingPacket.getSourceMac()), PortState.CONNECTING);
+                        send(new Packet(
+                                receivingPacket.getSessionID(),
+                                sessionManager.getSessionInformation(receivingPacket.getSessionID()),
+                                HandshakeData.SYN_ACK,
+                                null,
+                                getMac()
+                        ));
+                        return;
+                    }
                     Logger.Log(Logger.LogLevel.ERROR, 
                             String.format("Session id [%6s] is not registered", receivingPacket.getSessionID()), getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                     return;
@@ -256,7 +288,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                         {
                             Logger.Log(Logger.LogLevel.INFO, String.format("connected to [%6s] Port [%d]", receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getSourcePort()), getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             arpTable.put(receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
-                            // First send ack packet
+                            changePortState(receivingPacket.getSessionID(), receivingPacket.getSessionInformation().reverse(receivingPacket.getSourceMac()), PortState.CONNECTED);
                             send(new Packet(
                                     receivingPacket.getSessionID(),
                                     sessionManager.getSessionInformation(receivingPacket.getSessionID()),
@@ -264,7 +296,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                                     null,
                                     getMac()
                             ));
-                            changePortState(receivingPacket.getSessionID(), receivingPacket.getSessionInformation().reverse(receivingPacket.getSourceMac()), PortState.CONNECTED);
+                            handleConnectionEstablished(sessionId, port);
                         }else{
                             Logger.Log(Logger.LogLevel.ERROR, "invalid packet SYN ACK", getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             responsePacket = new Packet(
@@ -284,6 +316,7 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
                                     String.format("connected to [%6s] Port [%d] ACK", receivingPacket.getSourceMac().substring(0, 6), receivingPacket.getSourcePort()), getMac(), receivingPacket.getSourceMac(), receivingPacket.getDestinationPort());
                             registerArp(receivingPacket);
                             changePortState(receivingPacket.getSessionID(), sessionManager.getSessionInformation(receivingPacket.getSessionID()), PortState.CONNECTED);
+                            handleConnectionEstablished(sessionId, port);
                         }
                         else if(portStateMap.get(receivingPacket.getDestinationPort()) == PortState.CONNECTED){
                             processData(receivingPacket.getData(), receivingPacket.getSessionID(), true);
@@ -437,7 +470,6 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
             sessionManager.updateSession(sessionId, port, destinationPort, destinationMac);
             timeoutManager.removeTimeout(sessionId, ConnectionTimeoutHandler.class);
             portStateMap.put(port, state);
-            handleConnectionEstablished(sessionId, port);
         }
         else if(portStateMap.get(port) == PortState.CONNECTED && state == PortState.OPEN)
         {
@@ -468,6 +500,12 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
     public void connect(int sourcePort, ConnectionEstablishedHandler handler) {
         connectionEstablishedHandlerMap.put(sourcePort, handler);
         connect(sourcePort, sourcePort);
+    }
+
+    @Override
+    public void connect(int sourcePort, int destinationPort, ConnectionEstablishedHandler handler) {
+        connectionEstablishedHandlerMap.put(sourcePort, handler);
+        connect(sourcePort, destinationPort);
     }
 
     @Override
@@ -576,35 +614,37 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
         };
 
         Network network1 = new NetworkImp(0.01F);
-        Network network2 = new NetworkImp(0.01F);
         NetworkComponent component1 = new SlowStartApplicationNetworkComponentImp(network1, 0.01F);
-        component1.openPort(10);
+        component1.openPort(11);
+        component1.enabledPortTransfer(11);
         NetworkComponent component2 = new SlowStartApplicationNetworkComponentImp(network1, 0.01F);
         component2.openPort(10);
-        NetworkComponent component3 = new SlowStartApplicationNetworkComponentImp(network2, 0.01F);
-        component3.openPort(20);
-        NetworkComponent component4 = new SlowStartApplicationNetworkComponentImp(network2, 0.01F);
-        component4.openPort(20);
+        NetworkComponent component3 = new SlowStartApplicationNetworkComponentImp(network1, 0.01F);
+        component3.openPort(10);
 
 //        component1.connect(10);
 //        component1.connect(20);
-        component1.connect(10, port -> {
-            component1.sendData(port, positionData);
+        component2.connect(10, 11, port -> {
+            component2.sendData(port, positionData);
         });
-        component3.connect(20, port -> {
-//            component3.sendData(port, positionData);
+        component3.connect(10, 11, port -> {
+            component3.sendData(port, positionData);
         });
 
-        component2.addDataReceiver(positionData.getClass(), ((data, sessionId) -> {
+//        component3.connect(20, port -> {
+////            component3.sendData(port, positionData);
+//        });
+
+        component1.addDataReceiver(positionData.getClass(), ((data, sessionId) -> {
             ArrayList<PositionCommand> array = data;
             for(PositionCommand p: array)
                 System.out.println(p);
         }));
-        component4.addDataReceiver(positionData.getClass(), ((data, sessionId) -> {
-            ArrayList<PositionCommand> array = data;
-            for(PositionCommand p: array)
-                System.out.println(p);
-        }));
+//        component4.addDataReceiver(positionData.getClass(), ((data, sessionId) -> {
+//            ArrayList<PositionCommand> array = data;
+//            for(PositionCommand p: array)
+//                System.out.println(p);
+//        }));
 
         int cnt = 0;
 
@@ -612,8 +652,6 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
         {
             Thread.sleep(30);
             network1.update(0.03F);
-            Thread.sleep(30);
-            network2.update(0.03F);
 //            if(cnt==100)
 //            {
 //                component3.setDataReceiver(s ->{

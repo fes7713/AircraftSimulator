@@ -10,11 +10,13 @@ public interface NetworkComponent extends DataReceiverSwitcher{
     String getMac();
     void update(float delta);
     boolean openPort(int port);
+    void enabledPortTransfer(int port);
     void closePort(int port);
 
     boolean isConnected(int port);
     void connect(int port);
     void connect(int sourcePort, ConnectionEstablishedHandler handler);
+    void connect(int sourcePort, int destinationPort, ConnectionEstablishedHandler handler);
     void connect(int sourcePort, int destinationPort);
     void disconnect(Integer port);
     void disconnect(String sessionId);
