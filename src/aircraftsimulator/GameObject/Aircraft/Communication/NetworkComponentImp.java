@@ -2,7 +2,7 @@ package aircraftsimulator.GameObject.Aircraft.Communication;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.EmptyData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionEstablishedHandler;
-import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionTimeoutHandler;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.Handler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 
 // TODO -> Unreleased session in code.
 
-public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutHandler {
+public class NetworkComponentImp implements NetworkComponent, ConnectionHandler {
     protected final Network network;
     private final String mac;
     private final NetworkErrorHandler errorHandler;
@@ -41,9 +41,10 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
     private final Map<Integer, ConnectionEstablishedHandler> connectionEstablishedHandlerMap;
 
     private final long timeout;
-    private static final long DEFAULT_TIMEOUT = 500000;
+    private static final long DEFAULT_TIMEOUT = 5000;
     private final static int DEFAULT_NETWORK_SPEED = 5;
     protected final static float DEFAULT_UPDATE_INTERVAL = 0.01F;
+    protected final static float CONNECTION_TIMEOUT_RETRY = 5;
 
     public NetworkComponentImp(Network network, NetworkErrorHandler errorHandler)
     {
@@ -462,13 +463,13 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
         {
             // SYN
             sessionManager.register(sessionId, port, destinationPort, destinationMac);
-            timeoutManager.registerTimeout(sessionId, ConnectionTimeoutHandler.class, timeout, this::handleConnectionTimeout);
+            timeoutManager.registerTimeout(sessionId, ConnectionHandler.class, timeout, this::handleConnectionTimeout);
         }
         else if(portStateMap.get(port) == PortState.CONNECTING && state == PortState.CONNECTED)
         {
             // Syn Ack // Ack
             sessionManager.updateSession(sessionId, port, destinationPort, destinationMac);
-            timeoutManager.removeTimeout(sessionId, ConnectionTimeoutHandler.class);
+            timeoutManager.removeTimeout(sessionId, ConnectionHandler.class);
             portStateMap.put(port, state);
         }
         else if(portStateMap.get(port) == PortState.CONNECTED && state == PortState.OPEN)
@@ -544,11 +545,25 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionTimeoutH
     @Override
     public void handleConnectionTimeout(String sessionId, Integer retryNum) {
         Logger.Log(Logger.LogLevel.ERROR, "timeout", getMac(), sessionManager.getPort(sessionId));
-        errorHandler(sessionId, NetworkErrorType.TIMEOUT);
+        if(retryNum < CONNECTION_TIMEOUT_RETRY)
+        {
+            Packet packet = new Packet(
+                    sessionId,
+                    sessionManager.getSessionInformation(sessionId),
+                    HandshakeData.SYN,
+                    null,
+                    getMac()
+            );
+            Logger.Log(Logger.LogLevel.INFO, "connecting RST", getMac(), sessionManager.getSessionInformation(sessionId).sourcePort());
+            send(packet);
+            timeoutManager.updateTimeout(sessionId, ConnectionHandler.class);
+            return;
+        }
         if(sessionManager.getSessionInformation(sessionId).destinationMac() != null)
             disconnect(sessionId);
+        errorHandler(sessionId, NetworkErrorType.TIMEOUT);
         sessionManager.deleteSession(sessionId);
-        timeoutManager.removeTimeout(sessionId, ConnectionTimeoutHandler.class);
+        timeoutManager.removeTimeout(sessionId, ConnectionHandler.class);
     }
 
     @Override
