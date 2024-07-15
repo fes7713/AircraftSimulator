@@ -1,6 +1,5 @@
 package aircraftsimulator.GameObject.Aircraft;
 
-import aircraftsimulator.GameObject.Aircraft.CentralStrategy.CentralStrategy;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.*;
 import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
@@ -8,7 +7,6 @@ import aircraftsimulator.GameObject.Aircraft.Communication.*;
 import aircraftsimulator.GameObject.Aircraft.FlightController.FlightControllerInterface;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.Aircraft.Radar.RadarData;
-import aircraftsimulator.GameObject.Aircraft.Spawner.WeaponSystem;
 import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.ThrusterLevel;
 import aircraftsimulator.GameObject.Aircraft.Thruster.ThrusterRequest;
@@ -29,7 +27,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     private final float angularAccelerationMagnitude;
     private final float maxG;
 
-    protected final CentralStrategy centralStrategy;
     protected final FlightControllerInterface flightControl;
     protected Thruster thruster;
 
@@ -81,7 +78,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         network = new NetworkImp(0.01F);
         networkComponent = new SlowStartApplicationNetworkComponentImp(network, 0.01F);
 
-        centralStrategy = new CentralStrategy(this);
         flightControl = fci;
         fci.setParent(this);
         angularSpeed = 0;
@@ -92,6 +88,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         networkComponent.addDataReceiver(RadarData.class, (data, port) -> {
             System.out.println(data.toString());
             radarPosition = new Vector3f(data.waves().get(0).getPosition());
+            networkComponent.sendData(SystemPort.STRATEGY, data);
         });
         networkComponent.addDataReceiver(ThrusterRequestAck.class, (data, port) -> {
             System.out.println(data.toString());
@@ -102,7 +99,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     public void update(float delta)
     {
         network.update(delta);
-        centralStrategy.update(delta);
         angularAcceleration = 0;
 
         flightControl.update(delta);
@@ -228,12 +224,10 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 
     public void connectToGuidance(Guided guidedObject, PositionInformation keyInformation)
     {
-        centralStrategy.addToGuidance(guidedObject, keyInformation);
     }
 
     @Override
     public void disconnectFromGuidance(Guided guidedObject) {
-        centralStrategy.removeFromGuidance(guidedObject);
     }
 
     @Override
@@ -241,8 +235,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     {
         component.setParent(this);
         components.add(component);
-        if(component instanceof WeaponSystem weaponSystem)
-            centralStrategy.addWeaponSystem(weaponSystem);
     }
 
     @Override
@@ -250,14 +242,11 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     {
         components.remove(component);
 //        router.removeRouting(component);
-        if(component instanceof WeaponSystem w)
-            centralStrategy.removeWeaponSystem(w);
     }
 
     @Override
     public void receive(@Nullable Information information) {
         flightControl.setTarget(information);
-        centralStrategy.receive(information);
     }
 
     @Override

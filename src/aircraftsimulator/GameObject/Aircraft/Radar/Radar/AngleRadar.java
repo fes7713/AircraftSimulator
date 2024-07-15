@@ -12,6 +12,7 @@ import aircraftsimulator.GameObject.Aircraft.Radar.Wave.ElectroMagneticWaveData;
 import aircraftsimulator.GameObject.Aircraft.SystemPort;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.GameObject.GameObject;
+import aircraftsimulator.PaintDrawer;
 
 import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
@@ -66,6 +67,7 @@ public class AngleRadar extends Component implements RadarInterface{
             }
         };
         networkComponent.openPort(SystemPort.SEARCH_RADAR);
+        networkComponent.enabledPortTransfer(SystemPort.SEARCH_RADAR);
 
         System.out.println("[%s] %s:%f, %s:%f".formatted("AngleRadar", "Angle", angle, "Gain", gain) );
     }
@@ -121,9 +123,7 @@ public class AngleRadar extends Component implements RadarInterface{
 
     @Override
     public void draw(Graphics2D g2d) {
-        float[] rgb = new float[4];
-        color.getRGBComponents(rgb);
-        g2d.setColor(new Color(rgb[0], rgb[1], rgb[2], 0.3F * color.getAlpha() / 255));
+        g2d.setColor(PaintDrawer.opacColor(color, 0.3F));
         Vector3f direction = ((MovingObjectInterface)parent).getDirection();
         Vector3f position = parent.getPosition();
         double centerAngle = GameMath.directionToAngle(new Vector2f(direction.x, direction.y)) % 360;

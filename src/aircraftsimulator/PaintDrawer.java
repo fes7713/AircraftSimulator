@@ -11,6 +11,13 @@ public class PaintDrawer {
     public static final Color reflectedColor = new Color(50, 50, 150, 200);
     public static final Color radarColor = new Color(71,179,77, 100);
 
+    public static Color opacColor(Color color, float opacity)
+    {
+        float[] rgb = new float[4];
+        color.getRGBComponents(rgb);
+        return new Color(rgb[0], rgb[1], rgb[2], opacity * color.getAlpha() / 255);
+    }
+
     public static void DrawLaser(Graphics2D g2d, LaserInformation laser, float opacity)
     {
         Vector3f direction = laser.getDirection();
@@ -18,7 +25,7 @@ public class PaintDrawer {
         float angle = laser.getAngle();
         float[] rgb = new float[4];
         laser.getColor().getRGBComponents(rgb);
-        g2d.setColor(new Color(rgb[0], rgb[1], rgb[2], opacity * laser.getColor().getAlpha() / 255));
+        g2d.setColor(opacColor(laser.getColor(), opacity));
         double angleCos =
                 Math.sqrt((direction.x * direction.x + direction.y * direction.y)
                         / (direction.x * direction.x + direction.y * direction.y + direction.z * direction.z));

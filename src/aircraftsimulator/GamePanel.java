@@ -2,6 +2,7 @@ package aircraftsimulator;
 
 import aircraftsimulator.Animation.AnimationManager;
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
+import aircraftsimulator.GameObject.Aircraft.CentralStrategy.SimpleStrategy;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.ConnectRequest;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.LaserInformation;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
@@ -58,7 +59,8 @@ public class GamePanel extends JPanel {
 //            aircraftAcc.receive(info);
 //        }));
         aircraftAcc.setThruster(new SimpleThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE, Aircraft.THRUSTER_FUEL));
-        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.P, 500, 500000, 1F, 1), SystemPort.SEARCH_RADAR, new ConnectRequest());
+        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.G, 2000, 500000, 2F, 1), SystemPort.SEARCH_RADAR, new ConnectRequest());
+        aircraftAcc.addComponent(new SimpleStrategy(aircraftAcc, aircraftAcc.getNetwork()), SystemPort.STRATEGY, new ConnectRequest());
 //        aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
 
 //        Missile missile = new GuidedMissile(A, 100, 80);
@@ -94,7 +96,7 @@ public class GamePanel extends JPanel {
 //        aircraftAcc.addToNetwork(missile1);
 
 //        DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
-        GameObject object = new GameObject(B, new Vector3f(500, 50, 50), Color.BLACK, 10);
+        GameObject object = new GameObject(B, new Vector3f(600, 50, 50), Color.BLACK, 10);
         Stream.of(aircraftAcc, aircraftAcc1, object).forEach(this::addObject);
 
 //        emWaves.add(new ElectroMagneticWave(new Vector3f(100, 100, 100), 5000, RadarFrequency.Ku, new Vector3f(1, 0, 0), 360, "AA"));

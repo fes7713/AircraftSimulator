@@ -6,6 +6,8 @@ import java.util.Timer;
 public class Game {
     public static long prevTime;
     public static int frames = 0;
+
+    private static float frameTime = 10 / 1000F;
     public static void main(String[] args)
     {
         Environment env = Environment.getInstance();
@@ -36,5 +38,8 @@ public class Game {
 
     public static int getFrames() {
         return frames;
+    }
+    public static float getGameTime() {
+        return frames * frameTime;
     }
 }
