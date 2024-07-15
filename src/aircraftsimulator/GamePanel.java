@@ -7,6 +7,7 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Data.ConnectRequest;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.LaserInformation;
 import aircraftsimulator.GameObject.Aircraft.FlightController.SwitchValueFlightController;
 import aircraftsimulator.GameObject.Aircraft.Radar.Radar.AngleRadar;
+import aircraftsimulator.GameObject.Aircraft.Radar.Radar.RadioCommunicator;
 import aircraftsimulator.GameObject.Aircraft.Radar.RadarFrequency;
 import aircraftsimulator.GameObject.Aircraft.Radar.Wave.ElectroMagneticWave;
 import aircraftsimulator.GameObject.Aircraft.SystemPort;
@@ -32,6 +33,7 @@ public class GamePanel extends JPanel {
     private final AnimationManager animationManager;
     private final Set<ElectroMagneticWave> emWaves;
     private final Map<GameObject, List<ElectroMagneticWave>> sensorStackMap;
+    private final Map<GameObject, List<ElectroMagneticWave>> detectedWaveMap;
 
     public final static float LASER_DRAW_TIME = 1.5F;
 
@@ -44,6 +46,7 @@ public class GamePanel extends JPanel {
         laserDrawTimeMap = new HashMap<>();
         emWaves = new HashSet<>();
         sensorStackMap = new HashMap<>();
+        detectedWaveMap = new HashMap<>();
 
 //        objects.add(new GameObject(new Vector3f(100, 100, 100), Color.CYAN, 5));
         Team A = newTeam();
@@ -59,19 +62,23 @@ public class GamePanel extends JPanel {
 //            aircraftAcc.receive(info);
 //        }));
         aircraftAcc.setThruster(new SimpleThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE, Aircraft.THRUSTER_FUEL));
-        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.G, 2000, 500000, 2F, 1), SystemPort.SEARCH_RADAR, new ConnectRequest());
+        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.C, 200, 500000, 0.2F, 1), SystemPort.SEARCH_RADAR, new ConnectRequest());
+        aircraftAcc.addComponent(new RadioCommunicator(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.L, 500000, 1F, 1), SystemPort.COMMUNICATION, new ConnectRequest());
         aircraftAcc.addComponent(new SimpleStrategy(aircraftAcc, aircraftAcc.getNetwork()), SystemPort.STRATEGY, new ConnectRequest());
 //        aircraftAcc.addComponent(new Gun(aircraftAcc, 0.2F, 2, 50));
 
 //        Missile missile = new GuidedMissile(A, 100, 80);
 //        aircraftAcc.addComponent(new MissileLauncher(aircraftAcc, missile, 1F, 6));
 
-        Aircraft aircraftAcc1 = new Aircraft(B,
+        Aircraft aircraftAcc1 = new Aircraft(A,
                 new SwitchValueFlightController<>(),
-                new Vector3f(0, 100, 100),
+                new Vector3f(150, 130, 100),
                 new Vector3f(2, 0, 0), Color.BLUE, 5, 100);
 
         aircraftAcc1.setThruster(new SimpleThruster(aircraftAcc1, Aircraft.THRUSTER_MAGNITUDE * 2, Aircraft.THRUSTER_FUEL));
+        aircraftAcc1.addComponent(new AngleRadar(aircraftAcc1, aircraftAcc1.getNetwork(), RadarFrequency.C, 2000, 500000, 0.2F, 1), SystemPort.SEARCH_RADAR, new ConnectRequest());
+        aircraftAcc1.addComponent(new RadioCommunicator(aircraftAcc1, aircraftAcc1.getNetwork(), RadarFrequency.L, 500000, 1F, 1), SystemPort.COMMUNICATION, new ConnectRequest());
+        aircraftAcc1.addComponent(new SimpleStrategy(aircraftAcc1, aircraftAcc1.getNetwork()), SystemPort.STRATEGY, new ConnectRequest());
 
 //        aircraftAcc1.setThruster(new VariableThruster(aircraftAcc1, Aircraft.THRUSTER_MAGNITUDE * 2, 3600));
 //        aircraftAcc.addComponent(new SimpleRadar(aircraftAcc, 100, info -> {
@@ -105,7 +112,9 @@ public class GamePanel extends JPanel {
     public void update(float delta)
     {
         laserMap.clear();
-
+        detectedWaveMap.clear();
+        detectedWaveMap.putAll(sensorStackMap);
+        sensorStackMap.clear();
         for(LaserInformation laser: new HashSet<>(laserDrawTimeMap.keySet()))
         {
             if(laserDrawTimeMap.get(laser) - delta > 0)
@@ -129,16 +138,14 @@ public class GamePanel extends JPanel {
         }
     }
 
-    public List<ElectroMagneticWave> detectEMWave(GameObject object, String code)
+    public List<ElectroMagneticWave> detectEMWave(GameObject object)
     {
-        List<ElectroMagneticWave> waves = sensorStackMap.getOrDefault(object, new ArrayList<>());
-        sensorStackMap.remove(object);
-        return waves;
+        return detectedWaveMap.getOrDefault(object, new ArrayList<>());
     }
 
     public Team newTeam()
     {
-        Team team = new Team("" + (teamDetectionObjectMap.size() + 1), UUID.randomUUID().toString());
+        Team team = new Team("" + (teamDetectionObjectMap.size() + 1));
         teamDetectionObjectMap.put(team, new ArrayList<>());
         return team;
     }

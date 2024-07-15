@@ -84,8 +84,8 @@ public class Environment extends JPanel{
         gamePanel.addWaveToSensor(object, wave);
     }
 
-    public List<ElectroMagneticWave> detectWave(GameObject object, String code) {
-        return gamePanel.detectEMWave(object, code);
+    public List<ElectroMagneticWave> detectWave(GameObject object) {
+        return gamePanel.detectEMWave(object);
     }
 
     public void updateGame(float delta)

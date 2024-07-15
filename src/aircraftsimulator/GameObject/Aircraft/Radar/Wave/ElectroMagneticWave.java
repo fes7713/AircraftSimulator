@@ -2,7 +2,7 @@ package aircraftsimulator.GameObject.Aircraft.Radar.Wave;
 
 import aircraftsimulator.Environment;
 import aircraftsimulator.GameMath;
-import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
+import aircraftsimulator.GameObject.Aircraft.CentralStrategy.CommunicationData;
 import aircraftsimulator.GameObject.Aircraft.Radar.RadarFrequency;
 import aircraftsimulator.GameObject.GameObject;
 import aircraftsimulator.GameObject.GameObjectInterface;
@@ -24,11 +24,10 @@ public class ElectroMagneticWave {
     private final double wavelength;
     private final Vector3f direction;
     private final float angle;
-    private final String code;
     private Color color;
 
     private boolean reflected;
-    private Data data;
+    private CommunicationData data;
 
     private double virtualRange;
     private double actualRange;
@@ -38,6 +37,9 @@ public class ElectroMagneticWave {
 
     private final static List<Color> colors = new ArrayList<>(){
         {
+            add(new Color(200, 200, 200));
+            add(new Color(200, 200, 200));
+            add(new Color(10, 10, 10));
             add(new Color(49,1,1));
             add(new Color(118,2,1));
             add(new Color(255,16,0));
@@ -52,7 +54,7 @@ public class ElectroMagneticWave {
         }
     };
 
-    public ElectroMagneticWave(GameObjectInterface parent, Vector3f position, double power, double frequency, Vector3f direction, float angle, String code) {
+    public ElectroMagneticWave(GameObjectInterface parent, Vector3f position, double power, double frequency, Vector3f direction, float angle) {
         this.parent = parent;
         this.position = new Vector3f(position);
         this.power = power;
@@ -60,23 +62,31 @@ public class ElectroMagneticWave {
         wavelength = LIGHT_SPEED / frequency;
         this.direction = direction;
         this.angle = angle;
-        this.code = code;
 
         color = ElectroMagneticWave.GenerateFrequencyColor(frequency);
         reflected = false;
     }
 
-    public ElectroMagneticWave(Vector3f position, double power, double frequency, Vector3f direction, float angle, String code) {
-        this(null, position, power, frequency, direction, angle, code);
+    public ElectroMagneticWave(Vector3f position, double power, double frequency, Vector3f direction, float angle) {
+        this(null, position, power, frequency, direction, angle);
     }
 
     public ElectroMagneticWave(ElectroMagneticWave wave, GameObjectInterface parent, double power) {
-        this(parent, parent.getPosition(), power, wave.frequency, new Vector3f(wave.position), wave.angle, wave.code);
+        this(parent, parent.getPosition(), power, wave.frequency, new Vector3f(wave.position), wave.angle);
         reflected = true;
         direction.sub(parent.getPosition());
     }
 
+    public ElectroMagneticWave(GameObjectInterface parent, Vector3f position, double power, double frequency, Vector3f direction, float angle, CommunicationData data) {
+        this(parent, position, power, frequency, direction, angle);
+        this.data = data;
+        reflected = true;
+    }
 
+    public double getFrequency()
+    {
+        return frequency;
+    }
 
     public double getIntensity()
     {
@@ -107,7 +117,6 @@ public class ElectroMagneticWave {
             for(GameObject object: gameObjects)
             {
                 detect(object.getPosition(), wave -> {
-                    System.out.println("Detect");
                     if(reflected)
                         Environment.getInstance().addWaveToSensor(object, this);
                     else
@@ -153,21 +162,8 @@ public class ElectroMagneticWave {
         return color;
     }
 
-    public Data getData(String code) {
-        if(isSameCode(code))
-            return data;
-        else
-            return null;
-    }
-
-    public void setData(Data data)
-    {
-        this.data = data;
-    }
-
-    public boolean isSameCode(String code)
-    {
-        return this.code.equals(code);
+    public CommunicationData getData() {
+        return data;
     }
 
     public void draw(Graphics2D g2d)
@@ -181,8 +177,8 @@ public class ElectroMagneticWave {
     public static Color GenerateFrequencyColor(double frequency)
     {
         float colorPos = (float)((Math.log10(frequency) - Math.log10(RadarFrequency.MIN)) / (Math.log10(RadarFrequency.MAX) - Math.log10(RadarFrequency.MIN)));
-        int colorIndex = Math.max(Math.min((int)(colorPos * 10), 9), 0);
-        return mixColors(colors.get(colorIndex + 1), colors.get(colorIndex), Math.max(Math.min(colorPos * 10F - colorIndex, 1), 0));
+        int colorIndex = Math.max(Math.min((int)(colorPos * 13), 12), 0);
+        return mixColors(colors.get(colorIndex + 1), colors.get(colorIndex), Math.max(Math.min(colorPos * 13F - colorIndex, 1), 0));
     }
 
     private static Color mixColors(Color color1, Color color2, double percent){
@@ -191,10 +187,5 @@ public class ElectroMagneticWave {
         int greenPart = (int) (color1.getGreen()*percent + color2.getGreen()*inverse_percent);
         int bluePart = (int) (color1.getBlue()*percent + color2.getBlue()*inverse_percent);
         return new Color(redPart, greenPart, bluePart);
-    }
-
-    public static void main(String[] args)
-    {
-        ElectroMagneticWave emp = new ElectroMagneticWave(new Vector3f(0, 0, 0), 1000, RadarFrequency.Ku, new Vector3f(1, 0, 0), 60, "Aaa");
     }
 }

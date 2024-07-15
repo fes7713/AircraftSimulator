@@ -1,9 +1,12 @@
 package aircraftsimulator.GameObject.Aircraft.Radar;
 
 public class RadarFrequency {
-    public static final float G = 0.2F * 100; //200 MHz
-    public static final float P = 0.25F * 100;
-    public static final float L = 0.5F * 100;
+    public static final float MF = 0.0003F * 100; // 300kHz
+    public static final float HF = 0.003F * 100;
+    public static final float VHF = 0.03F * 100;
+    public static final float UHF = 0.3F * 100; //300 MHz
+    public static final float P = 0.5F * 100;
+    public static final float L = 1F * 100;
     public static final float S = 2F * 100; // 2 GHz
     public static final float C = 4F * 100;
     public static final float X = 8F * 100;
@@ -14,6 +17,6 @@ public class RadarFrequency {
     public static final float W = 75F * 100;  // 75 GHz
 
 
-    public static final float MIN = G;
+    public static final float MIN = MF;
     public static final float MAX = W;
 }

@@ -48,6 +48,11 @@ public class FragmentHandler implements Handler{
         adaptor.addDataReceiver(AckWindowSizeData.class, this::handleAckWindowSizeData);
     }
 
+    public boolean isIdle(int port)
+    {
+        return !fragmentStoreMap.containsKey(adaptor.getSessionId(port));
+    }
+
     public void sendData(int port, byte[][] stream) {
         String sessionId = adaptor.getSessionId(port);
         fragmentStoreMap.put(sessionId, stream);

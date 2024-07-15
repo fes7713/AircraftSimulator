@@ -1,5 +1,9 @@
 package aircraftsimulator.GameObject.Aircraft;
 
+import aircraftsimulator.GameObject.Aircraft.CentralStrategy.CommunicationData;
+import aircraftsimulator.GameObject.Aircraft.CentralStrategy.DirectionalCommunicationData;
+import aircraftsimulator.GameObject.Aircraft.CentralStrategy.IFFResult;
+import aircraftsimulator.GameObject.Aircraft.CentralStrategy.IFFSecretData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.*;
 import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
@@ -93,6 +97,19 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         networkComponent.addDataReceiver(ThrusterRequestAck.class, (data, port) -> {
             System.out.println(data.toString());
         });
+        networkComponent.addDataReceiver(CommunicationData.class, ((data, port) -> {
+            networkComponent.sendData(SystemPort.COMMUNICATION, data);
+        }));
+        networkComponent.addDataReceiver(DirectionalCommunicationData.class, ((data, port) -> {
+            networkComponent.sendData(SystemPort.COMMUNICATION, data);
+        }));
+        networkComponent.addDataReceiver(IFFSecretData.class, ((data, port) -> {
+            networkComponent.sendData(SystemPort.STRATEGY, data);
+        }));
+        networkComponent.addDataReceiver(IFFResult.class, ((data, port) -> {
+            networkComponent.sendData(SystemPort.STRATEGY, data);
+        }));
+
         Logger.Log_Filter = Logger.LogLevel.INFO;
     }
 

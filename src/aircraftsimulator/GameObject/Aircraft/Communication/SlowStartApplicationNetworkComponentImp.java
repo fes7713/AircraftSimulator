@@ -86,7 +86,8 @@ public class SlowStartApplicationNetworkComponentImp extends NetworkComponentImp
             byte[][] stream = new byte[fragmentedData.size()][];
             for(int i = 0; !fragmentedData.isEmpty(); i++)
                 stream[i] = fragmentedData.poll().fragmentedData();
-            fragmentHandler.sendData(port, stream);
+            if(fragmentHandler.isIdle(port))
+                fragmentHandler.sendData(port, stream);
             ProgressLogger.AddProgressData(sessionId, stream.length);
             System.out.println();
         }else{

@@ -13,8 +13,8 @@ public class NetworkImp implements Network{
     private final int networkSpeed;
 
     private final static int DEFAULT_NETWORK_SPEED = 4;
-    private final static int DEFAULT_QUEUE_SIZE = 7;
-    private final static int DEFAULT_FRAME_SIZE = 512;
+    private final static int DEFAULT_QUEUE_SIZE = 100;
+    private final static int DEFAULT_FRAME_SIZE = 1024;
 
     public NetworkImp(float updateInterval) {
         this.arpNetworkComponentMap = new HashMap<>();
