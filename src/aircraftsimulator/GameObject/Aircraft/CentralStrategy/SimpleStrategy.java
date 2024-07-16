@@ -49,14 +49,14 @@ public class SimpleStrategy extends Component {
     private final Map<String, TrackingNode> trackingMap;
     private final Map<String, Queue<TrackingNode>> trackingHistoryMap;
     private final Map<String, TrackingState> trackingStateMap;
-    private final Map<String, Float> iffStartedMap;
 
 
     private final NetworkComponent networkComponent;
-    private float iffTimeout;
     private final float trackingTimeout;
     private final float trackingSeparationDistance;
 
+    private final float iffTimeout;
+    private final float iffTravelTimoutMultipliplier;
 
     private static final float TRACKING_THRESHOLD = ElectroMagneticWave.LIGHT_SPEED * 5;
     private static final float TRACKING_TIMEOUT = 8;
@@ -64,7 +64,8 @@ public class SimpleStrategy extends Component {
     private static final int TRACKING_POINT_SIZE = 4;
     private static final int TRACKING_LOCK_SIZE = 10;
 
-    private static final float IFF_TIMEOUT = 15;
+    private static final float IFF_TIMEOUT = 15000;
+    private static final float IFF_TRAVEL_TIMOUT_MULTIPLIPLIER = 1.5F;
 
     private static final float COMMUNICATION_FREQUENCY = RadarFrequency.HF;
 
@@ -88,8 +89,8 @@ public class SimpleStrategy extends Component {
         trackingHistoryMap = new HashMap<>();
         trackingStateMap = new HashMap<>();
 
-        iffStartedMap = new HashMap<>();
         iffTimeout = IFF_TIMEOUT;
+        iffTravelTimoutMultipliplier = IFF_TRAVEL_TIMOUT_MULTIPLIPLIER;
 
         networkComponent.addDataReceiver(RadarData.class, (data, port) -> {
             processRadar(data.waves());
@@ -107,6 +108,8 @@ public class SimpleStrategy extends Component {
             if(trackingMap.containsKey(data.secret()))
             {
                 trackingStateMap.put(data.secret(), TrackingState.FRIENDLY);
+                networkComponent.removeTimeout(data.secret());
+                networkComponent.removeTimeout(data.secret() + "E");
             }
             Logger.Log(Logger.LogLevel.INFO, "IFF Result ACK [%s] [%s]".formatted(data.secret(), trackingMap.containsKey(data.secret()) ? "Friendly":"Enemy"), networkComponent.getMac(), SystemPort.STRATEGY);
         });
@@ -134,33 +137,40 @@ public class SimpleStrategy extends Component {
         {
             TrackingNode node = new TrackingNode(tempTracker.get(trackingId));
             Queue<TrackingNode> nodes = trackingHistoryMap.getOrDefault(trackingId, new ArrayDeque<>());
-            if(!trackingStateMap.containsKey(trackingId) || trackingStateMap.get(trackingId) == TrackingState.UNIDENTIFIED)
+            if(!trackingStateMap.containsKey(trackingId))
             {
-                if(!iffStartedMap.containsKey(trackingId))
-                    iffStartedMap.put(trackingId, Game.getGameTime());
-                if(Game.getGameTime() - iffStartedMap.get(trackingId) > iffTimeout)
-                {
+                trackingStateMap.put(trackingId, TrackingState.UNIDENTIFIED);
+                sendIFF(trackingId, node.getPosition());
+                networkComponent.registerTimeout(trackingId + "E", (long) (iffTimeout), s -> {
                     trackingStateMap.put(trackingId, TrackingState.ENEMY);
                     Logger.Log(Logger.LogLevel.INFO, "IFF No Respond Tracking ID [%s]".formatted(trackingId), networkComponent.getMac(), SystemPort.STRATEGY);
-                }
-                else
-                {
-                    trackingStateMap.put(trackingId, TrackingState.UNIDENTIFIED);
-                    networkComponent.sendData(SystemPort.STRATEGY,
-                            new DirectionalCommunicationData(
-                                    new IFFSecretData(trackingId, parent.getTeam().getPW(), parent.getPosition()),
-                                    COMMUNICATION_FREQUENCY,
-                                    node.getPosition(),
-                                    parent.getPosition()
-                            )
-                    );
-                    Logger.Log(Logger.LogLevel.INFO, "IFF Request to Tracking ID [%s]".formatted(trackingId), networkComponent.getMac(), SystemPort.STRATEGY);
-                }
+                    networkComponent.removeTimeout(trackingId);
+                    networkComponent.removeTimeout(trackingId + "E");
+                });
             }
             trackingMap.put(trackingId, node);
             nodes.add(node);
             trackingHistoryMap.put(trackingId, nodes);
         }
+    }
+
+    private void sendIFF(String trackingId, Vector3f trackingPosition)
+    {
+        networkComponent.sendData(SystemPort.STRATEGY,
+                new DirectionalCommunicationData(
+                        new IFFSecretData(trackingId, parent.getTeam().getPW(), parent.getPosition()),
+                        COMMUNICATION_FREQUENCY,
+                        trackingPosition,
+                        parent.getPosition()
+                )
+        );
+        Logger.Log(Logger.LogLevel.INFO, "IFF Request to Tracking ID [%s]".formatted(trackingId), networkComponent.getMac(), SystemPort.STRATEGY);
+        Vector3f diff = new Vector3f(trackingPosition);
+        diff.sub(parent.getPosition());
+        float expectedTime = diff.length() / ElectroMagneticWave.LIGHT_SPEED;
+        networkComponent.registerTimeout(trackingId, (long)(expectedTime * iffTravelTimoutMultipliplier * 1000), s -> {
+            sendIFF(trackingId, trackingMap.get(trackingId).getPosition());
+        });
     }
 
     private Map.Entry<String, Float> getClosestTrackingEntry(Vector3f position)
@@ -189,7 +199,8 @@ public class SimpleStrategy extends Component {
                 trackingStateMap.remove(id);
                 trackingMap.remove(id);
                 trackingHistoryMap.remove(id);
-                iffStartedMap.remove(id);
+                networkComponent.removeTimeout(id);
+                networkComponent.removeTimeout(id + "E");
             }
         }
     }

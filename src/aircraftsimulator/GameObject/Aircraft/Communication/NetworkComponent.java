@@ -32,4 +32,8 @@ public interface NetworkComponent extends DataReceiverSwitcher{
     void registerTimeout(int port, long timeout, Consumer<Integer> handler);
     void updateTimeout(int port, long timeout);
     void removeTimeout(int port);
+
+    void registerTimeout(String key, long timeout, Consumer<String> handler);
+    void updateTimeout(String key, long timeout);
+    void removeTimeout(String key);
 }

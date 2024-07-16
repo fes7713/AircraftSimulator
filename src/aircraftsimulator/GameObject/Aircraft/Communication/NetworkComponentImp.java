@@ -115,6 +115,21 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionHandler 
     }
 
     @Override
+    public void registerTimeout(String key, long timeout, Consumer<String> handler) {
+        timeoutManager.registerTimeout(key, Handler.class, timeout, (s, integer) -> handler.accept(key));
+    }
+
+    @Override
+    public void updateTimeout(String key, long timeout) {
+        timeoutManager.updateTimeout(key, Handler.class, timeout);
+    }
+
+    @Override
+    public void removeTimeout(String key) {
+        timeoutManager.removeTimeout(key);
+    }
+
+    @Override
     public void update(float delta) {
         if(timeClock < 0)
         {
