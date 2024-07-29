@@ -14,8 +14,11 @@ import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class GameObject implements GameObjectInterface, SenderInterface, ReflectionInterface {
+    private final String id;
+
     protected final Team team;
     protected GameObject parent;
     protected final Vector3f position;
@@ -29,6 +32,8 @@ public class GameObject implements GameObjectInterface, SenderInterface, Reflect
 
     public GameObject(Team team, Vector3f position, Color color, float size)
     {
+        id = UUID.randomUUID().toString();
+
         this.team = team;
         this.position = position;
         this.color = color;
@@ -36,6 +41,11 @@ public class GameObject implements GameObjectInterface, SenderInterface, Reflect
         components = new ArrayList<>();
         router = new LocalRouter();
 //        surfaceRoughness = 0.5F;
+    }
+
+    @Override
+    public String getId() {
+        return id;
     }
 
     @Override

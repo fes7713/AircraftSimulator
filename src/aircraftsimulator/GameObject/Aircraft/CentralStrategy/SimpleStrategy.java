@@ -58,14 +58,14 @@ public class SimpleStrategy extends Component {
     private final float iffTimeout;
     private final float iffTravelTimoutMultipliplier;
 
-    private static final float TRACKING_THRESHOLD = ElectroMagneticWave.LIGHT_SPEED * 5;
-    private static final float TRACKING_TIMEOUT = 8;
+    private static final float TRACKING_THRESHOLD = ElectroMagneticWave.LIGHT_SPEED * 8;
+    private static final float TRACKING_TIMEOUT = 20;
     private static final Color TRACKING_POINT_COLOR = Color.WHITE;
     private static final int TRACKING_POINT_SIZE = 4;
     private static final int TRACKING_LOCK_SIZE = 10;
 
     private static final float IFF_TIMEOUT = 15000;
-    private static final float IFF_TRAVEL_TIMOUT_MULTIPLIPLIER = 1.5F;
+    private static final float IFF_TRAVEL_TIMEOUT_MULTIPLIER = 1.2F;
 
     private static final float COMMUNICATION_FREQUENCY = RadarFrequency.HF;
 
@@ -90,7 +90,7 @@ public class SimpleStrategy extends Component {
         trackingStateMap = new HashMap<>();
 
         iffTimeout = IFF_TIMEOUT;
-        iffTravelTimoutMultipliplier = IFF_TRAVEL_TIMOUT_MULTIPLIPLIER;
+        iffTravelTimoutMultipliplier = IFF_TRAVEL_TIMEOUT_MULTIPLIER;
 
         networkComponent.addDataReceiver(RadarData.class, (data, port) -> {
             processRadar(data.waves());

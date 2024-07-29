@@ -90,9 +90,13 @@ public class RadioEmitter extends Component implements RadarInterface{
         g2d.setColor(PaintDrawer.opacColor(color, 0.3F));
         Vector3f direction = ((MovingObjectInterface)parent).getDirection();
         Vector3f position = parent.getPosition();
+        double horizontalCos = GameMath.getCosAngleToHorizontal(direction);
         double centerAngle = GameMath.directionToAngle(new Vector2f(direction.x, direction.y)) % 360;
-        g2d.fillArc((int)(position.x - maxWaveRange), (int)(position.y - maxWaveRange), (int)(maxWaveRange * 2), (int)(maxWaveRange * 2), (int)(centerAngle - angle / 2), (int)angle);
-        g2d.fillArc((int)(position.x - maxDetectionRange), (int)(position.y - maxDetectionRange), (int)(maxDetectionRange * 2), (int)(maxDetectionRange * 2), (int)(centerAngle - angle / 2), (int)angle);
+
+        double rangeWaveOnScreen = horizontalCos * maxWaveRange;
+        double rangeDetectionOnScreen = horizontalCos * maxDetectionRange;
+        g2d.fillArc((int)(position.x - rangeWaveOnScreen), (int)(position.y - rangeWaveOnScreen), (int)(rangeWaveOnScreen * 2), (int)(rangeWaveOnScreen * 2), (int)(centerAngle - angle / 2), (int)angle);
+        g2d.fillArc((int)(position.x - rangeDetectionOnScreen), (int)(position.y - rangeDetectionOnScreen), (int)(rangeDetectionOnScreen * 2), (int)(rangeDetectionOnScreen * 2), (int)(centerAngle - angle / 2), (int)angle);
     }
 
     @Override

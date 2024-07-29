@@ -12,7 +12,6 @@ import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
 
 public class ElectroMagneticWave {
@@ -28,6 +27,8 @@ public class ElectroMagneticWave {
 
     private boolean reflected;
     private CommunicationData data;
+
+    private final List<GameObject> gameObjects;
 
     private double virtualRange;
     private double actualRange;
@@ -60,11 +61,14 @@ public class ElectroMagneticWave {
         this.power = power;
         this.frequency = frequency;
         wavelength = LIGHT_SPEED / frequency;
-        this.direction = direction;
+        this.direction = new Vector3f(direction);
         this.angle = angle;
 
         color = ElectroMagneticWave.GenerateFrequencyColor(frequency);
         reflected = false;
+
+        gameObjects = new ArrayList<>(Environment.getInstance().getObjects());
+        gameObjects.remove(parent);
     }
 
     public ElectroMagneticWave(Vector3f position, double power, double frequency, Vector3f direction, float angle) {
@@ -72,7 +76,7 @@ public class ElectroMagneticWave {
     }
 
     public ElectroMagneticWave(ElectroMagneticWave wave, GameObjectInterface parent, double power) {
-        this(parent, parent.getPosition(), power, wave.frequency, new Vector3f(wave.position), wave.angle);
+        this(parent, parent.getPosition(), power, wave.frequency, wave.position, wave.angle);
         reflected = true;
         direction.sub(parent.getPosition());
     }
@@ -97,6 +101,11 @@ public class ElectroMagneticWave {
         return reflected;
     }
 
+    public void addObject(GameObject gameObject)
+    {
+        gameObjects.add(gameObject);
+    }
+
     public void update(float delta)
     {
         actualRange += LIGHT_SPEED * delta;
@@ -111,12 +120,9 @@ public class ElectroMagneticWave {
 
         if(nextRange - virtualRange > wavelength)
         {
-            Set<GameObject> gameObjects = Environment.getInstance().getObjects();
-            gameObjects.remove(parent);
-
-            for(GameObject object: gameObjects)
+            for(GameObject object: new ArrayList<>(gameObjects))
             {
-                detect(object.getPosition(), wave -> {
+                detect(object, wave -> {
                     if(reflected)
                         Environment.getInstance().addWaveToSensor(object, this);
                     else
@@ -127,16 +133,15 @@ public class ElectroMagneticWave {
         }
     }
 
-    public void detect(Vector3f position, Consumer<ElectroMagneticWave> waveConsumer) {
-        Vector3f diff = new Vector3f(position);
+    public void detect(GameObject object, Consumer<ElectroMagneticWave> waveConsumer) {
+        Vector3f diff = new Vector3f(object.getPosition());
         diff.sub(this.position);
         float length = diff.length();
 
-        if(virtualRange < length && length < nextRange)
+        if(length < nextRange)
         {
-            float angleCos = direction.dot(diff) / direction.length() / length;
-            boolean detected = angleCos > Math.cos(Math.toRadians(angle / 2));
-            if(detected)
+            gameObjects.remove(object);
+            if(GameMath.isWithinAngle(direction, diff, length, angle / 2))
                 waveConsumer.accept(this);
         }
     }
@@ -169,7 +174,8 @@ public class ElectroMagneticWave {
     public void draw(Graphics2D g2d)
     {
         g2d.setColor(color);
-        double range = actualRange;
+        double horizontalCos = GameMath.getCosAngleToHorizontal(direction);
+        double range = actualRange * horizontalCos;
         double centerAngle = GameMath.directionToAngle(new Vector2f(direction.x, direction.y)) % 360;
         g2d.drawArc((int)(position.x - range), (int)(position.y - range), (int)(range * 2), (int)(range * 2), (int)(centerAngle - angle / 2), (int)angle);
     }

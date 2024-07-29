@@ -88,6 +88,11 @@ public class Environment extends JPanel{
         return gamePanel.detectEMWave(object);
     }
 
+    public Set<ElectroMagneticWave> getEMWaves()
+    {
+        return gamePanel.getEMWaves();
+    }
+
     public void updateGame(float delta)
     {
         gamePanel.update(delta);

@@ -8,8 +8,6 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.*;
 import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
 import aircraftsimulator.GameObject.Aircraft.Communication.*;
-import aircraftsimulator.GameObject.Aircraft.FlightController.FlightControllerInterface;
-import aircraftsimulator.GameObject.Aircraft.FlightController.SimpleFlightController;
 import aircraftsimulator.GameObject.Aircraft.Radar.RadarData;
 import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.ThrusterLevel;
@@ -25,13 +23,12 @@ import javax.vecmath.Vector3f;
 import java.awt.*;
 import java.util.List;
 
-public class Aircraft extends DestructibleMovingObject implements AircraftInterface, ReceiverInterface, SenderInterface, Cloneable, GuideNetwork {
+public class Aircraft extends DestructibleMovingObject implements AircraftInterface, ReceiverInterface, SenderInterface, Cloneable, GuideNetwork, AircraftController {
     private float angularSpeed;
     private float angularAcceleration;
     private final float angularAccelerationMagnitude;
     private final float maxG;
 
-    protected final FlightControllerInterface flightControl;
     protected Thruster thruster;
 
     private final Network network;
@@ -68,22 +65,12 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 //                addComponent(c.clone());
 //    }
 
-    public Aircraft(Team team, Vector3f position, Color color, float size, float health) {
-        this(team, new SimpleFlightController(FLIGHT_CONTROLLER_INTERVAL), position, color, size, health);
-    }
-
-    public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Color color, float size, float health){
-        this(team, fci, position, new Vector3f(-1 , -1, 0), color, size, health);
-    }
-
-    public Aircraft(Team team, FlightControllerInterface fci, Vector3f position, Vector3f velocity, Color color, float size, float health) {
+    public Aircraft(Team team, Vector3f position, Vector3f velocity, Color color, float size, float health) {
         super(team, position, velocity, color, size, health);
 
         network = new NetworkImp(0.01F);
         networkComponent = new SlowStartApplicationNetworkComponentImp(network, 0.01F);
 
-        flightControl = fci;
-        fci.setParent(this);
         angularSpeed = 0;
         angularAcceleration = ANGULAR_ACCELERATION;
         angularAccelerationMagnitude = ANGULAR_ACCELERATION;
@@ -109,6 +96,9 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         networkComponent.addDataReceiver(IFFResult.class, ((data, port) -> {
             networkComponent.sendData(SystemPort.STRATEGY, data);
         }));
+        networkComponent.addDataReceiver(IFFResult.class, ((data, port) -> {
+            networkComponent.sendData(SystemPort.STRATEGY, data);
+        }));
 
         Logger.Log_Filter = Logger.LogLevel.INFO;
     }
@@ -116,23 +106,11 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     public void update(float delta)
     {
         network.update(delta);
-        angularAcceleration = 0;
 
-        flightControl.update(delta);
-
-        angularAcceleration = flightControl.calculateAngularAcceleration(delta);
         angularSpeed += angularAcceleration * delta;
 
         if(angularSpeed < 0.00000001F)
             angularSpeed = 0;
-        float angle = angularSpeed * delta;
-
-        if(angle != 0) {
-            Vector3f directionNew = flightControl.rotatedDirection(angle);
-            direction.set(directionNew);
-        }
-
-        flightControl.calculateLinearAcceleration(delta);
 
         super.update(delta);
     }
@@ -140,20 +118,19 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     @Override
     public void draw(Graphics2D g2d) {
         super.draw(g2d);
-        flightControl.draw(g2d);
+//        flightControl.draw(g2d);
         Vector2f direction2D = new Vector2f(direction.x, direction.y);
         direction2D.normalize();
         direction2D.scale(size);
         g2d.drawLine((int)position.x, (int)position.y, (int)(position.x + direction2D.x), (int)(position.y + direction2D.y));
-        String text = String.format("Height : %.5f\nThruster : %.5f\nFuel : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f\nTarget Angle : %.5f",
+        String text = String.format("Height : %.5f\nThruster : %.5f\nFuel : %.5f\nSpeed : %.5f\nAngular Speed : %.5f\nAngular Acceleration : %.5f\nG : %.5f",
                 position.z,
                 thruster.getMagnitude(),
                 thruster.getFuel(),
                 velocity.length(),
                 angularSpeed,
                 angularAcceleration,
-                velocity.length() * angularSpeed,
-                flightControl.getTargetAngle());
+                velocity.length() * angularSpeed);
         int y = (int)(position.y - 5);
         for (String line : text.split("\n"))
             g2d.drawString(line, (int)position.x + 5, y += g2d.getFontMetrics().getHeight());
@@ -200,7 +177,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         removeComponent(this.thruster);
         this.thruster = thruster;
         addComponent(thruster, SystemPort.THRUSTER, new ThrusterRequest(ThrusterLevel.MAX));
-        flightControl.configurationChanged();
     }
 
     @Override
@@ -263,7 +239,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 
     @Override
     public void receive(@Nullable Information information) {
-        flightControl.setTarget(information);
     }
 
     @Override
@@ -288,5 +263,20 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     public Network getNetwork()
     {
         return network;
+    }
+
+    @Override
+    public void setAngularAcceleration(float acceleration) {
+        angularAcceleration = acceleration;
+    }
+
+    @Override
+    public void setAngularSpeed(float speed) {
+        angularSpeed = speed;
+    }
+
+    @Override
+    public void setDirection(Vector3f direction) {
+        this.direction.set(direction);
     }
 }

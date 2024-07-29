@@ -6,6 +6,8 @@ import aircraftsimulator.GameObject.Component.Component;
 import java.awt.*;
 
 public interface GameObjectInterface extends PositionnInterface{
+    String getId();
+
     Team getTeam();
     Color getColor();
     void setParent(GameObject parent);
