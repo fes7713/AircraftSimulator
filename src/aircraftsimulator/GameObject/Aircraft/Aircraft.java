@@ -132,6 +132,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
                 angularAcceleration,
                 velocity.length() * angularSpeed);
         int y = (int)(position.y - 5);
+        g2d.setFont(new Font("Arial", Font.PLAIN, 12));
         for (String line : text.split("\n"))
             g2d.drawString(line, (int)position.x + 5, y += g2d.getFontMetrics().getHeight());
 

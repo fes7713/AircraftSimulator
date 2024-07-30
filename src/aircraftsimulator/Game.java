@@ -42,4 +42,8 @@ public class Game {
     public static float getGameTime() {
         return frames * frameTime;
     }
+    public static float getGameFrameTime()
+    {
+        return frameTime;
+    }
 }

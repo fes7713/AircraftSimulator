@@ -34,7 +34,7 @@ public class ElectroMagneticWave {
     private double actualRange;
     private double nextRange;
 
-    public final static float LIGHT_SPEED = 30;
+    public final static float LIGHT_SPEED = 300;
 
     private final static List<Color> colors = new ArrayList<>(){
         {

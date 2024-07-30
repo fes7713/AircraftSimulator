@@ -1,5 +1,6 @@
 package aircraftsimulator.GameObject.Aircraft.FlightController.v2;
 
+import aircraftsimulator.GameMath;
 import aircraftsimulator.GameObject.Aircraft.Aircraft;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Network;
@@ -11,7 +12,6 @@ import aircraftsimulator.GameObject.GameObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.vecmath.Matrix3f;
 import javax.vecmath.Vector3f;
 import java.awt.*;
 
@@ -108,25 +108,7 @@ public class SimpleFlightController extends FlightControlV2 {
         Vector3f direction = parent.getDirection();
         Vector3f destinationVector = new Vector3f(target);
         destinationVector.sub(parent.getPosition());
-        Vector3f n = new Vector3f();
-        n.cross(direction, destinationVector);
-        if(n.lengthSquared() == 0)
-            n.set(0, 0, 1);
-        n.normalize();
-        Matrix3f rotationMatrix = new Matrix3f(
-                n.x * n.x, n.x * n.y, n.x * n.z,
-                n.y * n.x, n.y * n.y, n.y * n.z,
-                n.z * n.x, n.z * n.y, n.z * n.z);
-        rotationMatrix.mul((float)(1 - Math.cos(radian)));
-        rotationMatrix.add(new Matrix3f(
-                (float)Math.cos(radian), (float)(- n.z * Math.sin(radian)), (float)(n.y * Math.sin(radian)),
-                (float)(n.z * Math.sin(radian)), (float)Math.cos(radian), (float)(-n.x * Math.sin(radian)),
-                (float)(- n.y * Math.sin(radian)), (float)(n.x * Math.sin(radian)), (float)Math.cos(radian))
-        );
-        Vector3f r = new Vector3f();
-        rotationMatrix.transform(direction, r);
-        r.normalize();
-        return r;
+        return GameMath.rotatedDirection(radian, direction, destinationVector);
     }
 
     public float getTargetAngle() {

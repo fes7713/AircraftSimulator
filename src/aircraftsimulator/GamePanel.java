@@ -63,7 +63,7 @@ public class GamePanel extends JPanel {
 //        }));
         aircraftAcc.setThruster(new SimpleThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE, Aircraft.THRUSTER_FUEL));
         aircraftAcc.addComponent(new SimpleFlightController(aircraftAcc, aircraftAcc.getNetwork()), SystemPort.FLIGHT_CONTROL, new PositionData(new Vector3f(1000, 1000, 100)));
-        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.C, 2000, 500000, 0.2F, 1), SystemPort.SEARCH_RADAR, new ConnectRequest());
+        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.C, 400, 500000, 0.2F, 1), SystemPort.SEARCH_RADAR, new ConnectRequest());
         aircraftAcc.addComponent(new RadioCommunicator(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.L, 500000, 1F, 1), SystemPort.COMMUNICATION, new ConnectRequest());
         aircraftAcc.addComponent(new SimpleStrategy(aircraftAcc, aircraftAcc.getNetwork()), SystemPort.STRATEGY, new ConnectRequest());
 
