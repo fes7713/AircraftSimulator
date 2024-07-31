@@ -173,10 +173,10 @@ public class SimpleStrategy extends Component {
             else
             {
                 Vector3f velocity = GameMath.getVelocityVector(tempTracker.get(trackingId), nodes.getLast().getPosition(), waves.get(0).getCreated() - nodes.getLast().getCreated());
-                        node = new TrackingNode(tempTracker.get(trackingId),
-                        velocity,
-                        GameMath.getAccelerationVector(velocity, nodes.getLast().getVelocity(), waves.get(0).getCreated() - nodes.getLast().getCreated())
-                        , 0, waves.get(0).getCreated());
+                Vector3f acceleration = GameMath.getAccelerationVector(velocity, nodes.getLast().getVelocity(), waves.get(0).getCreated() - nodes.getLast().getCreated());
+                node = new TrackingNode(tempTracker.get(trackingId),
+                        velocity, acceleration
+                        , acceleration.length() / velocity.length(), waves.get(0).getCreated());
             }
 
             if(!trackingStateMap.containsKey(trackingId))
@@ -272,8 +272,7 @@ public class SimpleStrategy extends Component {
                 nodes.remove(0);nodes.remove(0);
 
                 acceleration = new Vector3f(nodes.get(nodes.size() - 1).getVelocity());
-                angularSpeed = GameMath.additiveAverage(nodes.stream().map(trackingNode -> trackingNode.getAcceleration().length()).collect(Collectors.toList()))
-                        / velocity.length();
+                angularSpeed = GameMath.additiveAverage(nodes.stream().map(TrackingNode::getAngularSpeed).collect(Collectors.toList()));
                 targetDirection.set(nodes.get(0).getVelocity());
                 targetDirection.negate();
             }
@@ -289,15 +288,15 @@ public class SimpleStrategy extends Component {
                 futurePositionTrackingHistoryMap.get(id).clear();
             }
 
-            System.out.println(angularSpeed);
             for(int i = 0; i < 20; i++)
             {
-                if(angularSpeed >= 0.00000001F)
+                if(angularSpeed >= 0.000001F)
                 {
                     float radian = angularSpeed * timeDiff;
                     Vector3f newVelocity = GameMath.rotatedDirection(radian, velocity, targetDirection);
                     newVelocity.normalize();
                     newVelocity.scale(velocity.length());
+                    acceleration.set(GameMath.getAccelerationVector(newVelocity, velocity, timeDiff));
                     velocity.set(newVelocity);
                 }
                 Vector3f positionDiff = new Vector3f(velocity);
@@ -316,6 +315,7 @@ public class SimpleStrategy extends Component {
                     Vector3f newVelocity = GameMath.rotatedDirection(radian, velocity, targetDirection);
                     newVelocity.normalize();
                     newVelocity.scale(velocity.length());
+
                     Vector3f positionCurrent = new Vector3f(newVelocity);
                     positionCurrent.scale(timeDiffCurrent);
                     positionCurrent.add(position);
