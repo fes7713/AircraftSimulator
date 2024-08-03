@@ -24,6 +24,11 @@ public class PositionInformationImp implements PositionInformation{
     }
 
     @Override
+    public Vector3f getDirection() {
+        return null;
+    }
+
+    @Override
     public GameObjectInterface getSource() {
         return source;
     }

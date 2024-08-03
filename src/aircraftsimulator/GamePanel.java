@@ -55,15 +55,15 @@ public class GamePanel extends JPanel {
         Team C = newTeam();
         Aircraft aircraftAcc = new Aircraft(A,
                 new Vector3f(100, 100, 100),
-                new Vector3f(1, 0, 0), Color.ORANGE, 5, 100);
+                new Vector3f(1F, 0, 0), Color.ORANGE, 5, 100);
 
 //        aircraftAcc.setThruster(new VariableThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE * 2, 3600));
 //        aircraftAcc.addComponent(new SimpleRadar(aircraftAcc, 100, info -> {
 //            aircraftAcc.receive(info);
 //        }));
         aircraftAcc.setThruster(new SimpleThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE, Aircraft.THRUSTER_FUEL));
-        aircraftAcc.addComponent(new SimpleFlightController(aircraftAcc, aircraftAcc.getNetwork()), SystemPort.FLIGHT_CONTROL, new PositionData(new Vector3f(1000, 1000, 100)));
-        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.C, 400, 500000, 0.2F, 1), SystemPort.SEARCH_RADAR, new ConnectRequest());
+        aircraftAcc.addComponent(new SimpleFlightController(aircraftAcc, aircraftAcc.getNetwork()), SystemPort.FLIGHT_CONTROL, new PositionData(new Vector3f(1000, 1100, 100)));
+        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.C, 50, 100000, 45, 0.5F, 1), SystemPort.SEARCH_RADAR, new ConnectRequest());
         aircraftAcc.addComponent(new RadioCommunicator(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.L, 500000, 1F, 1), SystemPort.COMMUNICATION, new ConnectRequest());
         aircraftAcc.addComponent(new SimpleStrategy(aircraftAcc, aircraftAcc.getNetwork()), SystemPort.STRATEGY, new ConnectRequest());
 
@@ -77,8 +77,8 @@ public class GamePanel extends JPanel {
                 new Vector3f(2, 0, 0), Color.BLUE, 5, 100);
 
         aircraftAcc1.setThruster(new SimpleThruster(aircraftAcc1, Aircraft.THRUSTER_MAGNITUDE * 2, Aircraft.THRUSTER_FUEL));
-        aircraftAcc1.addComponent(new SimpleFlightController(aircraftAcc1, aircraftAcc1.getNetwork()), SystemPort.FLIGHT_CONTROL, new PositionData(new Vector3f(1000, 1000, 100)));
-        aircraftAcc1.addComponent(new AngleRadar(aircraftAcc1, aircraftAcc1.getNetwork(), RadarFrequency.C, 2000, 500000, 0.2F, 1), SystemPort.SEARCH_RADAR, new ConnectRequest());
+        aircraftAcc1.addComponent(new SimpleFlightController(aircraftAcc1, aircraftAcc1.getNetwork()), SystemPort.FLIGHT_CONTROL, new PositionData(new Vector3f(1000, 1100, 100)));
+        aircraftAcc1.addComponent(new AngleRadar(aircraftAcc1, aircraftAcc1.getNetwork(), RadarFrequency.C, 2000, 100000, 45, 0.5F, 1), SystemPort.SEARCH_RADAR, new ConnectRequest());
         aircraftAcc1.addComponent(new RadioCommunicator(aircraftAcc1, aircraftAcc1.getNetwork(), RadarFrequency.L, 500000, 1F, 1), SystemPort.COMMUNICATION, new ConnectRequest());
         aircraftAcc1.addComponent(new SimpleStrategy(aircraftAcc1, aircraftAcc1.getNetwork()), SystemPort.STRATEGY, new ConnectRequest());
 
@@ -105,7 +105,7 @@ public class GamePanel extends JPanel {
 //        aircraftAcc.addToNetwork(missile1);
 
 //        DestructibleStationaryObject target = new DestructibleStationaryObject(C, new Vector3f(100, 500, 100), Color.GREEN, 5, 100);
-        GameObject object = new GameObject(B, new Vector3f(600, 50, 50), Color.BLACK, 10);
+        GameObject object = new GameObject(B, new Vector3f(400 + 300, 100, 400), Color.BLACK, 10);
         Stream.of(aircraftAcc, aircraftAcc1, object).forEach(this::addObject);
 
 //        emWaves.add(new ElectroMagneticWave(new Vector3f(100, 100, 100), 5000, RadarFrequency.Ku, new Vector3f(1, 0, 0), 360, "AA"));

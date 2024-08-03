@@ -22,13 +22,17 @@ public class GameObject implements GameObjectInterface, SenderInterface, Reflect
     protected final Team team;
     protected GameObject parent;
     protected final Vector3f position;
+    protected final Vector3f direction;
     protected final Color color;
     protected final float size;
     protected final List<Component> components;
     protected final Router router;
 
     // 0 to 1
-    protected float surfaceRoughness = 1000;
+    protected float surfaceReflectance = 1000;
+
+    // 0 to 90 degrees
+    protected float surfaceRoughness = 90 / 1;
 
     public GameObject(Team team, Vector3f position, Color color, float size)
     {
@@ -36,6 +40,7 @@ public class GameObject implements GameObjectInterface, SenderInterface, Reflect
 
         this.team = team;
         this.position = position;
+        this.direction = new Vector3f(1, 0, 0);
         this.color = color;
         this.size = size;
         components = new ArrayList<>();
@@ -56,6 +61,11 @@ public class GameObject implements GameObjectInterface, SenderInterface, Reflect
     @Override
     public Vector3f getPosition() {
         return position;
+    }
+
+    @Override
+    public Vector3f getDirection() {
+        return direction;
     }
 
     @Override
@@ -106,7 +116,12 @@ public class GameObject implements GameObjectInterface, SenderInterface, Reflect
 
     @Override
     public float getRCS() {
-        return size * size * (float) Math.PI * surfaceRoughness;
+        return size * size * (float) Math.PI * surfaceReflectance;
+    }
+
+    @Override
+    public float getSurfaceRoughness() {
+        return surfaceRoughness;
     }
 
     @Override

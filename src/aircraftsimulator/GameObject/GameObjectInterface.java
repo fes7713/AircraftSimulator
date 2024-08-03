@@ -20,4 +20,5 @@ public interface GameObjectInterface extends PositionnInterface{
     Router getRouter();
 
     float getRCS();
+    float getSurfaceRoughness();
 }

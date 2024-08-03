@@ -76,7 +76,7 @@ public class ElectroMagneticWave {
     }
 
     public ElectroMagneticWave(ElectroMagneticWave wave, GameObjectInterface parent, double power) {
-        this(parent, parent.getPosition(), power, wave.frequency, wave.position, wave.angle);
+        this(parent, parent.getPosition(), power, wave.frequency, wave.position, parent.getSurfaceRoughness());
         reflected = true;
         direction.sub(parent.getPosition());
     }

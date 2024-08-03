@@ -3,6 +3,7 @@ package aircraftsimulator;
 import javax.vecmath.Matrix3f;
 import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
+import java.awt.*;
 import java.util.List;
 
 public class GameMath {
@@ -37,7 +38,7 @@ public class GameMath {
         return angleCos > Math.cos(Math.toRadians(angle));
     }
 
-    public static Vector3f rotatedDirection(float radian, Vector3f direction, Vector3f destinationVector)
+    public static Vector3f rotatedDirection(double radian, Vector3f direction, Vector3f destinationVector)
     {
         Vector3f n = new Vector3f();
         n.cross(direction, destinationVector);
@@ -93,9 +94,31 @@ public class GameMath {
         return valueSum / weightSum;
     }
 
+    public static Vector3f rotateUp90(Vector3f v)
+    {
+        float x2y2 = v.x * v.x + v.y * v.y;
+        float x2y2Sqrt = (float)Math.sqrt(x2y2);
+        return new Vector3f(-v.z * v.x / x2y2Sqrt,- v.z * v.y / x2y2Sqrt, x2y2Sqrt);
+    }
+
+    public static void drawArc(Graphics2D g2d, Vector3f position, double range, int startAngle, int totalAngle)
+    {
+        g2d.drawLine((int)(position.x), (int)(position.y), (int)(position.x + range * Math.cos(Math.toRadians(startAngle + totalAngle))), (int)(position.y - range * Math.sin(Math.toRadians(startAngle + totalAngle))));
+        g2d.drawLine((int)(position.x), (int)(position.y), (int)(position.x + range * Math.cos(Math.toRadians(startAngle))), (int)(position.y - range * Math.sin(Math.toRadians(startAngle))));
+
+        g2d.drawArc((int)(position.x - range), (int)(position.y - range), (int)(range * 2), (int)(range * 2), (startAngle), totalAngle);
+    }
+
     public static void main(String[] argv)
     {
         System.out.println(GameMath.directionToAngle(new Vector2f(1, 1.5F)));
         System.out.println(GameMath.sphereAreaForAngle(1, Math.toRadians(180)));
+
+        Vector3f v = new Vector3f(-2, -3, -1);
+        Vector3f vr = GameMath.rotateUp90(v);
+        System.out.println(vr);
+        System.out.println(vr.dot(v));
+        System.out.println(Math.atan(vr.y / vr.x));
+        System.out.println(Math.atan(v.y / v.x));
     }
 }

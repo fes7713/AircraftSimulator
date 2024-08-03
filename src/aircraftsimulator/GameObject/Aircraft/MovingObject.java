@@ -10,7 +10,6 @@ import java.util.List;
 
 public class MovingObject extends GameObject implements MovingObjectInterface, Spawnable {
     protected final Vector3f velocity;
-    protected final Vector3f direction;
     protected float minimumSpeed;
 
     protected final AirResistance airResistance;
@@ -32,7 +31,7 @@ public class MovingObject extends GameObject implements MovingObjectInterface, S
         super(team, position, color, size);
         airResistance = new AirResistance(this, airResistanceCoefficient);
         this.velocity = velocity;
-        direction = new Vector3f(velocity);
+        direction.set(new Vector3f(velocity));
         direction.normalize();
         minimumSpeed = MINIMUM_SPEED;
     }
@@ -60,11 +59,6 @@ public class MovingObject extends GameObject implements MovingObjectInterface, S
         for(ForceApplier force: forces)
             acceleration.add(force.generateForce());
         return acceleration;
-    }
-
-    public Vector3f getDirection()
-    {
-        return direction;
     }
 
     @Override

@@ -18,8 +18,10 @@ public class AngleRadar extends RadioEmitter implements RadarInterface{
 
     protected final long interval;
 
-    public AngleRadar(GameObject parent, Network network, float frequency, long interval, float power, float antennaDiameter, float detectionSNR) {
-        super(parent, network, frequency, power, antennaDiameter, detectionSNR);
+    protected RadarMode mode;
+
+    public AngleRadar(GameObject parent, Network network, float frequency, long interval, float power, float radarMaxAngle, float antennaDiameter, float detectionSNR) {
+        super(parent, network, frequency, power, radarMaxAngle, antennaDiameter, detectionSNR);
 
         this.interval = interval;
         networkComponent = new SlowStartApplicationNetworkComponentImp(network){
@@ -27,6 +29,13 @@ public class AngleRadar extends RadioEmitter implements RadarInterface{
             public void handleConnectionEstablished(String sessionId, Integer port) {
                 super.handleConnectionEstablished(sessionId, port);
                 networkComponent.registerTimeout(SystemPort.SEARCH_RADAR, 1000, p -> {
+                    if(!setHorizontalAngle(radarHorizontalAngle - beamAngle))
+                    {
+                        setHorizontalAngle(360);
+                        System.out.println(radarVerticalAngle);
+                        if(!setVerticalAngle(radarVerticalAngle - beamAngle))
+                            setVerticalAngle(360);
+                    }
                     illuminate();
                     networkComponent.updateTimeout(p, interval);
                 });
@@ -35,7 +44,7 @@ public class AngleRadar extends RadioEmitter implements RadarInterface{
         networkComponent.openPort(SystemPort.SEARCH_RADAR);
         networkComponent.enabledPortTransfer(SystemPort.SEARCH_RADAR);
 
-        System.out.println("[%s] %s:%f, %s:%f".formatted("AngleRadar", "Angle", angle, "Gain", gain) );
+        System.out.println("[%s] %s:%f, %s:%f".formatted("AngleRadar", "Angle", beamAngle, "Gain", gain) );
     }
 
     protected void detect() {

@@ -21,20 +21,20 @@ public class RadioCommunicator extends RadioEmitter implements RadarInterface{
     protected final NetworkComponent networkComponent;
 
     public RadioCommunicator(GameObject parent, Network network, float frequency, float power, float antennaDiameter, float detectionSNR) {
-        super(parent, network, frequency, power, antennaDiameter, detectionSNR);
+        super(parent, network, frequency, power, 360, antennaDiameter, detectionSNR);
         networkComponent = new SlowStartApplicationNetworkComponentImp(network);
 
         networkComponent.openPort(SystemPort.COMMUNICATION);
         networkComponent.enabledPortTransfer(SystemPort.COMMUNICATION);
 
         networkComponent.addDataReceiver(CommunicationData.class, (data, port) -> {
-            Environment.getInstance().addPulseWave(new ElectroMagneticWave(parent, parent.getPosition(), power * gain, frequency, ((MovingObjectInterface)parent).getDirection(), angle, data));
+            Environment.getInstance().addPulseWave(new ElectroMagneticWave(parent, parent.getPosition(), power * gain, frequency, ((MovingObjectInterface)parent).getDirection(), beamAngle, data));
             Logger.Log(Logger.LogLevel.INFO, "Wireless communication [%s]".formatted(data), networkComponent.getMac(), 0);
         });
         networkComponent.addDataReceiver(DirectionalCommunicationData.class, (data, port) -> {
             Vector3f direction = new Vector3f(data.getTarget());
             direction.sub(data.getSource());
-            Environment.getInstance().addPulseWave(new ElectroMagneticWave(parent, parent.getPosition(), power * gain, frequency, direction, angle, data.communicationData()));
+            Environment.getInstance().addPulseWave(new ElectroMagneticWave(parent, parent.getPosition(), power * gain, frequency, direction, beamAngle, data.communicationData()));
             Logger.Log(Logger.LogLevel.INFO, "Wireless communication [%s]".formatted(data), networkComponent.getMac(), 0);
         });
     }

@@ -3,7 +3,6 @@ package aircraftsimulator.GameObject.Aircraft.Radar.Radar;
 import aircraftsimulator.Environment;
 import aircraftsimulator.GameMath;
 import aircraftsimulator.GameObject.Aircraft.Communication.Network;
-import aircraftsimulator.GameObject.Aircraft.MovingObjectInterface;
 import aircraftsimulator.GameObject.Aircraft.Radar.Wave.ElectroMagneticWave;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.GameObject.GameObject;
@@ -15,11 +14,16 @@ import java.awt.*;
 
 public class RadioEmitter extends Component implements RadarInterface{
     protected GameObject parent;
+    protected Vector3f direction;
     protected final float power;
     protected final float frequency;
     protected final String code;
 
-    protected final float angle;
+    protected final float beamAngle;
+    protected final float radarMaxAngle;
+    protected float radarHorizontalAngle;
+    protected float radarVerticalAngle;
+
     protected final float gain;
     protected final Color color;
 
@@ -27,15 +31,25 @@ public class RadioEmitter extends Component implements RadarInterface{
     protected final double maxWaveRange;
     protected final double maxDetectionRange;
 
+    protected boolean active;
+
     private final double DEFAULT_RCS = 5 * 5 * Math.PI * 1000;
 
-    public RadioEmitter(GameObject parent, Network network, float frequency, float power, float antennaDiameter, float detectionSNR) {
+    public RadioEmitter(GameObject parent, Network network, float frequency, float power, float radarMaxAngle, float antennaDiameter, float detectionSNR) {
+        active = false;
+
         this.frequency = frequency;
         this.power = power;
         this.parent = parent;
+        direction = new Vector3f(parent.getDirection());
         code = parent.getTeam().getPW();
 
-        angle = AngleFromArea(antennaDiameter, frequency);
+        beamAngle = AngleFromArea(antennaDiameter, frequency);
+
+        this.radarMaxAngle = radarMaxAngle;
+        setVerticalAngle(0);
+        setHorizontalAngle(0);
+
         gain = calcGain();
         color = ElectroMagneticWave.GenerateFrequencyColor(frequency);
         System.out.println(calcEffectiveArea());
@@ -47,7 +61,7 @@ public class RadioEmitter extends Component implements RadarInterface{
 
     private float calcGain()
     {
-        return 52525F / angle / angle;
+        return 52525F / beamAngle / beamAngle;
     }
 
     private double calcEffectiveArea()
@@ -61,13 +75,14 @@ public class RadioEmitter extends Component implements RadarInterface{
 
     @Override
     public void illuminate() {
-        if (parent instanceof MovingObjectInterface m)
-        {
-//            environment.addLaser(new LaserInformation(new PositionInformationImp(parent, parent.getPosition()), frequency, power, m.getDirection(), angle, parent.getTeam().getTeamName(), PaintDrawer.radarColor), parent.getTeam());
-            Environment.getInstance().addPulseWave(new ElectroMagneticWave(parent, parent.getPosition(), power * gain, frequency,  m.getDirection(), angle));
-        }
-//        else
-//            environment.addLaser(new LaserInformation(new PositionInformationImp(parent, parent.getPosition()), frequency, power, new Vector3f(0, 0, 0), angle, parent.getTeam().getTeamName(), PaintDrawer.radarColor), parent.getTeam());
+        if(!active)
+            return;
+        Vector3f left = new Vector3f(- direction.y, direction.x, 0);
+        Vector3f up = GameMath.rotateUp90(direction);
+        Vector3f newDirection = GameMath.rotatedDirection(Math.toRadians(radarHorizontalAngle), direction, left);
+        Vector3f newDirection1 = GameMath.rotatedDirection(Math.toRadians(radarVerticalAngle), newDirection, up);
+
+        Environment.getInstance().addPulseWave(new ElectroMagneticWave(parent, parent.getPosition(), power * gain, frequency,  newDirection1, beamAngle));
     }
 
     @Override
@@ -81,22 +96,43 @@ public class RadioEmitter extends Component implements RadarInterface{
     }
 
     @Override
+    public boolean setHorizontalAngle(float angle) {
+        radarHorizontalAngle = Math.min(Math.max(angle, - radarMaxAngle / 2 + beamAngle / 2), radarMaxAngle / 2 - beamAngle / 2);
+        return angle == radarHorizontalAngle;
+    }
+
+    @Override
+    public boolean setVerticalAngle(float angle) {
+        radarVerticalAngle = Math.min(Math.max(angle, - radarMaxAngle / 2 + beamAngle / 2), radarMaxAngle / 2 - beamAngle / 2);
+        return angle == radarVerticalAngle;
+    }
+
+    @Override
     public void update(float delta) {
-        detect();
+        direction.set(parent.getDirection());
+        if(active)
+            detect();
     }
 
     @Override
     public void draw(Graphics2D g2d) {
         g2d.setColor(PaintDrawer.opacColor(color, 0.3F));
-        Vector3f direction = ((MovingObjectInterface)parent).getDirection();
         Vector3f position = parent.getPosition();
         double horizontalCos = GameMath.getCosAngleToHorizontal(direction);
-        double centerAngle = GameMath.directionToAngle(new Vector2f(direction.x, direction.y)) % 360;
+        Vector3f up = GameMath.rotateUp90(direction);
+        Vector3f radarDirection = GameMath.rotatedDirection(Math.toRadians(radarVerticalAngle), direction, up);
+        double horizontalRadarCos = GameMath.getCosAngleToHorizontal(radarDirection);
+        double radarCenterAngle = (GameMath.directionToAngle(new Vector2f(direction.x, direction.y)) - radarHorizontalAngle) % 360;
+
+        double radarLeftAngle = (GameMath.directionToAngle(new Vector2f(direction.x, direction.y)) - radarMaxAngle / 2) % 360;
 
         double rangeWaveOnScreen = horizontalCos * maxWaveRange;
-        double rangeDetectionOnScreen = horizontalCos * maxDetectionRange;
-        g2d.fillArc((int)(position.x - rangeWaveOnScreen), (int)(position.y - rangeWaveOnScreen), (int)(rangeWaveOnScreen * 2), (int)(rangeWaveOnScreen * 2), (int)(centerAngle - angle / 2), (int)angle);
-        g2d.fillArc((int)(position.x - rangeDetectionOnScreen), (int)(position.y - rangeDetectionOnScreen), (int)(rangeDetectionOnScreen * 2), (int)(rangeDetectionOnScreen * 2), (int)(centerAngle - angle / 2), (int)angle);
+        double rangeMaxDetection = horizontalCos * maxDetectionRange;
+        double rangeRange = horizontalRadarCos * maxDetectionRange;
+
+        GameMath.drawArc(g2d, position, rangeMaxDetection,(int) radarLeftAngle, (int)radarMaxAngle);
+        if(active)
+            g2d.fillArc((int)(position.x - rangeRange), (int)(position.y - rangeRange), (int)(rangeRange * 2), (int)(rangeRange * 2), (int)(radarCenterAngle - beamAngle / 2), (int) beamAngle);
     }
 
     @Override
