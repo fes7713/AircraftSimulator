@@ -7,6 +7,7 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Handler.Handler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
 import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
+import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutManager;
 import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutManagerImp;
 
@@ -117,6 +118,11 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionHandler 
     @Override
     public void registerTimeout(String key, long timeout, Consumer<String> handler) {
         timeoutManager.registerTimeout(key, Handler.class, timeout, (s, integer) -> handler.accept(key));
+    }
+
+    @Override
+    public void registerTimeout(String key, TimeoutInformation information) {
+        timeoutManager.registerTimeout(key, Handler.class, information);
     }
 
     @Override

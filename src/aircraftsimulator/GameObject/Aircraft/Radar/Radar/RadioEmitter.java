@@ -108,6 +108,11 @@ public class RadioEmitter extends Component implements RadarInterface{
     }
 
     @Override
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    @Override
     public void update(float delta) {
         direction.set(parent.getDirection());
         if(active)

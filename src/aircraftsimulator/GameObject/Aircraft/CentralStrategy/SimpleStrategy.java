@@ -7,6 +7,7 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
 import aircraftsimulator.GameObject.Aircraft.Communication.Network;
 import aircraftsimulator.GameObject.Aircraft.Communication.NetworkComponent;
 import aircraftsimulator.GameObject.Aircraft.Communication.SlowStartApplicationNetworkComponentImp;
+import aircraftsimulator.GameObject.Aircraft.Radar.Radar.TrackingRequest;
 import aircraftsimulator.GameObject.Aircraft.Radar.RadarData;
 import aircraftsimulator.GameObject.Aircraft.Radar.RadarFrequency;
 import aircraftsimulator.GameObject.Aircraft.Radar.Wave.ElectroMagneticWave;
@@ -15,6 +16,7 @@ import aircraftsimulator.GameObject.Aircraft.SystemPort;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.GameObject.GameObject;
 import aircraftsimulator.PaintDrawer;
+import aircraftsimulator.Trendline.PolyTrendLine;
 
 import javax.vecmath.Vector3f;
 import java.awt.*;
@@ -27,17 +29,11 @@ public class SimpleStrategy extends Component {
     private class TrackingNode implements Data
     {
         private final Vector3f position;
-        private final Vector3f velocity;
-        private final Vector3f acceleration;
-        private final float angularSpeed;
         private final float created;
 
-        public TrackingNode(Vector3f position, Vector3f velocity, Vector3f acceleration, float angularSpeed, float created)
+        public TrackingNode(Vector3f position, float created)
         {
             this.position = position;
-            this.velocity = velocity;
-            this.acceleration = acceleration;
-            this.angularSpeed = angularSpeed;
             this.created = created;
         }
 
@@ -46,29 +42,23 @@ public class SimpleStrategy extends Component {
             return position;
         }
 
-        public Vector3f getVelocity(){
-            return velocity;
-        }
-
-        public Vector3f getAcceleration()
-        {
-            return acceleration;
-        }
-
-        public float getAngularSpeed()
-        {
-            return angularSpeed;
-        }
-
         public float getCreated() {
             return created;
         }
+
+        @Override
+        public String toString() {
+            return String.format("%.4f,%.4f", position.x, position.y);
+        }
     }
+
+    private record TrackingInfo(float recordedTime, Vector3f acceleration, Vector3f velocity, Vector3f position, float angularSpeed) { }
 
     private final GameObject parent;
 
     private final Map<String, LinkedList<TrackingNode>> trackingHistoryMap;
     private final Map<String, TrackingState> trackingStateMap;
+    private final Map<String, TrackingInfo> trackingInfoMap;
 
     private final Map<String, TrackingNode> futurePositionTrackingMap;
     private final Map<String, LinkedList<TrackingNode>> futurePositionTrackingHistoryMap;
@@ -81,12 +71,12 @@ public class SimpleStrategy extends Component {
     private final float iffTravelTimoutMultipliplier;
 
     private static final float TRACKING_THRESHOLD = ElectroMagneticWave.LIGHT_SPEED * 8;
-    private static final float TRACKING_TIMEOUT = 20;
+    private static final float TRACKING_TIMEOUT = 50;
     private static final Color TRACKING_POINT_COLOR = Color.WHITE;
     private static final int TRACKING_POINT_SIZE = 4;
     private static final int TRACKING_LOCK_SIZE = 10;
 
-    private static final float FUTURE_PREDICTION_INTERVAL = 2F;
+    private static final float TRACKING_INTERVAL = 1.5F;
 
     private static final float IFF_TIMEOUT = 15000;
     private static final float IFF_TRAVEL_TIMEOUT_MULTIPLIER = 1.2F;
@@ -111,6 +101,7 @@ public class SimpleStrategy extends Component {
 
         trackingHistoryMap = new HashMap<>();
         trackingStateMap = new HashMap<>();
+        trackingInfoMap = new HashMap<>();
 
         futurePositionTrackingMap = new HashMap<>();
         futurePositionTrackingHistoryMap = new HashMap<>();
@@ -161,22 +152,59 @@ public class SimpleStrategy extends Component {
 
         for(String trackingId: tempTracker.keySet())
         {
-            LinkedList<TrackingNode> nodes = trackingHistoryMap.getOrDefault(trackingId, new LinkedList<>());
+            if(!trackingHistoryMap.containsKey(trackingId))
+                trackingHistoryMap.put(trackingId, new LinkedList<>());
+            LinkedList<TrackingNode> nodes = trackingHistoryMap.get(trackingId);
 
             TrackingNode node;
             if(nodes.size() == 0)
-                node = new TrackingNode(tempTracker.get(trackingId), null, null, 0, waves.get(0).getCreated());
+                node = new TrackingNode(tempTracker.get(trackingId), waves.get(0).getCreated());
             else if(nodes.size() == 1)
-                node = new TrackingNode(tempTracker.get(trackingId),
-                        GameMath.getVelocityVector(tempTracker.get(trackingId), nodes.get(0).getPosition(), waves.get(0).getCreated() - nodes.get(0).getCreated()),
-                        null, 0, waves.get(0).getCreated());
+                node = new TrackingNode(tempTracker.get(trackingId), waves.get(0).getCreated());
             else
             {
-                Vector3f velocity = GameMath.getVelocityVector(tempTracker.get(trackingId), nodes.getLast().getPosition(), waves.get(0).getCreated() - nodes.getLast().getCreated());
-                Vector3f acceleration = GameMath.getAccelerationVector(velocity, nodes.getLast().getVelocity(), waves.get(0).getCreated() - nodes.getLast().getCreated());
-                node = new TrackingNode(tempTracker.get(trackingId),
-                        velocity, acceleration
-                        , acceleration.length() / velocity.length(), waves.get(0).getCreated());
+                Vector3f velocity;
+                Vector3f acceleration;
+//                LinkedList<TrackingNode> samplingNodesNew = new LinkedList<>();
+//                LinkedList<TrackingNode> samplingNodesOld = new LinkedList<>();
+//
+//                Vector3f velocityNew = GameMath.getVelocityVector(tempTracker.get(trackingId), nodes.getLast().getPosition(), waves.get(0).getCreated() - nodes.getLast().getCreated());
+//                Vector3f accelerationNew = GameMath.getAccelerationVector(velocityNew, nodes.getLast().getVelocity(), waves.get(0).getCreated() - nodes.getLast().getCreated());
+//
+//                samplingNodesNew.add(new TrackingNode(tempTracker.get(trackingId),
+//                        velocityNew, accelerationNew, accelerationNew.length() / velocityNew.length(), waves.get(0).getCreated()));
+//
+//                for(int i = nodes.size() - 1; i >= 1; i--)
+//                {
+//                    if(waves.get(0).getCreated() - nodes.get(i).getCreated() > TRACKING_INTERVAL)
+//                        break;
+//                    else if(waves.get(0).getCreated() - nodes.get(i).getCreated() > TRACKING_INTERVAL / 2)
+//                        samplingNodesOld.add(nodes.get(i));
+//                    else
+//                        samplingNodesNew.add(nodes.get(i));
+//                }
+////                float angularSpeed;
+//                // Sampling
+//                if(!samplingNodesNew.isEmpty() && !samplingNodesOld.isEmpty())
+//                {
+//                    if(samplingNodesNew.size() < 3 || samplingNodesOld.size() < 3)
+//                    {
+//                        velocity = GameMath.getVelocityVector(tempTracker.get(trackingId), nodes.getLast().getPosition(), waves.get(0).getCreated() - nodes.getLast().getCreated());
+//                        acceleration = GameMath.getAccelerationVector(velocity, samplingNodesOld.getLast().getVelocity(), waves.get(0).getCreated() - nodes.getLast().getCreated());
+//                    }
+//                    else{
+//                        velocity = GameMath.vector3fAveraging(samplingNodesNew.stream().map(trackingNode -> trackingNode.velocity).toList());
+//                        acceleration = GameMath.getAccelerationVector(
+//                                velocity,
+//                                GameMath.vector3fAveraging(samplingNodesOld.stream().map(trackingNode -> trackingNode.velocity).toList()),
+//                                waves.get(0).getCreated() - samplingNodesOld.getLast().getCreated());
+//                    }
+//                }
+//                // Direct calc
+//                else{
+
+//                }
+                node = new TrackingNode(tempTracker.get(trackingId), waves.get(0).getCreated());
             }
 
             if(!trackingStateMap.containsKey(trackingId))
@@ -188,10 +216,20 @@ public class SimpleStrategy extends Component {
                     Logger.Log(Logger.LogLevel.INFO, "IFF No Respond Tracking ID [%s]".formatted(trackingId), networkComponent.getMac(), SystemPort.STRATEGY);
                     networkComponent.removeTimeout(trackingId);
                     networkComponent.removeTimeout(trackingId + "E");
+                    networkComponent.registerTimeout(trackingId + "T", 1000,  s1 -> {
+                        if(trackingInfoMap.containsKey(trackingId))
+                        {
+                            Vector3f position = getFuturePoints(trackingId, Arrays.asList(Game.getGameTime())).get(0);
+                            futurePositionTrackingMap.put(trackingId, new TrackingNode(position, Game.getGameTime()));
+                            networkComponent.sendData(SystemPort.STRATEGY, new TrackingRequest(s1, position));
+                        }
+                        networkComponent.updateTimeout(s1, 1000);
+                    });
                 });
             }
             nodes.add(node);
-            trackingHistoryMap.put(trackingId, nodes);
+            trackingUpdate(trackingId);
+
             if(!futurePositionTrackingHistoryMap.containsKey(trackingId))
                 futurePositionTrackingHistoryMap.put(trackingId, new LinkedList<>());
         }
@@ -218,6 +256,8 @@ public class SimpleStrategy extends Component {
 
     private Map.Entry<String, Float> getClosestTrackingEntry(Vector3f position)
     {
+//        TrackingNode currentNode = generateTrackPoint(futurePositionTrackingHistoryMap.get(trackingId), Game.getGameTime(), futurePositionTrackingHistoryMap.get(trackingId).getLast().getAngularSpeed());
+
         return trackingHistoryMap.entrySet()
                 .stream()
                 .collect(Collectors.toMap(e -> e.getKey(), e -> {
@@ -229,6 +269,175 @@ public class SimpleStrategy extends Component {
                 .stream()
                 .min(Map.Entry.comparingByValue(Comparator.comparingDouble(Float::doubleValue)))
                 .orElse(null);
+    }
+
+//    private TrackingNode generateTrackPoint(List<TrackingNode> nodes, float time, float angularSpeed)
+//    {
+//        int index = -1;
+//        for(int i = nodes.size() - 1; i >= 0; i--)
+//        {
+//            if(time - nodes.get(i).getCreated() > 0)
+//            {
+//                index = i;
+//                break;
+//            }
+//        }
+//
+//        if(index == -1)
+//        {
+//            System.err.println("Cannot predict past");
+//            return null;
+//        }
+//
+//        Vector3f targetDirection = new Vector3f();
+//        if(index > 10)
+//            targetDirection.set(nodes.get(index - 5).getVelocity());
+//        else
+//            targetDirection.set(nodes.get(0).getVelocity());
+//        targetDirection.negate();
+//
+//        Vector3f position = new Vector3f(nodes.get(index).getPosition());
+//        Vector3f velocity = new Vector3f(nodes.get(index).getVelocity());
+//
+//        float timeDiff = time  - nodes.get(index).getCreated();
+//        if(angularSpeed >= 0.000001F)
+//        {
+//            float radian = angularSpeed * timeDiff;
+//            Vector3f newVelocity = GameMath.rotatedDirection(radian, velocity, targetDirection);
+//            newVelocity.normalize();
+//            newVelocity.scale(velocity.length());
+//            velocity.set(newVelocity);
+//        }
+//        Vector3f positionDiff = new Vector3f(velocity);
+//        positionDiff.scale(timeDiff);
+//        position.add(positionDiff);
+//        return new TrackingNode(new Vector3f(position), new Vector3f(velocity), new Vector3f(0, 0, 0), angularSpeed, time);
+//    }
+
+    private void trackingUpdate(String id)
+    {
+        if(trackingHistoryMap.get(id).size() <= 2)
+            return;
+
+        LinkedList<TrackingNode> nodes = new LinkedList<>(trackingHistoryMap.get(id));
+
+        LinkedList<TrackingNode> samplingNodes = new LinkedList<>();
+        for(int i = nodes.size() - 1; i >= 0; i--)
+        {
+            if(nodes.getLast().getCreated() - nodes.get(i).getCreated() < TRACKING_INTERVAL * 3)
+                samplingNodes.add(nodes.get(i));
+        }
+
+
+        float angularSpeed;
+        synchronized (futurePositionTrackingHistoryMap)
+        {
+            futurePositionTrackingHistoryMap.get(id).clear();
+        }
+        if(samplingNodes.size() < 2) {
+            return;
+        }
+        if(samplingNodes.size() < 4){
+            angularSpeed = 0;
+            Vector3f acceleration = new Vector3f(0, 0, 0);
+            Vector3f velocity = new Vector3f(samplingNodes.getLast().getPosition());
+            velocity.sub(samplingNodes.get(samplingNodes.size() - 2).getPosition());
+            velocity.scale(1 / (samplingNodes.getLast().getCreated() - samplingNodes.get(samplingNodes.size() - 2).getCreated()));
+            trackingInfoMap.put(id, new TrackingInfo(samplingNodes.getLast().getCreated(), acceleration, velocity, samplingNodes.getLast().getPosition(), 0));
+        }
+        else
+        {
+            System.out.println("Tracking size " + samplingNodes.size());
+            double[] t = new double[samplingNodes.size()];
+            double[] x = new double[samplingNodes.size()];
+            double[] y = new double[samplingNodes.size()];
+            double[] z = new double[samplingNodes.size()];
+
+            for (int i = 0; i < samplingNodes.size(); i++)
+            {
+                t[i] = trackingHistoryMap.get(id).get(trackingHistoryMap.get(id).size() - i - 1).getCreated();
+                x[i] = trackingHistoryMap.get(id).get(trackingHistoryMap.get(id).size() - i - 1).getPosition().x;
+                y[i] = trackingHistoryMap.get(id).get(trackingHistoryMap.get(id).size() - i - 1).getPosition().y;
+                z[i] = trackingHistoryMap.get(id).get(trackingHistoryMap.get(id).size() - i - 1).getPosition().z;
+            }
+            PolyTrendLine trendLineX = new PolyTrendLine(2);
+            PolyTrendLine trendLineY = new PolyTrendLine(2);
+            PolyTrendLine trendLineZ = new PolyTrendLine(2);
+            trendLineX.setValues(x, t);
+            trendLineY.setValues(y, t);
+            trendLineZ.setValues(z, t);
+
+            double[] parametersX = trendLineX.getParameters().getColumn(0);
+            double[] parametersY = trendLineY.getParameters().getColumn(0);
+            double[] parametersZ = trendLineZ.getParameters().getColumn(0);
+
+            Vector3f currentPosition = new Vector3f(
+                (float)(parametersX[0] + parametersX[1] * Game.getGameTime() + parametersX[2] * Game.getGameTime() * Game.getGameTime()),
+                (float)(parametersY[0] + parametersY[1] * Game.getGameTime() + parametersY[2] * Game.getGameTime() * Game.getGameTime()),
+                (float)(parametersZ[0] + parametersZ[1] * Game.getGameTime() + parametersZ[2] * Game.getGameTime() * Game.getGameTime())
+            );
+            Vector3f currentVelocity = new Vector3f((float)(parametersX[1] + 2 * parametersX[2] * Game.getGameTime()), (float)(parametersY[1] + 2 * parametersY[2] * Game.getGameTime()), (float)(parametersZ[1] + 2 * parametersZ[2] * Game.getGameTime()));
+            Vector3f acceleration = new Vector3f((float)(2 * parametersX[2]), (float)(2 * parametersY[2]), (float)(2 * parametersZ[2]));
+
+            Vector3f accelerationCent = GameMath.getPerpendicularComponent(acceleration, currentVelocity);
+            angularSpeed = accelerationCent.length() / currentVelocity.length();
+            trackingInfoMap.put(id, new TrackingInfo(Game.getGameTime(), acceleration, currentVelocity, currentPosition, angularSpeed));
+        }
+
+        float timePassed = ((int)(Game.getGameTime() / TRACKING_INTERVAL)) * TRACKING_INTERVAL;
+        float shift = - (Game.getGameTime() - timePassed);
+
+        List<Float> times = new ArrayList<>();
+        for(int i = 0; i < 20; i++)
+            times.add(shift + i * TRACKING_INTERVAL + Game.getGameTime());
+
+        List<Vector3f> positions = getFuturePoints(id, times);
+
+        for (int i = 0; i < positions.size(); i++) {
+            TrackingNode node = new TrackingNode(positions.get(i), times.get(i));
+            futurePositionTrackingHistoryMap.get(id).add(node);
+        }
+
+//        TrackingNode latestNode = trackingHistoryMap.get(id).getLast();
+//
+//        float timeDiff = TRACKING_INTERVAL;
+//        float timePassed = ((int)(latestNode.getCreated() / timeDiff)) * timeDiff;
+//
+//        List<TrackingNode> trackingNodes = new ArrayList<>(nodes);
+//        trackingNodes.addAll(futurePositionTrackingHistoryMap.get(id));
+//        trackingNodes.sort((o1, o2) -> (int) Math.floor(o1.getCreated() - o2.getCreated()));
+//        for(int i = 0; i < 40; i++)
+//        {
+//            TrackingNode node = generateTrackPoint(trackingNodes, timePassed, angularSpeed);
+//
+//            if(node != null)
+//                futurePositionTrackingHistoryMap.get(id).add(node);
+//            else
+//                break;
+//
+//            timePassed += timeDiff;
+//            timeDiff = TRACKING_INTERVAL;
+//        }
+    }
+
+    public List<Vector3f> getFuturePoints(String id, List<Float> times)
+    {
+        TrackingInfo info = trackingInfoMap.get(id);
+        Vector3f accelerationCent = GameMath.getPerpendicularComponent(info.acceleration(), info.velocity());
+
+        List<Vector3f> positions = new ArrayList<>();
+        if(info.angularSpeed() > 0.001F) {
+            positions = GameMath.futurePos(info.position(), accelerationCent, info.velocity(), times, info.recordedTime());
+        }else {
+            for(int i = 0; i < times.size(); i++)
+            {
+                Vector3f position = new Vector3f(info.velocity());
+                position.scale(times.get(i) - info.recordedTime());
+                position.add(info.position());
+                positions.add(position);
+            }
+        }
+        return positions;
     }
 
     @Override
@@ -243,86 +452,31 @@ public class SimpleStrategy extends Component {
             if(trackingHistoryMap.get(id).isEmpty())
             {
                 trackingStateMap.remove(id);
+                trackingInfoMap.remove(id);
                 trackingHistoryMap.remove(id);
                 futurePositionTrackingMap.remove(id);
                 futurePositionTrackingHistoryMap.remove(id);
                 networkComponent.removeTimeout(id);
                 networkComponent.removeTimeout(id + "E");
+                networkComponent.removeTimeout(id + "T");
             }
         }
 
         for(String id: trackingHistoryMap.keySet())
         {
-            if(trackingHistoryMap.get(id).size() == 1)
-                continue;
-
-            Vector3f position = new Vector3f(trackingHistoryMap.get(id).getLast().getPosition());
-            Vector3f velocity = new Vector3f(trackingHistoryMap.get(id).getLast().getVelocity());
-            Vector3f acceleration = new Vector3f(0, 0, 0);
-            Vector3f targetDirection = new Vector3f();
-            float angularSpeed = 0;
-
-
-            if(trackingHistoryMap.get(id).size() == 2)
+            if(trackingHistoryMap.get(id).size() <= 2)
+                break;
+//            List<TrackingNode> trackingNodes = new ArrayList<>(trackingHistoryMap.get(id));
+//            trackingNodes.addAll(futurePositionTrackingHistoryMap.get(id));
+//            trackingNodes.sort((o1, o2) -> (int) Math.floor(o1.getCreated() - o2.getCreated()));
+//            trackingNodes.remove(0);
+//            float angularSpeed = GameMath.additiveAverage(trackingHistoryMap.get(id).stream().map(TrackingNode::getAngularSpeed).collect(Collectors.toList()));
+//
+//            futurePositionTrackingMap.put(id, generateTrackPoint(trackingNodes, Game.getGameTime(), angularSpeed));
+            if(trackingInfoMap.containsKey(id))
             {
-
-            }
-            else{
-                List<TrackingNode> nodes = new ArrayList<>(trackingHistoryMap.get(id));
-                nodes.remove(0);nodes.remove(0);
-
-                acceleration = new Vector3f(nodes.get(nodes.size() - 1).getVelocity());
-                angularSpeed = GameMath.additiveAverage(nodes.stream().map(TrackingNode::getAngularSpeed).collect(Collectors.toList()));
-                targetDirection.set(nodes.get(0).getVelocity());
-                targetDirection.negate();
-            }
-            TrackingNode latestNode = trackingHistoryMap.get(id).getLast();
-
-
-            float timeDiff = FUTURE_PREDICTION_INTERVAL;
-            float timePassed = ((int)(latestNode.getCreated() / timeDiff)) * timeDiff;
-            timeDiff = timePassed - latestNode.getCreated();
-
-            synchronized (futurePositionTrackingHistoryMap)
-            {
-                futurePositionTrackingHistoryMap.get(id).clear();
-            }
-
-            for(int i = 0; i < 20; i++)
-            {
-                if(angularSpeed >= 0.000001F)
-                {
-                    float radian = angularSpeed * timeDiff;
-                    Vector3f newVelocity = GameMath.rotatedDirection(radian, velocity, targetDirection);
-                    newVelocity.normalize();
-                    newVelocity.scale(velocity.length());
-                    acceleration.set(GameMath.getAccelerationVector(newVelocity, velocity, timeDiff));
-                    velocity.set(newVelocity);
-                }
-                Vector3f positionDiff = new Vector3f(velocity);
-                positionDiff.scale(timeDiff);
-                position.add(positionDiff);
-                TrackingNode node = new TrackingNode(new Vector3f(position), new Vector3f(velocity), new Vector3f(acceleration), angularSpeed, timePassed);
-                futurePositionTrackingHistoryMap.get(id).add(node);
-
-                timeDiff = FUTURE_PREDICTION_INTERVAL;
-
-
-                if(timePassed < Game.getGameTime() && timePassed + timeDiff > Game.getGameTime())
-                {
-                    float timeDiffCurrent =  Game.getGameTime() - timePassed;
-                    float radian = angularSpeed * timeDiffCurrent;
-                    Vector3f newVelocity = GameMath.rotatedDirection(radian, velocity, targetDirection);
-                    newVelocity.normalize();
-                    newVelocity.scale(velocity.length());
-
-                    Vector3f positionCurrent = new Vector3f(newVelocity);
-                    positionCurrent.scale(timeDiffCurrent);
-                    positionCurrent.add(position);
-                    futurePositionTrackingMap.put(id, new TrackingNode(positionCurrent, newVelocity, new Vector3f(acceleration), angularSpeed, Game.getGameTime()));
-                }
-
-                timePassed += timeDiff;
+                Vector3f position = getFuturePoints(id, Arrays.asList(Game.getGameTime())).get(0);
+                futurePositionTrackingMap.put(id, new TrackingNode(position, Game.getGameTime()));
             }
         }
 
@@ -352,7 +506,7 @@ public class SimpleStrategy extends Component {
                 (int)(centerPosition.x + size / 2F), (int)(centerPosition.y + size));
     }
 
-    private void drawTrackingNode(Graphics2D g2d, TrackingNode prevNode, TrackingNode node)
+    private void drawTrackingNode(Graphics2D g2d, String id, TrackingNode prevNode, TrackingNode node)
     {
         if(prevNode != null)
         {
@@ -361,7 +515,7 @@ public class SimpleStrategy extends Component {
         }
         g2d.fillOval((int)(node.getPosition().x - TRACKING_POINT_SIZE /2), (int)(node.getPosition().y - TRACKING_POINT_SIZE /2), (int)TRACKING_POINT_SIZE, (int)TRACKING_POINT_SIZE);
         g2d.setFont(new Font("Arial", Font.PLAIN, 4));
-        g2d.drawString(String.format("[%2.2f]%2.8f", node.getCreated(), node.getAngularSpeed()), (int)node.getPosition().x, (int)(node.getPosition().y));
+        g2d.drawString(String.format("[%2.2f]%2.8f", node.getCreated(), trackingInfoMap.containsKey(id) ? trackingInfoMap.get(id).angularSpeed() : 0), (int)node.getPosition().x, (int)(node.getPosition().y));
     }
 
     @Override
@@ -373,10 +527,10 @@ public class SimpleStrategy extends Component {
             {
                 Queue<TrackingNode> nodes = trackingHistoryMap.get(trackingId);
                 TrackingNode prevNode = null;
-                for(TrackingNode node: nodes)
+                for(TrackingNode node: new ArrayList<>(nodes))
                 {
                     g2d.setColor(PaintDrawer.opacColor(TRACKING_POINT_COLOR, 1 - (Game.getGameTime() - node.getCreated()) / trackingTimeout));
-                    drawTrackingNode(g2d, prevNode, node);
+                    drawTrackingNode(g2d, trackingId, prevNode, node);
                     prevNode = node;
                 }
             }
@@ -387,7 +541,7 @@ public class SimpleStrategy extends Component {
             drawLock(g2d, trackingHistoryMap.get(id).getLast().getPosition(), trackingStateMap.get(id).getColor(), 1 - (Game.getGameTime() - trackingHistoryMap.get(id).getLast().getCreated()) / trackingTimeout, TRACKING_LOCK_SIZE);
         }
 
-        float dash1[] = {FUTURE_PREDICTION_INTERVAL * 2, FUTURE_PREDICTION_INTERVAL};
+        float dash1[] = {TRACKING_INTERVAL * 2, TRACKING_INTERVAL};
         BasicStroke dsahStroke1 = new BasicStroke(1.0f,
                 BasicStroke.CAP_BUTT,
                 BasicStroke.JOIN_MITER,
@@ -405,7 +559,7 @@ public class SimpleStrategy extends Component {
                 TrackingNode prevNode = null;
                 for(int i = 0; i < nodes.size(); i++)
                 {
-                    drawTrackingNode(g2d, prevNode, nodes.get(i));
+                    drawTrackingNode(g2d, trackingId, prevNode, nodes.get(i));
                     prevNode = nodes.get(i);
                 }
             }

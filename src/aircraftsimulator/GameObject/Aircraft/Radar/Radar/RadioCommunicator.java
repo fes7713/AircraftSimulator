@@ -22,6 +22,7 @@ public class RadioCommunicator extends RadioEmitter implements RadarInterface{
 
     public RadioCommunicator(GameObject parent, Network network, float frequency, float power, float antennaDiameter, float detectionSNR) {
         super(parent, network, frequency, power, 360, antennaDiameter, detectionSNR);
+        setActive(true);
         networkComponent = new SlowStartApplicationNetworkComponentImp(network);
 
         networkComponent.openPort(SystemPort.COMMUNICATION);

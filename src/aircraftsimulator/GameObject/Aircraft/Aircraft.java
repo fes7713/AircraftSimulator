@@ -5,9 +5,13 @@ import aircraftsimulator.GameObject.Aircraft.CentralStrategy.DirectionalCommunic
 import aircraftsimulator.GameObject.Aircraft.CentralStrategy.IFFResult;
 import aircraftsimulator.GameObject.Aircraft.CentralStrategy.IFFSecretData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
+import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionEstablishedHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.*;
 import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
 import aircraftsimulator.GameObject.Aircraft.Communication.*;
+import aircraftsimulator.GameObject.Aircraft.Radar.Radar.RadarRequestAck;
+import aircraftsimulator.GameObject.Aircraft.Radar.Radar.SearchingRequest;
+import aircraftsimulator.GameObject.Aircraft.Radar.Radar.TrackingRequest;
 import aircraftsimulator.GameObject.Aircraft.Radar.RadarData;
 import aircraftsimulator.GameObject.Aircraft.Thruster.Thruster;
 import aircraftsimulator.GameObject.Aircraft.Thruster.ThrusterLevel;
@@ -99,6 +103,15 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         networkComponent.addDataReceiver(IFFResult.class, ((data, port) -> {
             networkComponent.sendData(SystemPort.STRATEGY, data);
         }));
+        networkComponent.addDataReceiver(SearchingRequest.class, ((data, port) -> {
+            networkComponent.sendData(SystemPort.SEARCH_RADAR, data);
+        }));
+        networkComponent.addDataReceiver(TrackingRequest.class, ((data, port) -> {
+            networkComponent.sendData(SystemPort.SEARCH_RADAR, data);
+        }));
+        networkComponent.addDataReceiver(RadarRequestAck.class, ((data, port) -> {
+            networkComponent.sendData(SystemPort.STRATEGY, data);
+        }));
 
         Logger.Log_Filter = Logger.LogLevel.INFO;
     }
@@ -178,6 +191,18 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         removeComponent(this.thruster);
         this.thruster = thruster;
         addComponent(thruster, SystemPort.THRUSTER, new ThrusterRequest(ThrusterLevel.MAX));
+    }
+
+    @Override
+    public void addComponent(Component component, int port, ConnectionEstablishedHandler handler) {
+        super.addComponent(component);
+
+        network.addToNetwork(thruster.getNetworkComponent());
+        networkComponent.openPort(port);
+        networkComponent.connect(port, p -> {
+            if(handler != null)
+                handler.established(port);
+        });
     }
 
     @Override
@@ -261,9 +286,15 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 //        return new Aircraft(this);
 //    }
 
+    @Override
     public Network getNetwork()
     {
         return network;
+    }
+
+    @Override
+    public NetworkComponent getNetworkComponent() {
+        return networkComponent;
     }
 
     @Override

@@ -7,4 +7,6 @@ public interface RadarInterface {
 
     boolean setHorizontalAngle(float angle);
     boolean setVerticalAngle(float angle);
+
+    void setActive(boolean active);
 }

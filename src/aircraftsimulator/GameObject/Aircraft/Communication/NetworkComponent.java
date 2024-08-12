@@ -2,6 +2,7 @@ package aircraftsimulator.GameObject.Aircraft.Communication;
 
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionEstablishedHandler;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.NetworkError.NetworkErrorType;
+import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutInformation;
 
 import java.io.Serializable;
 import java.util.function.Consumer;
@@ -34,6 +35,7 @@ public interface NetworkComponent extends DataReceiverSwitcher{
     void removeTimeout(int port);
 
     void registerTimeout(String key, long timeout, Consumer<String> handler);
+    void registerTimeout(String key, TimeoutInformation information);
     void updateTimeout(String key, long timeout);
     void removeTimeout(String key);
 }

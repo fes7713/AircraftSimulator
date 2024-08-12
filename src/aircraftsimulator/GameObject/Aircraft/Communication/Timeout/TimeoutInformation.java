@@ -28,9 +28,9 @@ public class TimeoutInformation
         this(sessionId, timeoutStartTime, 1, 0.0, 0.0, 1, timeoutHandler, retryTimeoutHandler);
     }
 
-    public TimeoutInformation(String sessionId, long timeoutStartTime, long timeoutRetryInterval, BiConsumer<String, Integer> timeoutHandler, Consumer<String> retryTimeoutHandler)
+    public TimeoutInformation(String sessionId, long timeoutStartTime, long timeoutRetryInterval, int retryMaxNum, BiConsumer<String, Integer> timeoutHandler, Consumer<String> retryTimeoutHandler)
     {
-        this(sessionId, timeoutStartTime, timeoutRetryInterval, TIMEOUT_POWER_MULTIPLIER, TIMEOUT_LINER_MULTIPLIER, RETRY_MAX_NUM, timeoutHandler, retryTimeoutHandler);
+        this(sessionId, timeoutStartTime, timeoutRetryInterval, TIMEOUT_POWER_MULTIPLIER, TIMEOUT_LINER_MULTIPLIER, retryMaxNum, timeoutHandler, retryTimeoutHandler);
     }
 
     public TimeoutInformation(String sessionId, long timeoutStartTime, long timeoutRetryInterval, double timeoutPowerMultiplier, double timeoutLinearMultiplier, int retryMaxNum, BiConsumer<String, Integer> timeoutHandler, Consumer<String> retryTimeoutHandler){

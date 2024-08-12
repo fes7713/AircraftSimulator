@@ -9,6 +9,7 @@ import aircraftsimulator.GameObject.Aircraft.FlightController.PositionData;
 import aircraftsimulator.GameObject.Aircraft.FlightController.v2.SimpleFlightController;
 import aircraftsimulator.GameObject.Aircraft.Radar.Radar.AngleRadar;
 import aircraftsimulator.GameObject.Aircraft.Radar.Radar.RadioCommunicator;
+import aircraftsimulator.GameObject.Aircraft.Radar.Radar.TrackingRequest;
 import aircraftsimulator.GameObject.Aircraft.Radar.RadarFrequency;
 import aircraftsimulator.GameObject.Aircraft.Radar.Wave.ElectroMagneticWave;
 import aircraftsimulator.GameObject.Aircraft.SystemPort;
@@ -63,7 +64,7 @@ public class GamePanel extends JPanel {
 //        }));
         aircraftAcc.setThruster(new SimpleThruster(aircraftAcc, Aircraft.THRUSTER_MAGNITUDE, Aircraft.THRUSTER_FUEL));
         aircraftAcc.addComponent(new SimpleFlightController(aircraftAcc, aircraftAcc.getNetwork()), SystemPort.FLIGHT_CONTROL, new PositionData(new Vector3f(1000, 1100, 100)));
-        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.C, 50, 100000, 45, 0.5F, 1), SystemPort.SEARCH_RADAR, new ConnectRequest());
+        aircraftAcc.addComponent(new AngleRadar(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.C, 50, 500000, 45, 0.5F, 1), SystemPort.SEARCH_RADAR, new TrackingRequest("aa", new Vector3f(1000, 100, 100)));
         aircraftAcc.addComponent(new RadioCommunicator(aircraftAcc, aircraftAcc.getNetwork(), RadarFrequency.L, 500000, 1F, 1), SystemPort.COMMUNICATION, new ConnectRequest());
         aircraftAcc.addComponent(new SimpleStrategy(aircraftAcc, aircraftAcc.getNetwork()), SystemPort.STRATEGY, new ConnectRequest());
 
@@ -72,7 +73,7 @@ public class GamePanel extends JPanel {
 //        Missile missile = new GuidedMissile(A, 100, 80);
 //        aircraftAcc.addComponent(new MissileLauncher(aircraftAcc, missile, 1F, 6));
 
-        Aircraft aircraftAcc1 = new Aircraft(A,
+        Aircraft aircraftAcc1 = new Aircraft(B,
                 new Vector3f(150, 130, 100),
                 new Vector3f(2, 0, 0), Color.BLUE, 5, 100);
 
