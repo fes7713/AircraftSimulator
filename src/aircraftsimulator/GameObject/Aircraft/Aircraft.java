@@ -9,6 +9,7 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionEst
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.*;
 import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
 import aircraftsimulator.GameObject.Aircraft.Communication.*;
+import aircraftsimulator.GameObject.Aircraft.FlightController.PositionData;
 import aircraftsimulator.GameObject.Aircraft.Radar.Radar.RadarRequestAck;
 import aircraftsimulator.GameObject.Aircraft.Radar.Radar.SearchingRequest;
 import aircraftsimulator.GameObject.Aircraft.Radar.Radar.TrackingRequest;
@@ -108,6 +109,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         }));
         networkComponent.addDataReceiver(TrackingRequest.class, ((data, port) -> {
             networkComponent.sendData(SystemPort.SEARCH_RADAR, data);
+            networkComponent.sendData(SystemPort.FLIGHT_CONTROL, new PositionData(data.position()));
         }));
         networkComponent.addDataReceiver(RadarRequestAck.class, ((data, port) -> {
             networkComponent.sendData(SystemPort.STRATEGY, data);

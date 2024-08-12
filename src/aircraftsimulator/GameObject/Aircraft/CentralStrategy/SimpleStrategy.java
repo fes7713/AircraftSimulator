@@ -139,16 +139,22 @@ public class SimpleStrategy extends Component {
         Map<String, Vector3f> tempTracker = new HashMap<>();
         for(ElectroMagneticWaveData waveData: waves)
         {
-            Map.Entry<String, Float> closeEntry = getClosestTrackingEntry(waveData.getPosition());
+            Map.Entry<String, Float> closeEntry = getClosestTrackingEntry(waveData);
             if(closeEntry == null)
                 tempTracker.put(UUID.randomUUID().toString(), waveData.getPosition());
             else
             {
                 if(trackingInfoMap.containsKey(closeEntry.getKey()))
                 {
-                    float distanceSquared = trackingInfoMap.get(closeEntry.getKey()).velocity().lengthSquared()
-                            * (waveData.getCreated() - trackingInfoMap.get(closeEntry.getKey()).recordedTime()) * (waveData.getCreated() - trackingInfoMap.get(closeEntry.getKey()).recordedTime());
-                    if(closeEntry.getValue() < distanceSquared * 3)
+                    float distanceSquared;
+                    if(trackingInfoMap.containsKey(closeEntry.getKey()))
+                        distanceSquared = trackingInfoMap.get(closeEntry.getKey()).velocity().lengthSquared()
+                                * (waveData.getCreated() - trackingInfoMap.get(closeEntry.getKey()).recordedTime()) * (waveData.getCreated() - trackingInfoMap.get(closeEntry.getKey()).recordedTime());
+                    else
+                        distanceSquared = trackingInfoMap.get(closeEntry.getKey()).velocity().lengthSquared()
+                                * (waveData.getCreated() - trackingHistoryMap.get(closeEntry.getKey()).getLast().getCreated()) * (waveData.getCreated() - trackingHistoryMap.get(closeEntry.getKey()).getLast().getCreated());
+
+                    if(closeEntry.getValue() < distanceSquared)
                         tempTracker.put(closeEntry.getKey(), waveData.getPosition());
                     else
                         tempTracker.put(UUID.randomUUID().toString(), waveData.getPosition());
@@ -231,13 +237,13 @@ public class SimpleStrategy extends Component {
         });
     }
 
-    private Map.Entry<String, Float> getClosestTrackingEntry(Vector3f position)
+    private Map.Entry<String, Float> getClosestTrackingEntry(ElectroMagneticWaveData waveData)
     {
         Map<String, Vector3f> currentPos = new HashMap<>();
         for(String id: trackingStateMap.keySet())
         {
             if(trackingInfoMap.containsKey(id))
-                currentPos.put(id, getFuturePoints(id, Arrays.asList(Game.getGameTime())).get(0));
+                currentPos.put(id, getFuturePoints(id, Arrays.asList(waveData.getCreated())).get(0));
             else
                 currentPos.put(id, trackingHistoryMap.get(id).getLast().getPosition());
         }
@@ -246,7 +252,7 @@ public class SimpleStrategy extends Component {
                 .stream()
                 .collect(Collectors.toMap(e -> e.getKey(), e -> {
                     Vector3f diff = new Vector3f(currentPos.get(e.getKey()));
-                    diff.sub(position);
+                    diff.sub(waveData.getPosition());
                     return diff.lengthSquared();
                 }))
                 .entrySet()
@@ -265,7 +271,7 @@ public class SimpleStrategy extends Component {
         LinkedList<TrackingNode> samplingNodes = new LinkedList<>();
         for(int i = nodes.size() - 1; i >= 0; i--)
         {
-            if(nodes.getLast().getCreated() - nodes.get(i).getCreated() < TRACKING_INTERVAL * 3)
+            if(nodes.getLast().getCreated() - nodes.get(i).getCreated() < TRACKING_INTERVAL * 5)
                 samplingNodes.add(nodes.get(i));
         }
 
