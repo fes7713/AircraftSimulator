@@ -6,7 +6,9 @@ public enum TrackingState {
     UNIDENTIFIED(Color.ORANGE),
     FRIENDLY(Color.GREEN),
     CIVILIAN(Color.GRAY),
-    ENEMY(Color.RED);
+    LOST(Color.GRAY),
+    ENEMY(Color.RED),
+    ENEMY_LOST(Color.PINK);
 
     private Color color;
 

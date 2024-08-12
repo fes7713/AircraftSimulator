@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class SimpleStrategy extends Component {
+
     private class TrackingNode implements Data
     {
         private final Vector3f position;
@@ -70,11 +71,13 @@ public class SimpleStrategy extends Component {
     private final float iffTimeout;
     private final float iffTravelTimoutMultipliplier;
 
-    private static final float TRACKING_THRESHOLD = ElectroMagneticWave.LIGHT_SPEED * 8;
-    private static final float TRACKING_TIMEOUT = 50;
+    private static final float TRACKING_THRESHOLD = ElectroMagneticWave.LIGHT_SPEED * 0.2F;
+    private static final float TRACKING_TIMEOUT = 300;
+    private static final float SEARCH_TIMEOUT = 20;
     private static final Color TRACKING_POINT_COLOR = Color.WHITE;
     private static final int TRACKING_POINT_SIZE = 4;
     private static final int TRACKING_LOCK_SIZE = 10;
+    private static final int TRACKING_MAX_SIZE = 30;
 
     private static final float TRACKING_INTERVAL = 1.5F;
 
@@ -136,16 +139,25 @@ public class SimpleStrategy extends Component {
         Map<String, Vector3f> tempTracker = new HashMap<>();
         for(ElectroMagneticWaveData waveData: waves)
         {
-            Map.Entry<String, Float> closestTrackingEntry = getClosestTrackingEntry(waveData.getPosition());
-            if(closestTrackingEntry == null)
+            Map.Entry<String, Float> closeEntry = getClosestTrackingEntry(waveData.getPosition());
+            if(closeEntry == null)
                 tempTracker.put(UUID.randomUUID().toString(), waveData.getPosition());
             else
             {
-                if(closestTrackingEntry.getValue() > trackingSeparationDistance * trackingSeparationDistance)
+                if(trackingInfoMap.containsKey(closeEntry.getKey()))
+                {
+                    float distanceSquared = trackingInfoMap.get(closeEntry.getKey()).velocity().lengthSquared()
+                            * (waveData.getCreated() - trackingInfoMap.get(closeEntry.getKey()).recordedTime()) * (waveData.getCreated() - trackingInfoMap.get(closeEntry.getKey()).recordedTime());
+                    if(closeEntry.getValue() < distanceSquared * 3)
+                        tempTracker.put(closeEntry.getKey(), waveData.getPosition());
+                    else
+                        tempTracker.put(UUID.randomUUID().toString(), waveData.getPosition());
+                }
+                else if(closeEntry.getValue() > trackingSeparationDistance * trackingSeparationDistance)
                 {
                     tempTracker.put(UUID.randomUUID().toString(), waveData.getPosition());
                 }else{
-                    tempTracker.put(closestTrackingEntry.getKey(), waveData.getPosition());
+                    tempTracker.put(closeEntry.getKey(), waveData.getPosition());
                 }
             }
         }
@@ -162,50 +174,7 @@ public class SimpleStrategy extends Component {
             else if(nodes.size() == 1)
                 node = new TrackingNode(tempTracker.get(trackingId), waves.get(0).getCreated());
             else
-            {
-                Vector3f velocity;
-                Vector3f acceleration;
-//                LinkedList<TrackingNode> samplingNodesNew = new LinkedList<>();
-//                LinkedList<TrackingNode> samplingNodesOld = new LinkedList<>();
-//
-//                Vector3f velocityNew = GameMath.getVelocityVector(tempTracker.get(trackingId), nodes.getLast().getPosition(), waves.get(0).getCreated() - nodes.getLast().getCreated());
-//                Vector3f accelerationNew = GameMath.getAccelerationVector(velocityNew, nodes.getLast().getVelocity(), waves.get(0).getCreated() - nodes.getLast().getCreated());
-//
-//                samplingNodesNew.add(new TrackingNode(tempTracker.get(trackingId),
-//                        velocityNew, accelerationNew, accelerationNew.length() / velocityNew.length(), waves.get(0).getCreated()));
-//
-//                for(int i = nodes.size() - 1; i >= 1; i--)
-//                {
-//                    if(waves.get(0).getCreated() - nodes.get(i).getCreated() > TRACKING_INTERVAL)
-//                        break;
-//                    else if(waves.get(0).getCreated() - nodes.get(i).getCreated() > TRACKING_INTERVAL / 2)
-//                        samplingNodesOld.add(nodes.get(i));
-//                    else
-//                        samplingNodesNew.add(nodes.get(i));
-//                }
-////                float angularSpeed;
-//                // Sampling
-//                if(!samplingNodesNew.isEmpty() && !samplingNodesOld.isEmpty())
-//                {
-//                    if(samplingNodesNew.size() < 3 || samplingNodesOld.size() < 3)
-//                    {
-//                        velocity = GameMath.getVelocityVector(tempTracker.get(trackingId), nodes.getLast().getPosition(), waves.get(0).getCreated() - nodes.getLast().getCreated());
-//                        acceleration = GameMath.getAccelerationVector(velocity, samplingNodesOld.getLast().getVelocity(), waves.get(0).getCreated() - nodes.getLast().getCreated());
-//                    }
-//                    else{
-//                        velocity = GameMath.vector3fAveraging(samplingNodesNew.stream().map(trackingNode -> trackingNode.velocity).toList());
-//                        acceleration = GameMath.getAccelerationVector(
-//                                velocity,
-//                                GameMath.vector3fAveraging(samplingNodesOld.stream().map(trackingNode -> trackingNode.velocity).toList()),
-//                                waves.get(0).getCreated() - samplingNodesOld.getLast().getCreated());
-//                    }
-//                }
-//                // Direct calc
-//                else{
-
-//                }
                 node = new TrackingNode(tempTracker.get(trackingId), waves.get(0).getCreated());
-            }
 
             if(!trackingStateMap.containsKey(trackingId))
             {
@@ -217,17 +186,25 @@ public class SimpleStrategy extends Component {
                     networkComponent.removeTimeout(trackingId);
                     networkComponent.removeTimeout(trackingId + "E");
                     networkComponent.registerTimeout(trackingId + "T", 1000,  s1 -> {
-                        if(trackingInfoMap.containsKey(trackingId))
+                        if(trackingInfoMap.containsKey(trackingId) && trackingStateMap.get(trackingId) == TrackingState.ENEMY)
                         {
                             Vector3f position = getFuturePoints(trackingId, Arrays.asList(Game.getGameTime())).get(0);
                             futurePositionTrackingMap.put(trackingId, new TrackingNode(position, Game.getGameTime()));
-                            networkComponent.sendData(SystemPort.STRATEGY, new TrackingRequest(s1, position));
+                            if(Game.getGameTime() - trackingInfoMap.get(trackingId).recordedTime() < SEARCH_TIMEOUT)
+                                networkComponent.sendData(SystemPort.STRATEGY, new TrackingRequest(s1, position));
+                            else
+                                trackingStateMap.put(trackingId, TrackingState.ENEMY_LOST);
                         }
                         networkComponent.updateTimeout(s1, 1000);
                     });
                 });
+            } else if(trackingStateMap.get(trackingId) == TrackingState.ENEMY_LOST)
+            {
+                trackingStateMap.put(trackingId, TrackingState.ENEMY);
             }
             nodes.add(node);
+            while(nodes.size() > TRACKING_MAX_SIZE)
+                nodes.remove(0);
             trackingUpdate(trackingId);
 
             if(!futurePositionTrackingHistoryMap.containsKey(trackingId))
@@ -256,12 +233,19 @@ public class SimpleStrategy extends Component {
 
     private Map.Entry<String, Float> getClosestTrackingEntry(Vector3f position)
     {
-//        TrackingNode currentNode = generateTrackPoint(futurePositionTrackingHistoryMap.get(trackingId), Game.getGameTime(), futurePositionTrackingHistoryMap.get(trackingId).getLast().getAngularSpeed());
+        Map<String, Vector3f> currentPos = new HashMap<>();
+        for(String id: trackingStateMap.keySet())
+        {
+            if(trackingInfoMap.containsKey(id))
+                currentPos.put(id, getFuturePoints(id, Arrays.asList(Game.getGameTime())).get(0));
+            else
+                currentPos.put(id, trackingHistoryMap.get(id).getLast().getPosition());
+        }
 
-        return trackingHistoryMap.entrySet()
+        return currentPos.entrySet()
                 .stream()
                 .collect(Collectors.toMap(e -> e.getKey(), e -> {
-                    Vector3f diff = new Vector3f(trackingHistoryMap.get(e.getKey()).getLast().getPosition());
+                    Vector3f diff = new Vector3f(currentPos.get(e.getKey()));
                     diff.sub(position);
                     return diff.lengthSquared();
                 }))
@@ -270,49 +254,6 @@ public class SimpleStrategy extends Component {
                 .min(Map.Entry.comparingByValue(Comparator.comparingDouble(Float::doubleValue)))
                 .orElse(null);
     }
-
-//    private TrackingNode generateTrackPoint(List<TrackingNode> nodes, float time, float angularSpeed)
-//    {
-//        int index = -1;
-//        for(int i = nodes.size() - 1; i >= 0; i--)
-//        {
-//            if(time - nodes.get(i).getCreated() > 0)
-//            {
-//                index = i;
-//                break;
-//            }
-//        }
-//
-//        if(index == -1)
-//        {
-//            System.err.println("Cannot predict past");
-//            return null;
-//        }
-//
-//        Vector3f targetDirection = new Vector3f();
-//        if(index > 10)
-//            targetDirection.set(nodes.get(index - 5).getVelocity());
-//        else
-//            targetDirection.set(nodes.get(0).getVelocity());
-//        targetDirection.negate();
-//
-//        Vector3f position = new Vector3f(nodes.get(index).getPosition());
-//        Vector3f velocity = new Vector3f(nodes.get(index).getVelocity());
-//
-//        float timeDiff = time  - nodes.get(index).getCreated();
-//        if(angularSpeed >= 0.000001F)
-//        {
-//            float radian = angularSpeed * timeDiff;
-//            Vector3f newVelocity = GameMath.rotatedDirection(radian, velocity, targetDirection);
-//            newVelocity.normalize();
-//            newVelocity.scale(velocity.length());
-//            velocity.set(newVelocity);
-//        }
-//        Vector3f positionDiff = new Vector3f(velocity);
-//        positionDiff.scale(timeDiff);
-//        position.add(positionDiff);
-//        return new TrackingNode(new Vector3f(position), new Vector3f(velocity), new Vector3f(0, 0, 0), angularSpeed, time);
-//    }
 
     private void trackingUpdate(String id)
     {
@@ -338,7 +279,6 @@ public class SimpleStrategy extends Component {
             return;
         }
         if(samplingNodes.size() < 4){
-            angularSpeed = 0;
             Vector3f acceleration = new Vector3f(0, 0, 0);
             Vector3f velocity = new Vector3f(samplingNodes.getLast().getPosition());
             velocity.sub(samplingNodes.get(samplingNodes.size() - 2).getPosition());
@@ -397,27 +337,6 @@ public class SimpleStrategy extends Component {
             TrackingNode node = new TrackingNode(positions.get(i), times.get(i));
             futurePositionTrackingHistoryMap.get(id).add(node);
         }
-
-//        TrackingNode latestNode = trackingHistoryMap.get(id).getLast();
-//
-//        float timeDiff = TRACKING_INTERVAL;
-//        float timePassed = ((int)(latestNode.getCreated() / timeDiff)) * timeDiff;
-//
-//        List<TrackingNode> trackingNodes = new ArrayList<>(nodes);
-//        trackingNodes.addAll(futurePositionTrackingHistoryMap.get(id));
-//        trackingNodes.sort((o1, o2) -> (int) Math.floor(o1.getCreated() - o2.getCreated()));
-//        for(int i = 0; i < 40; i++)
-//        {
-//            TrackingNode node = generateTrackPoint(trackingNodes, timePassed, angularSpeed);
-//
-//            if(node != null)
-//                futurePositionTrackingHistoryMap.get(id).add(node);
-//            else
-//                break;
-//
-//            timePassed += timeDiff;
-//            timeDiff = TRACKING_INTERVAL;
-//        }
     }
 
     public List<Vector3f> getFuturePoints(String id, List<Float> times)
@@ -466,13 +385,6 @@ public class SimpleStrategy extends Component {
         {
             if(trackingHistoryMap.get(id).size() <= 2)
                 break;
-//            List<TrackingNode> trackingNodes = new ArrayList<>(trackingHistoryMap.get(id));
-//            trackingNodes.addAll(futurePositionTrackingHistoryMap.get(id));
-//            trackingNodes.sort((o1, o2) -> (int) Math.floor(o1.getCreated() - o2.getCreated()));
-//            trackingNodes.remove(0);
-//            float angularSpeed = GameMath.additiveAverage(trackingHistoryMap.get(id).stream().map(TrackingNode::getAngularSpeed).collect(Collectors.toList()));
-//
-//            futurePositionTrackingMap.put(id, generateTrackPoint(trackingNodes, Game.getGameTime(), angularSpeed));
             if(trackingInfoMap.containsKey(id))
             {
                 Vector3f position = getFuturePoints(id, Arrays.asList(Game.getGameTime())).get(0);
