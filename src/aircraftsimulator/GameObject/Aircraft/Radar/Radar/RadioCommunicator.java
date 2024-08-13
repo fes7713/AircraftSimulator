@@ -58,4 +58,9 @@ public class RadioCommunicator extends RadioEmitter implements RadarInterface{
         g2d.drawOval((int)(position.x - maxWaveRange), (int)(position.y - maxWaveRange), (int)(maxWaveRange * 2), (int)(maxWaveRange * 2));
         g2d.drawOval((int)(position.x - maxDetectionRange), (int)(position.y - maxDetectionRange), (int)(maxDetectionRange * 2), (int)(maxDetectionRange * 2));
     }
+
+    @Override
+    public NetworkComponent getNetworkComponent() {
+        return networkComponent;
+    }
 }

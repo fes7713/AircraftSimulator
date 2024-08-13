@@ -140,4 +140,9 @@ public class SimpleFlightController extends FlightControlV2 {
     public void setParent(GameObject parent) {
 
     }
+
+    @Override
+    public NetworkComponent getNetworkComponent() {
+        return networkComponent;
+    }
 }

@@ -1,16 +1,15 @@
 package aircraftsimulator.GameObject.Aircraft;
 
-import aircraftsimulator.GameObject.Aircraft.Spawner.Spawnable;
 import aircraftsimulator.GameObject.GameObject;
 import aircraftsimulator.GameObject.Team;
 
 import javax.vecmath.Vector3f;
 import java.awt.*;
-import java.util.List;
 
-public class MovingObject extends GameObject implements MovingObjectInterface, Spawnable {
+public class MovingObject extends GameObject implements MovingObjectInterface {
     protected final Vector3f velocity;
     protected float minimumSpeed;
+    protected Vector3f acceleration;
 
     protected final AirResistance airResistance;
 
@@ -30,6 +29,7 @@ public class MovingObject extends GameObject implements MovingObjectInterface, S
     public MovingObject(Team team, Vector3f position, Vector3f velocity, Color color, float size, float airResistanceCoefficient) {
         super(team, position, color, size);
         airResistance = new AirResistance(this, airResistanceCoefficient);
+        acceleration = new Vector3f();
         this.velocity = velocity;
         direction.set(new Vector3f(velocity));
         direction.normalize();
@@ -39,7 +39,8 @@ public class MovingObject extends GameObject implements MovingObjectInterface, S
     public void update(float delta)
     {
         super.update(delta);
-        Vector3f accelerationScaled = new Vector3f(getAcceleration());
+        acceleration.add(airResistance.generateForce());
+        Vector3f accelerationScaled = new Vector3f(acceleration);
         accelerationScaled.scale(delta);
 
         velocity.add(accelerationScaled);
@@ -47,23 +48,16 @@ public class MovingObject extends GameObject implements MovingObjectInterface, S
         velocityScaled.scale(delta);
 
         position.add(velocityScaled);
+        acceleration.set(0, 0, 0);
     }
 
     public Vector3f getVelocity() {
         return velocity;
     }
 
-    public Vector3f getAcceleration() {
-        Vector3f acceleration = new Vector3f(0, 0, 0);
-        List<ForceApplier> forces = getForceList();
-        for(ForceApplier force: forces)
-            acceleration.add(force.generateForce());
-        return acceleration;
-    }
-
-    @Override
-    public List<ForceApplier> getForceList() {
-        return List.of(airResistance);
+    public void addAcceleration(Vector3f acceleration)
+    {
+        this.acceleration.add(acceleration);
     }
 
     public float getRange() {
@@ -77,10 +71,4 @@ public class MovingObject extends GameObject implements MovingObjectInterface, S
         return minimumSpeed;
     }
 
-    @Override
-    public void activate(Vector3f position, Vector3f velocity, Vector3f direction) {
-        this.position.set(position);
-        this.velocity.set(velocity);
-        this.direction.set(direction);
-    }
 }

@@ -128,4 +128,9 @@ public class AngleRadar extends RadioEmitter implements RadarInterface{
             setVerticalAngle(0);
         }
     }
+
+    @Override
+    public NetworkComponent getNetworkComponent() {
+        return networkComponent;
+    }
 }

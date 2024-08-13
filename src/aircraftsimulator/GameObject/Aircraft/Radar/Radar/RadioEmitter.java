@@ -12,7 +12,7 @@ import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
 import java.awt.*;
 
-public class RadioEmitter extends Component implements RadarInterface{
+public abstract class RadioEmitter extends Component implements RadarInterface{
     protected GameObject parent;
     protected Vector3f direction;
     protected final float power;

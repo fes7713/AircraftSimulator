@@ -6,9 +6,11 @@ import aircraftsimulator.GameObject.Aircraft.CentralStrategy.IFFResult;
 import aircraftsimulator.GameObject.Aircraft.CentralStrategy.IFFSecretData;
 import aircraftsimulator.GameObject.Aircraft.Communication.Data.Data;
 import aircraftsimulator.GameObject.Aircraft.Communication.Handler.ConnectionEstablishedHandler;
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.*;
 import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
-import aircraftsimulator.GameObject.Aircraft.Communication.*;
+import aircraftsimulator.GameObject.Aircraft.Communication.Network;
+import aircraftsimulator.GameObject.Aircraft.Communication.NetworkComponent;
+import aircraftsimulator.GameObject.Aircraft.Communication.NetworkImp;
+import aircraftsimulator.GameObject.Aircraft.Communication.SlowStartApplicationNetworkComponentImp;
 import aircraftsimulator.GameObject.Aircraft.FlightController.PositionData;
 import aircraftsimulator.GameObject.Aircraft.Radar.Radar.RadarRequestAck;
 import aircraftsimulator.GameObject.Aircraft.Radar.Radar.SearchingRequest;
@@ -21,14 +23,12 @@ import aircraftsimulator.GameObject.Aircraft.Thruster.ThrusterRequestAck;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.GameObject.DestructibleMovingObject;
 import aircraftsimulator.GameObject.Team;
-import org.jetbrains.annotations.Nullable;
 
 import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
 import java.awt.*;
-import java.util.List;
 
-public class Aircraft extends DestructibleMovingObject implements AircraftInterface, ReceiverInterface, SenderInterface, Cloneable, GuideNetwork, AircraftController {
+public class Aircraft extends DestructibleMovingObject implements AircraftInterface, Cloneable, AircraftController {
     private float angularSpeed;
     private float angularAcceleration;
     private final float angularAccelerationMagnitude;
@@ -184,11 +184,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     }
 
     @Override
-    public List<ForceApplier> getForceList() {
-        return List.of(thruster, airResistance);
-    }
-
-    @Override
     public void setThruster(Thruster thruster) {
         removeComponent(this.thruster);
         this.thruster = thruster;
@@ -199,7 +194,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     public void addComponent(Component component, int port, ConnectionEstablishedHandler handler) {
         super.addComponent(component);
 
-        network.addToNetwork(thruster.getNetworkComponent());
+        network.addToNetwork(component.getNetworkComponent());
         networkComponent.openPort(port);
         networkComponent.connect(port, p -> {
             if(handler != null)
@@ -211,7 +206,7 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     public void addComponent(Component component, int port, Data initialData) {
         super.addComponent(component);
 
-        network.addToNetwork(thruster.getNetworkComponent());
+        network.addToNetwork(component.getNetworkComponent());
         networkComponent.openPort(port);
         networkComponent.connect(port, p -> {
             networkComponent.sendData(p, initialData);
@@ -243,14 +238,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         return (float) (log_coef * Math.log(Math.cosh(Ltime) + sinh_coef * Math.sinh(Ltime)) + no_thruster_distance);
     }
 
-    public void connectToGuidance(Guided guidedObject, PositionInformation keyInformation)
-    {
-    }
-
-    @Override
-    public void disconnectFromGuidance(Guided guidedObject) {
-    }
-
     @Override
     public void addComponent(Component component)
     {
@@ -264,29 +251,6 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
         components.remove(component);
 //        router.removeRouting(component);
     }
-
-    @Override
-    public void receive(@Nullable Information information) {
-    }
-
-    @Override
-    public <T extends PositionInformation> PositionInformation send(Class<T> type) {
-        if(type == MotionInformation.class)
-        {
-            return new MotionInformationImp(this, position, velocity, getAcceleration(), direction);
-        }
-        else if(type == PositionInformation.class)
-        {
-            return new PositionInformationImp(this, position);
-        }
-        System.err.println("Type error in Aircraft.java send(Class<T>)");
-        return super.send(type);
-    }
-
-//    @Override
-//    public Aircraft clone() {
-//        return new Aircraft(this);
-//    }
 
     @Override
     public Network getNetwork()

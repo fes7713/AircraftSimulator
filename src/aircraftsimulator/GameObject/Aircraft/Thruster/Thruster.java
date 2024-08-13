@@ -63,6 +63,7 @@ public abstract class Thruster extends Component implements ForceApplier, DataRe
             magnitude = getMagnitude();
             fuel -= magnitude * delta * fuelCoefficient;
         }
+        parent.addAcceleration(generateForce());
     }
 
     @Override

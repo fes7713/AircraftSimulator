@@ -2,11 +2,9 @@ package aircraftsimulator.GameObject;
 
 import aircraftsimulator.Environment;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.LaserInformation;
-import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformationImp;
 import aircraftsimulator.GameObject.Aircraft.Communication.LocalRouter;
 import aircraftsimulator.GameObject.Aircraft.Communication.Router;
-import aircraftsimulator.GameObject.Aircraft.Communication.SenderInterface;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.PaintDrawer;
 
@@ -16,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class GameObject implements GameObjectInterface, SenderInterface, ReflectionInterface {
+public class GameObject implements GameObjectInterface, ReflectionInterface {
     private final String id;
 
     protected final Team team;
@@ -122,11 +120,6 @@ public class GameObject implements GameObjectInterface, SenderInterface, Reflect
     @Override
     public float getSurfaceRoughness() {
         return surfaceRoughness;
-    }
-
-    @Override
-    public <T extends PositionInformation> PositionInformation send(Class<T> type) {
-        return new PositionInformationImp(this, position);
     }
 
     @Override
