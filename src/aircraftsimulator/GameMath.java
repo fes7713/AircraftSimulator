@@ -144,8 +144,6 @@ public class GameMath {
         parrallel.scale(resolvingVector.dot(perpendicularTo) / perpendicularTo.dot(perpendicularTo));
         Vector3f perpendicularVector = new Vector3f(resolvingVector);
         perpendicularVector.sub(parrallel);
-
-//        System.out.println(perpendicularVector.dot(perpendicularTo));
         return perpendicularVector;
     }
 
@@ -155,49 +153,6 @@ public class GameMath {
         angularVelocity.cross(centripetalAcceleration, linearVelocity);
         angularVelocity.scale(1 / linearVelocity.lengthSquared());
         return angularVelocity;
-    }
-
-    public static Map<String, List<?>> getFuturePosition(Vector3f initialPosition, Vector3f angularVelocity, float totalAngle, float size)
-    {
-        Matrix3f K = new Matrix3f(
-                0, -angularVelocity.z, angularVelocity.y,
-                angularVelocity.z, 0, -angularVelocity.x,
-                -angularVelocity.y, angularVelocity.x, 0
-        );
-        Matrix3f identity = new Matrix3f(1, 0, 0, 0, 1, 0, 0, 0, 1);
-        Matrix3f KSquared = new Matrix3f(K);
-        KSquared.mul(K);
-
-        List<Vector3f> positions= new ArrayList<>();
-        List<Float> times = new ArrayList<>();
-        float angularSpeed = angularVelocity.length();
-        for(int i = 0; i < size; i++)
-        {
-            float angle = totalAngle / size * (i + 1);
-            float time = angle / angularSpeed;
-
-            Matrix3f KCalc = new Matrix3f(K);
-            Matrix3f KSquaredCalc = new Matrix3f(KSquared);
-            KCalc.mul((float)Math.sin(angle));
-            KSquaredCalc.mul((float)(1 - Math.cos(angle)));
-
-            Matrix3f R = new Matrix3f(identity);
-            R.add(KCalc);
-            R.add(KSquaredCalc);
-
-            Vector3f position = new Vector3f(initialPosition);
-            R.transform(position);
-
-            positions.add(position);
-            times.add(time);
-        }
-
-        return new HashMap<>(){
-            {
-                put("Time", times);
-                put("Position", positions);
-            }
-        };
     }
 
     public static List<Vector3f> futurePos(Vector3f initialPos, Vector3f centripetalAcceleration, Vector3f velocity, List<Float> times, float shiftTime)
@@ -212,8 +167,6 @@ public class GameMath {
         Vector3f normal = new Vector3f();
         normal.cross(centerDiff, velocity);
         normal.normalize();
-        Vector3f cross = new Vector3f();
-        cross.cross(normal, centerDiff);
 
         List<Vector3f> positions = new ArrayList<>();
         float angularSpeed = centripetalAcceleration.length() / velocity.length();
@@ -235,21 +188,6 @@ public class GameMath {
             Vector3f r = new Vector3f();
             rotationMatrix.transform(position, r);
             r.add(center);
-
-//            Vector3f newPosition = new Vector3f(center);
-//            newPosition.add(r);
-
-
-//            Vector3f crossCalc = new Vector3f(cross);
-//            crossCalc.scale((float) Math.sin(angle));
-//
-//            Vector3f centerDiffCalc = new Vector3f(centerDiff);
-//            centerDiffCalc.scale((float) Math.cos(angle));
-//
-//            Vector3f newPosition = new Vector3f(center);
-//            newPosition.add(crossCalc);
-//            newPosition.add(centerDiffCalc);
-
             positions.add(r);
         }
 

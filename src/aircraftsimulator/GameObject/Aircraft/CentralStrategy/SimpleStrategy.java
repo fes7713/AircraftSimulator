@@ -7,6 +7,7 @@ import aircraftsimulator.GameObject.Aircraft.Communication.Logger.Logger;
 import aircraftsimulator.GameObject.Aircraft.Communication.Network;
 import aircraftsimulator.GameObject.Aircraft.Communication.NetworkComponent;
 import aircraftsimulator.GameObject.Aircraft.Communication.SlowStartApplicationNetworkComponentImp;
+import aircraftsimulator.GameObject.Aircraft.Communication.Timeout.TimeoutInformation;
 import aircraftsimulator.GameObject.Aircraft.Radar.Radar.TrackingRequest;
 import aircraftsimulator.GameObject.Aircraft.Radar.RadarData;
 import aircraftsimulator.GameObject.Aircraft.Radar.RadarFrequency;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class SimpleStrategy extends Component {
 
@@ -53,7 +55,7 @@ public class SimpleStrategy extends Component {
         }
     }
 
-    private record TrackingInfo(float recordedTime, Vector3f acceleration, Vector3f velocity, Vector3f position, float angularSpeed) { }
+    private record TrackingInfo(String id, float recordedTime, Vector3f acceleration, Vector3f velocity, Vector3f position, float angularSpeed) { }
 
     private final GameObject parent;
 
@@ -68,11 +70,11 @@ public class SimpleStrategy extends Component {
     private final float trackingTimeout;
     private final float trackingSeparationDistance;
 
-    private final float iffTimeout;
-    private final float iffTravelTimoutMultipliplier;
+    private final long iffTimeout;
+    private final int iffRetry;
 
     private static final float TRACKING_THRESHOLD = ElectroMagneticWave.LIGHT_SPEED * 0.2F;
-    private static final float TRACKING_TIMEOUT = 300;
+    private static final float TRACKING_TIMEOUT = 100;
     private static final float SEARCH_TIMEOUT = 20;
     private static final Color TRACKING_POINT_COLOR = Color.WHITE;
     private static final int TRACKING_POINT_SIZE = 4;
@@ -81,8 +83,9 @@ public class SimpleStrategy extends Component {
 
     private static final float TRACKING_INTERVAL = 1.5F;
 
-    private static final float IFF_TIMEOUT = 15000;
-    private static final float IFF_TRAVEL_TIMEOUT_MULTIPLIER = 1.2F;
+    private static final long IFF_TIMEOUT = 2000;
+    private static final int IFF_RETRY = 5;
+
 
     private static final float COMMUNICATION_FREQUENCY = RadarFrequency.HF;
 
@@ -110,7 +113,7 @@ public class SimpleStrategy extends Component {
         futurePositionTrackingHistoryMap = new HashMap<>();
 
         iffTimeout = IFF_TIMEOUT;
-        iffTravelTimoutMultipliplier = IFF_TRAVEL_TIMEOUT_MULTIPLIER;
+        iffRetry = IFF_RETRY;
 
         networkComponent.addDataReceiver(RadarData.class, (data, port) -> {
             processRadar(data.waves());
@@ -129,7 +132,7 @@ public class SimpleStrategy extends Component {
             {
                 trackingStateMap.put(data.secret(), TrackingState.FRIENDLY);
                 networkComponent.removeTimeout(data.secret());
-                networkComponent.removeTimeout(data.secret() + "E");
+                networkComponent.removeTimeout(data.secret() + "IFF");
             }
             Logger.Log(Logger.LogLevel.INFO, "IFF Result ACK [%s] [%s]".formatted(data.secret(), trackingHistoryMap.containsKey(data.secret()) ? "Friendly":"Enemy"), networkComponent.getMac(), SystemPort.STRATEGY);
         });
@@ -154,7 +157,7 @@ public class SimpleStrategy extends Component {
                         distanceSquared = trackingInfoMap.get(closeEntry.getKey()).velocity().lengthSquared()
                                 * (waveData.getCreated() - trackingHistoryMap.get(closeEntry.getKey()).getLast().getCreated()) * (waveData.getCreated() - trackingHistoryMap.get(closeEntry.getKey()).getLast().getCreated());
 
-                    if(closeEntry.getValue() < distanceSquared)
+                    if(closeEntry.getValue() < distanceSquared * 2 + 1)
                         tempTracker.put(closeEntry.getKey(), waveData.getPosition());
                     else
                         tempTracker.put(UUID.randomUUID().toString(), waveData.getPosition());
@@ -182,15 +185,40 @@ public class SimpleStrategy extends Component {
             else
                 node = new TrackingNode(tempTracker.get(trackingId), waves.get(0).getCreated());
 
+            nodes.add(node);
+            while(nodes.size() > TRACKING_MAX_SIZE)
+                nodes.remove(0);
+            trackingUpdate(trackingId);
+
             if(!trackingStateMap.containsKey(trackingId))
             {
                 trackingStateMap.put(trackingId, TrackingState.UNIDENTIFIED);
                 sendIFF(trackingId, node.getPosition());
-                networkComponent.registerTimeout(trackingId + "E", (long) (iffTimeout), s -> {
+            } else if(trackingStateMap.get(trackingId) == TrackingState.ENEMY_LOST)
+            {
+                trackingStateMap.put(trackingId, TrackingState.ENEMY);
+            }
+        }
+    }
+
+    private void sendIFF(String trackingId, Vector3f trackingPosition)
+    {
+        networkComponent.registerTimeout(trackingId + "IFF", new TimeoutInformation(trackingId + "IFF", 100, iffTimeout, iffRetry,
+                (s, integer) -> {
+                    Logger.Log(Logger.LogLevel.INFO, "IFF Request[%d] to Tracking ID [%s]".formatted(integer, trackingId), networkComponent.getMac(), SystemPort.STRATEGY);
+                    networkComponent.sendData(SystemPort.STRATEGY,
+                            new DirectionalCommunicationData(
+                                    new IFFSecretData(trackingId, parent.getTeam().getPW(), parent.getPosition()),
+                                    COMMUNICATION_FREQUENCY,
+                                    trackingPosition,
+                                    parent.getPosition()
+                            )
+                    );
+                },
+                s -> {
                     trackingStateMap.put(trackingId, TrackingState.ENEMY);
                     Logger.Log(Logger.LogLevel.INFO, "IFF No Respond Tracking ID [%s]".formatted(trackingId), networkComponent.getMac(), SystemPort.STRATEGY);
-                    networkComponent.removeTimeout(trackingId);
-                    networkComponent.removeTimeout(trackingId + "E");
+                    networkComponent.removeTimeout(trackingId + "IFF");
                     networkComponent.registerTimeout(trackingId + "T", 1000,  s1 -> {
                         if(trackingInfoMap.containsKey(trackingId) && trackingStateMap.get(trackingId) == TrackingState.ENEMY)
                         {
@@ -203,38 +231,7 @@ public class SimpleStrategy extends Component {
                         }
                         networkComponent.updateTimeout(s1, 1000);
                     });
-                });
-            } else if(trackingStateMap.get(trackingId) == TrackingState.ENEMY_LOST)
-            {
-                trackingStateMap.put(trackingId, TrackingState.ENEMY);
-            }
-            nodes.add(node);
-            while(nodes.size() > TRACKING_MAX_SIZE)
-                nodes.remove(0);
-            trackingUpdate(trackingId);
-
-            if(!futurePositionTrackingHistoryMap.containsKey(trackingId))
-                futurePositionTrackingHistoryMap.put(trackingId, new LinkedList<>());
-        }
-    }
-
-    private void sendIFF(String trackingId, Vector3f trackingPosition)
-    {
-        networkComponent.sendData(SystemPort.STRATEGY,
-                new DirectionalCommunicationData(
-                        new IFFSecretData(trackingId, parent.getTeam().getPW(), parent.getPosition()),
-                        COMMUNICATION_FREQUENCY,
-                        trackingPosition,
-                        parent.getPosition()
-                )
-        );
-        Logger.Log(Logger.LogLevel.INFO, "IFF Request to Tracking ID [%s]".formatted(trackingId), networkComponent.getMac(), SystemPort.STRATEGY);
-        Vector3f diff = new Vector3f(trackingPosition);
-        diff.sub(parent.getPosition());
-        float expectedTime = diff.length() / ElectroMagneticWave.LIGHT_SPEED;
-        networkComponent.registerTimeout(trackingId, (long)(expectedTime * iffTravelTimoutMultipliplier * 1000), s -> {
-            sendIFF(trackingId, trackingHistoryMap.get(trackingId).getLast().getPosition());
-        });
+                }));
     }
 
     private Map.Entry<String, Float> getClosestTrackingEntry(ElectroMagneticWaveData waveData)
@@ -269,18 +266,20 @@ public class SimpleStrategy extends Component {
         LinkedList<TrackingNode> nodes = new LinkedList<>(trackingHistoryMap.get(id));
 
         LinkedList<TrackingNode> samplingNodes = new LinkedList<>();
-        for(int i = nodes.size() - 1; i >= 0; i--)
+        for(int i = 0; i < nodes.size(); i++)
         {
             if(nodes.getLast().getCreated() - nodes.get(i).getCreated() < TRACKING_INTERVAL * 5)
-                samplingNodes.add(nodes.get(i));
+            {
+                for(int j = i; j < nodes.size(); j++)
+                {
+                    samplingNodes.add(nodes.get(j));
+                }
+                break;
+            }
         }
-
 
         float angularSpeed;
-        synchronized (futurePositionTrackingHistoryMap)
-        {
-            futurePositionTrackingHistoryMap.get(id).clear();
-        }
+
         if(samplingNodes.size() < 2) {
             return;
         }
@@ -289,7 +288,7 @@ public class SimpleStrategy extends Component {
             Vector3f velocity = new Vector3f(samplingNodes.getLast().getPosition());
             velocity.sub(samplingNodes.get(samplingNodes.size() - 2).getPosition());
             velocity.scale(1 / (samplingNodes.getLast().getCreated() - samplingNodes.get(samplingNodes.size() - 2).getCreated()));
-            trackingInfoMap.put(id, new TrackingInfo(samplingNodes.getLast().getCreated(), acceleration, velocity, samplingNodes.getLast().getPosition(), 0));
+            trackingInfoMap.put(id, new TrackingInfo(id, samplingNodes.getLast().getCreated(), acceleration, velocity, samplingNodes.getLast().getPosition(), 0));
         }
         else
         {
@@ -327,7 +326,7 @@ public class SimpleStrategy extends Component {
 
             Vector3f accelerationCent = GameMath.getPerpendicularComponent(acceleration, currentVelocity);
             angularSpeed = accelerationCent.length() / currentVelocity.length();
-            trackingInfoMap.put(id, new TrackingInfo(Game.getGameTime(), acceleration, currentVelocity, currentPosition, angularSpeed));
+            trackingInfoMap.put(id, new TrackingInfo(id, Game.getGameTime(), acceleration, currentVelocity, currentPosition, angularSpeed));
         }
 
         float timePassed = ((int)(Game.getGameTime() / TRACKING_INTERVAL)) * TRACKING_INTERVAL;
@@ -338,11 +337,9 @@ public class SimpleStrategy extends Component {
             times.add(shift + i * TRACKING_INTERVAL + Game.getGameTime());
 
         List<Vector3f> positions = getFuturePoints(id, times);
-
-        for (int i = 0; i < positions.size(); i++) {
-            TrackingNode node = new TrackingNode(positions.get(i), times.get(i));
-            futurePositionTrackingHistoryMap.get(id).add(node);
-        }
+        futurePositionTrackingHistoryMap.put(id, IntStream.range(0, positions.size())
+                .mapToObj(i -> new TrackingNode(positions.get(i), times.get(i)))
+                .collect(Collectors.toCollection(LinkedList::new)));
     }
 
     public List<Vector3f> getFuturePoints(String id, List<Float> times)
@@ -382,7 +379,7 @@ public class SimpleStrategy extends Component {
                 futurePositionTrackingMap.remove(id);
                 futurePositionTrackingHistoryMap.remove(id);
                 networkComponent.removeTimeout(id);
-                networkComponent.removeTimeout(id + "E");
+                networkComponent.removeTimeout(id + "IFF");
                 networkComponent.removeTimeout(id + "T");
             }
         }
@@ -397,7 +394,6 @@ public class SimpleStrategy extends Component {
                 futurePositionTrackingMap.put(id, new TrackingNode(position, Game.getGameTime()));
             }
         }
-
     }
 
     private void drawLock(Graphics2D g2d, Vector3f centerPosition, Color color, float opacity, int size)
@@ -438,6 +434,13 @@ public class SimpleStrategy extends Component {
 
     @Override
     public void draw(Graphics2D g2d) {
+
+        g2d.setColor(new Color(255, 255, 255, 100));
+        for(TrackingInfo info: trackingInfoMap.values())
+        {
+            double radius = info.velocity().length() * (Game.getGameTime() - info.recordedTime());
+            g2d.drawOval((int)(info.position().x - radius), (int)(info.position().y - radius), (int)radius * 2, (int)radius * 2);
+        }
 
         synchronized (trackingHistoryMap)
         {

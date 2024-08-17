@@ -23,7 +23,7 @@ public class Game {
         new Thread(()->{
             while(true)
             {
-                env.updateGame(10 / 1000F);
+                env.updateGame(frameTime);
                 frame.repaint();
                 Game.frames++;
                 prevTime = System.currentTimeMillis();
