@@ -661,9 +661,15 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionHandler 
 //        component1.connect(10);
 //        component1.connect(20);
         component2.connect(10, 11, port -> {
-            component2.sendData(port, positionData);
+//            component2.sendData(port, positionData);
 //            component2.sendData(port, positionData);
         });
+        component2.registerTimeout("A", new TimeoutInformation("A", 1000, 1000, 10, (s, integer) -> {
+            System.out.println(integer + "");
+        },
+                s -> {
+                    System.out.println("End");
+                }));
 //        component3.connect(10, 11, port -> {
 //            component3.sendData(port, positionData);
 //        });
