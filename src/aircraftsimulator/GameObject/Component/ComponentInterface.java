@@ -11,4 +11,5 @@ public interface ComponentInterface {
     void setParent(GameObject parent);
     void setup();
     NetworkComponent getNetworkComponent();
+    float getMass();
 }

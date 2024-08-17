@@ -39,8 +39,8 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
     private final Network network;
     private final NetworkComponent networkComponent;
 
-    public static final float THRUSTER_MAGNITUDE = 1F;
-    public static final float THRUSTER_FUEL = 3600F;
+    public static final float THRUSTER_MAGNITUDE = 20000F;
+    public static final float THRUSTER_FUEL = 8000F;
     public static final float FLIGHT_CONTROLLER_INTERVAL = 1F;
     public static final float ANGULAR_ACCELERATION = 0.01F;
     public static final float MAX_G_FORCE = 0.5F;
@@ -70,8 +70,8 @@ public class Aircraft extends DestructibleMovingObject implements AircraftInterf
 //                addComponent(c.clone());
 //    }
 
-    public Aircraft(Team team, Vector3f position, Vector3f velocity, Color color, float size, float health) {
-        super(team, position, velocity, color, size, health);
+    public Aircraft(Team team, Vector3f position, Vector3f velocity, Color color, float size, float mass, float health) {
+        super(team, position, velocity, color, size, mass, health);
 
         network = new NetworkImp(0.01F);
         networkComponent = new SlowStartApplicationNetworkComponentImp(network, 0.01F);

@@ -8,8 +8,8 @@ import java.awt.*;
 public class DestructibleStationaryObject extends GameObject implements DestructibleObjectInterface, DamageReceiver {
     private float health;
 
-    public DestructibleStationaryObject(Team team, Vector3f position, Color color, float size, float health) {
-        super(team, position, color, size);
+    public DestructibleStationaryObject(Team team, Vector3f position, Color color, float size, float mass, float health) {
+        super(team, position, color, size, mass);
         this.health = health;
     }
 

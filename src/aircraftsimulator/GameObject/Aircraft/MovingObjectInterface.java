@@ -9,5 +9,5 @@ public interface MovingObjectInterface extends GameObjectInterface {
     Vector3f getVelocity();
     float getRange();
     float getMinimumSpeed();
-    void addAcceleration(Vector3f acceleration);
+    void addForce(Vector3f force);
 }

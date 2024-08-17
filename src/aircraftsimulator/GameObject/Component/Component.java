@@ -21,4 +21,9 @@ public abstract class Component implements ComponentInterface, Cloneable {
     public void setup() {
 
     }
+
+    @Override
+    public float getMass() {
+        return 0;
+    }
 }

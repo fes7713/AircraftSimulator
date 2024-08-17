@@ -3,8 +3,6 @@ package aircraftsimulator.GameObject;
 import aircraftsimulator.Environment;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.LaserInformation;
 import aircraftsimulator.GameObject.Aircraft.Communication.Information.PositionInformationImp;
-import aircraftsimulator.GameObject.Aircraft.Communication.LocalRouter;
-import aircraftsimulator.GameObject.Aircraft.Communication.Router;
 import aircraftsimulator.GameObject.Component.Component;
 import aircraftsimulator.PaintDrawer;
 
@@ -24,7 +22,7 @@ public class GameObject implements GameObjectInterface, ReflectionInterface {
     protected final Color color;
     protected final float size;
     protected final List<Component> components;
-    protected final Router router;
+    protected final float mass;
 
     // 0 to 1
     protected float surfaceReflectance = 1000;
@@ -32,7 +30,7 @@ public class GameObject implements GameObjectInterface, ReflectionInterface {
     // 0 to 90 degrees
     protected float surfaceRoughness = 90 / 1;
 
-    public GameObject(Team team, Vector3f position, Color color, float size)
+    public GameObject(Team team, Vector3f position, Color color, float size, float mass)
     {
         id = UUID.randomUUID().toString();
 
@@ -41,8 +39,8 @@ public class GameObject implements GameObjectInterface, ReflectionInterface {
         this.direction = new Vector3f(1, 0, 0);
         this.color = color;
         this.size = size;
+        this.mass = mass;
         components = new ArrayList<>();
-        router = new LocalRouter();
 //        surfaceRoughness = 0.5F;
     }
 
@@ -108,8 +106,8 @@ public class GameObject implements GameObjectInterface, ReflectionInterface {
     }
 
     @Override
-    public Router getRouter() {
-        return router;
+    public float getMass() {
+        return mass + components.stream().map(Component::getMass).reduce(Float::sum).orElse(0F);
     }
 
     @Override

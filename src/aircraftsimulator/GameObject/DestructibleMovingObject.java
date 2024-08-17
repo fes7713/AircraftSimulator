@@ -14,13 +14,13 @@ public class DestructibleMovingObject extends MovingObject implements Destructib
         health = d.health;
     }
 
-    public DestructibleMovingObject(Team team, Vector3f position, Vector3f velocity, Color color, float size, float health) {
-        super(team, position, velocity, color, size);
+    public DestructibleMovingObject(Team team, Vector3f position, Vector3f velocity, Color color, float size, float mass, float health) {
+        super(team, position, velocity, color, size, mass);
         this.health = health;
     }
 
-    public DestructibleMovingObject(Team team, Vector3f position, Vector3f velocity, Color color, float size, float airResistanceCoefficient, float health) {
-        super(team, position, velocity, color, size, airResistanceCoefficient);
+    public DestructibleMovingObject(Team team, Vector3f position, Vector3f velocity, Color color, float size, float mass, float airResistanceCoefficient, float health) {
+        super(team, position, velocity, color, size, mass, airResistanceCoefficient);
         this.health = health;
     }
 

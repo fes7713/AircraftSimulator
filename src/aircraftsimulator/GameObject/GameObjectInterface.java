@@ -1,6 +1,5 @@
 package aircraftsimulator.GameObject;
 
-import aircraftsimulator.GameObject.Aircraft.Communication.Router;
 import aircraftsimulator.GameObject.Component.Component;
 
 import java.awt.*;
@@ -17,7 +16,7 @@ public interface GameObjectInterface extends PositionnInterface{
     void componentUpdate(float delta);
     void draw(Graphics2D g2d);
     void remove();
-    Router getRouter();
+    float getMass();
 
     float getRCS();
     float getSurfaceRoughness();

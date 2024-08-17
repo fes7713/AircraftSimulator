@@ -662,11 +662,11 @@ public class NetworkComponentImp implements NetworkComponent, ConnectionHandler 
 //        component1.connect(20);
         component2.connect(10, 11, port -> {
             component2.sendData(port, positionData);
-            component2.sendData(port, positionData);
+//            component2.sendData(port, positionData);
         });
-        component3.connect(10, 11, port -> {
-            component3.sendData(port, positionData);
-        });
+//        component3.connect(10, 11, port -> {
+//            component3.sendData(port, positionData);
+//        });
 
 //        component3.connect(20, port -> {
 ////            component3.sendData(port, positionData);

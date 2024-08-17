@@ -13,22 +13,24 @@ import java.awt.*;
 
 public abstract class Thruster extends Component implements ForceApplier, DataReceiver<ThrusterRequest> {
     protected Aircraft parent;
+    protected final float maxMagnitude;
     protected float magnitude;
-    protected float maxMagnitude;
     protected float fuel;
-    protected final float fuelCoefficient;
+    protected float consumptionRate;
+
+    protected ThrusterLevel level;
 
     protected final NetworkComponent networkComponent;
 
-    public final static float FUEL_COEFFICIENT = 1;
+    public final static float CONSUMPTION_RATE = 1;
+    public final static float BASE_CONSUMPTION_RATE = 10;
 
     public Thruster(Aircraft parent, float maxMagnitude, float fuel)
     {
         this.parent = parent;
         this.maxMagnitude = maxMagnitude;
-        this.magnitude = ThrusterLevel.STOPPED.getPercentage();
         this.fuel = fuel;
-        fuelCoefficient = FUEL_COEFFICIENT;
+        setMagnitude(ThrusterLevel.STOPPED);
 
         networkComponent = new SlowStartApplicationNetworkComponentImp(parent.getNetwork());
         networkComponent.openPort(SystemPort.THRUSTER);
@@ -45,25 +47,26 @@ public abstract class Thruster extends Component implements ForceApplier, DataRe
     }
 
     protected void setMagnitude(ThrusterLevel level){
+        this.level = level;
+        consumptionRate = BASE_CONSUMPTION_RATE * level.getPercentage() / ThrusterLevel.NORMAL.getPercentage();
         magnitude = maxMagnitude * level.getPercentage() / 100;
     }
 
     @Override
     public void update(float delta) {
-        if(fuel == 0)
+        if(fuel < 0)
         {
-            magnitude = 0;
+            level = ThrusterLevel.STOPPED;
         }
-        else if(fuel < getMagnitude() * delta * fuelCoefficient)
+        else if(fuel < delta * consumptionRate)
         {
-            magnitude = fuel / delta / fuelCoefficient;
+            level = ThrusterLevel.STOPPED;
             fuel = 0;
         }
         else{
-            magnitude = getMagnitude();
-            fuel -= magnitude * delta * fuelCoefficient;
+            fuel -= delta * consumptionRate;
         }
-        parent.addAcceleration(generateForce());
+        parent.addForce(generateForce());
     }
 
     @Override
@@ -81,7 +84,7 @@ public abstract class Thruster extends Component implements ForceApplier, DataRe
 
     public float getMaxTime()
     {
-        return fuel / fuelCoefficient / getMagnitude();
+        return fuel / consumptionRate / getMagnitude();
     }
 
     public NetworkComponent getNetworkComponent() {
@@ -89,7 +92,7 @@ public abstract class Thruster extends Component implements ForceApplier, DataRe
     }
 
     @Override
-    public Thruster clone() {
-        return (Thruster) super.clone();
+    public float getMass() {
+        return fuel;
     }
 }

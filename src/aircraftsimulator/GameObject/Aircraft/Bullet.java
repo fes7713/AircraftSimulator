@@ -20,6 +20,7 @@ public class Bullet extends MovingObject implements DamageGenerator, Cloneable {
     public final static Color BULLET_COLOR = Color.ORANGE;
     public final static float MINIMUM_SPEED = 25;
     public final static float BULLET_AIR_RESISTANCE = 0.01F;
+    public final static float BULLET_MASS = 0.3F;
 
     // Clone constructor
     private Bullet(Bullet b)
@@ -31,7 +32,7 @@ public class Bullet extends MovingObject implements DamageGenerator, Cloneable {
     }
 
     public Bullet(Team team, float baseDamage) {
-        super(team, new Vector3f(), new Vector3f(), BULLET_COLOR, BULLET_SIZE, BULLET_AIR_RESISTANCE);
+        super(team, new Vector3f(), new Vector3f(), BULLET_COLOR, BULLET_SIZE, BULLET_MASS, BULLET_AIR_RESISTANCE);
         fuse = null;
         target = null;
         this.baseDamage = baseDamage;
